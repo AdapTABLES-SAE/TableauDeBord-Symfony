@@ -1,0 +1,33 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion Enseignant - AdapTABLES{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/teacher_login.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="login-page">
+        <header class="hero">
+            <div class="logo">Adap<span>TABLES</span></div>
+            <h1>Gestion et suivi des parcours d'entrainement</h1>
+        </header>
+
+        <main class="login-box">
+            <form method="post" action="{{ path('teacher_login') }}" class="login-form" autocomplete="off">
+                <div class="input-pill">
+                    <input type="text" name="identifier" id="identifier" value="{{ identifier|e }}" placeholder="Identifiant enseignant" />
+                </div>
+
+                {% if error %}
+                    <div class="flash-error">{{ error }}</div>
+                {% endif %}
+
+                <button class="btn-ok" type="submit">Ok</button>
+            </form>
+
+            <div class="version">Version 0.4.1 — Octobre 2024</div>
+        </main>
+    </div>
+{% endblock %}

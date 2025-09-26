@@ -1,0 +1,118 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Tableau de bord enseignant{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/teacher_dashboard.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="dashboard">
+        <header class="dashboard-header">
+            <a href="{{ path('teacher_logout') }}" class="back-btn">⬅</a>
+            <div class="logo">Mes <span>classes</span></div>
+            <div class="teacher-info">
+                {{ enseignant.nom ?? enseignant.identifiant }}
+            </div>
+        </header>
+
+        <main class="dashboard-main">
+            <table class="classes-table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Nom de la classe</th>
+                    <th>Nombre d’élèves</th>
+                    <th>Identifiant</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for classe in classes %}
+                    <tr onclick="window.location='{{ path('classe_eleves', {id: classe.id}) }}'" style="cursor:pointer;">
+                        <td>
+                            <button class="edit-btn" onclick="event.stopPropagation(); enableEdit({{ classe.id }})">✏️</button>
+                        </td>
+                        <td>
+                            <form id="form-{{ classe.id }}" action="{{ path('classe_edit', {id: classe.id}) }}" method="POST" style="display:flex;align-items:center;">
+                                <input id="input-{{ classe.id }}" type="text" name="nom" value="{{ classe.nom }}" readonly class="edit-input">
+                            </form>
+                        </td>
+                        <td>{{ classe.eleves|length }}</td>
+                        <td class="identifiant">{{ classe.identifiant }}</td>
+                        <td>
+                            <form action="{{ path('classe_delete', {id: classe.id}) }}" method="POST" onsubmit="event.stopPropagation(); return confirm('Supprimer cette classe ?');">
+                                <button class="delete-btn">❌</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="add-btn-wrapper">
+                <button id="openAddModal" class="btn-plus">➕</button>
+            </div>
+        </main>
+    </div>
+
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h2>Ajout d'une <span class="highlight">classe</span></h2>
+            <form action="{{ path('classe_add') }}" method="POST" id="addClassForm">
+                <!-- Nom -->
+                <input type="text" id="className" name="nom" placeholder="Nom" required class="modal-input">
+
+                <!-- Identifiant (modifiable) -->
+                <input type="text" id="classIdentifiant" name="identifiant"
+                       placeholder="Identifiant de connexion (unique)"
+                       class="modal-input identifiant-field">
+
+                <div class="modal-actions">
+                    <button type="submit" class="btn-create">Créer</button>
+                    <button type="button" id="closeAddModal" class="btn-cancel">Annuler</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        function enableEdit(id) {
+            const input = document.getElementById('input-' + id);
+            const form = document.getElementById('form-' + id);
+            input.removeAttribute('readonly');
+            input.focus();
+            input.addEventListener('blur', () => form.submit());
+        }
+
+        function generateIdentifiant(nom) {
+            const base = nom.toLowerCase().replace(/\s+/g, '').substring(0, 5); // 5 premières lettres
+            const random = Math.floor(1000 + Math.random() * 9000); // 4 chiffres
+            return base + random;
+        }
+
+        // Quand on ouvre la pop-up
+        document.getElementById('openAddModal').addEventListener('click', () => {
+            document.getElementById('addModal').style.display = 'flex';
+            document.getElementById('className').value = '';
+            document.getElementById('classIdentifiant').value = '';
+        });
+
+        // Fermer la pop-up
+        document.getElementById('closeAddModal').addEventListener('click', () => {
+            document.getElementById('addModal').style.display = 'none';
+        });
+
+        // Générer identifiant quand on tape le nom (si le champ identifiant est encore vide)
+        document.getElementById('className').addEventListener('input', (e) => {
+            const nom = e.target.value.trim();
+            const identField = document.getElementById('classIdentifiant');
+
+            if (nom.length > 0 && identField.value.trim() === '') {
+                identField.value = generateIdentifiant(nom);
+            }
+        });
+    </script>
+{% endblock %}

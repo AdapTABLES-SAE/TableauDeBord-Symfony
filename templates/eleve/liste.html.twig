@@ -1,0 +1,56 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Liste des élèves{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/eleve_liste.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="eleves">
+        <header class="eleves-header">
+            <a href="{{ path('teacher_dashboard') }}" class="back-btn">⬅</a>
+            <div class="logo">Liste des <span>élèves</span></div>
+            <div class="classe-info">{{ classe.nom }} ({{ classe.identifiant }})</div>
+        </header>
+
+        <main class="eleves-main">
+            <table class="eleves-table">
+                <thead>
+                <tr>
+                    <th></th>
+                    <th>Nom élève</th>
+                    <th>Prénom élève</th>
+                    <th>Identifiant</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for eleve in eleves %}
+                    <tr>
+                        <td><button class="edit-btn">✏️</button></td>
+                        <td>{{ eleve.nom }}</td>
+                        <td>{{ eleve.prenom }}</td>
+                        <td class="identifiant">{{ eleve.identifiant }}</td>
+                        <td>
+                            <button class="settings-btn">⚙️</button>
+                            <button class="delete-btn">❌</button>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:#888;">
+                            Aucun élève dans cette classe
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+
+            <div class="add-btn-wrapper">
+                <button class="btn-plus">➕</button>
+            </div>
+        </main>
+    </div>
+{% endblock %}
