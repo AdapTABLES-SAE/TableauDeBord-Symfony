@@ -60,20 +60,13 @@ body {
     font-size: 18px;
 }
 
-.add-btn-wrapper {
-    display: flex;
-    justify-content: center;
-    margin-top: 20px;
-}
-
-.btn-plus {
-    font-size: 32px;
-    border-radius: 50%;
+.edit-input {
+    background: none;
     border: none;
-    width: 60px;
-    height: 60px;
-    background: #0ea5a6;
     color: #fff;
-    cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    font-size: 16px;
+}
+.edit-input:focus {
+    outline: 2px solid #ff2fa0;
+    background: rgba(255,255,255,0.1);
 }

@@ -30,21 +30,30 @@
                 </thead>
                 <tbody>
                 {% for classe in classes %}
-                    <tr onclick="window.location='{{ path('classe_eleves', {id: classe.id}) }}'" style="cursor:pointer;">
+                    <tr class="class-row" onclick="goToEleves({{ classe.id }})" style="cursor:pointer;">
                         <td>
                             <button class="edit-btn" onclick="event.stopPropagation(); enableEdit({{ classe.id }})">✏️</button>
                         </td>
+
                         <td>
-                            <form id="form-{{ classe.id }}" action="{{ path('classe_edit', {id: classe.id}) }}" method="POST" style="display:flex;align-items:center;">
+                            <form id="form-{{ classe.id }}" action="{{ path('classe_edit', {id: classe.id}) }}" method="POST" style="display:flex;align-items:center;" onclick="event.stopPropagation();">
                                 <input id="input-{{ classe.id }}" type="text" name="nom" value="{{ classe.nom }}" readonly class="edit-input">
                             </form>
                         </td>
+
                         <td>{{ classe.eleves|length }}</td>
                         <td class="identifiant">{{ classe.identifiant }}</td>
+
                         <td>
-                            <form action="{{ path('classe_delete', {id: classe.id}) }}" method="POST" onsubmit="event.stopPropagation(); return confirm('Supprimer cette classe ?');">
+                            <form action="{{ path('classe_delete', {id: classe.id}) }}" method="POST" onclick="event.stopPropagation();" onsubmit="return confirm('Supprimer cette classe ?');">
                                 <button class="delete-btn">❌</button>
                             </form>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:#888;">
+                            Aucune classe enregistrée
                         </td>
                     </tr>
                 {% endfor %}
@@ -114,5 +123,17 @@
                 identField.value = generateIdentifiant(nom);
             }
         });
+
+        function enableEdit(id) {
+            const input = document.getElementById('input-' + id);
+            const form = document.getElementById('form-' + id);
+            input.removeAttribute('readonly');
+            input.focus();
+            input.addEventListener('blur', () => form.submit());
+        }
+
+        function goToEleves(classeId) {
+            window.location.href = "/enseignant/classe/" + classeId + "/eleves";
+        }
     </script>
 {% endblock %}

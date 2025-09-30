@@ -1,0 +1,95 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Progression élève{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/teacher_dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/progression.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="dashboard">
+        <!-- HEADER -->
+        <header class="dashboard-header">
+            <a href="{{ path('classe_eleves', {id: classe.id}) }}" class="back-btn">⬅</a>
+            <div class="logo">Progression <span>élève</span></div>
+            <div class="teacher-info">
+                {{ eleve.nom }} {{ eleve.prenom }}
+            </div>
+        </header>
+
+        <!-- ONGLET -->
+        <main class="dashboard-main">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('entrainement')">Progression Entrainement</button>
+                <button class="tab" onclick="showTab('jeu')">Progression Jeu</button>
+                <button class="tab" onclick="showTab('equipement')">Équipement</button>
+            </div>
+
+            <!-- CONTENU ENTRAINEMENT -->
+            <div class="tab-content active" id="entrainement">
+                <div class="objectifs-grid">
+                    {% for objectif in objectifs %}
+                        <div class="objectif-card">
+                            <div class="objectif-header">{{ objectif.titre }}</div>
+                            <div class="objectif-sub">
+                                Tables travaillées : [ {{ objectif.tables|join(', ') }} ]
+                            </div>
+
+                            {% for niveau in objectif.niveaux %}
+                                <div class="niveau-card">
+                                    <h3>Niveau {{ niveau.numero }}</h3>
+                                    <div class="stats">
+                                        <div class="stat">
+                                            <span class="icon">📋</span>
+                                            <span>Faits rencontrés :</span>
+                                            <strong>{{ niveau.faitsRencontres }}%</strong>
+                                        </div>
+                                        <div class="stat">
+                                            <span class="icon">⭐</span>
+                                            <span>Succès :</span>
+                                            <strong>{{ niveau.succes }}%</strong>
+                                        </div>
+                                    </div>
+
+                                    <!-- Liste des tâches -->
+                                    <div class="taches">
+                                        {% for tache in niveau.taches %}
+                                            <div class="tache">
+                                                • {{ tache.type }}
+                                            </div>
+                                        {% else %}
+                                            <div class="tache-empty">Aucune tâche définie</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% else %}
+                                <p class="niveau-empty">Aucun niveau pour cet objectif</p>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p style="text-align:center; color:#aaa;">Aucun objectif enregistré</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- AUTRES ONGLET -->
+            <div class="tab-content" id="jeu">
+                <p style="text-align:center; color:#aaa;">Progression jeu à venir...</p>
+            </div>
+            <div class="tab-content" id="equipement">
+                <p style="text-align:center; color:#aaa;">Équipement de l’élève à venir...</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function showTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelector(`.tab[onclick="showTab('${tabId}')"]`).classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+    </script>
+{% endblock %}
