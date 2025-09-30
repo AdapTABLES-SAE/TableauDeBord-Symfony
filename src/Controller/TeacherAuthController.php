@@ -1,7 +1,8 @@
 <?php
+
 namespace App\Controller;
 
-use App\Repository\EnseignantRepository;
+use App\Service\ApiClient;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,11 +11,11 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class TeacherAuthController extends AbstractController
 {
-    private EnseignantRepository $enseignantRepository;
+    private ApiClient $apiClient;
 
-    public function __construct(EnseignantRepository $enseignantRepository)
+    public function __construct(ApiClient $apiClient)
     {
-        $this->enseignantRepository = $enseignantRepository;
+        $this->apiClient = $apiClient;
     }
 
     #[Route('/enseignant/login', name: 'teacher_login', methods: ['GET','POST'])]
@@ -29,14 +30,18 @@ class TeacherAuthController extends AbstractController
             if ($identifier === '') {
                 $error = 'Veuillez saisir votre identifiant enseignant.';
             } else {
-                $enseignant = $this->enseignantRepository->findOneBy(['identifiant' => $identifier]);
+                // Appel API
+                $enseignant = $this->apiClient->getTeacher($identifier);
 
                 if ($enseignant) {
-                    $session->set('teacher_id', $enseignant->getId());
+                    // Sauvegarde des infos dans la session
+                    $session->set('teacher_id', $enseignant['idProf']);
+                    $session->set('teacher_name', $enseignant['name']);
+
                     return $this->redirectToRoute('teacher_dashboard');
                 }
 
-                $error = 'Identifiant enseignant introuvable.';
+                $error = 'Identifiant enseignant introuvable dans l’API.';
             }
         }
 
@@ -49,7 +54,7 @@ class TeacherAuthController extends AbstractController
     #[Route('/enseignant/logout', name: 'teacher_logout')]
     public function logout(SessionInterface $session): Response
     {
-        $session->remove('teacher_id');
+        $session->clear();
         return $this->redirectToRoute('teacher_login');
     }
 }

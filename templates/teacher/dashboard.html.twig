@@ -13,7 +13,7 @@
             <a href="{{ path('teacher_logout') }}" class="back-btn">⬅</a>
             <div class="logo">Mes <span>classes</span></div>
             <div class="teacher-info">
-                {{ enseignant.nom ?? enseignant.identifiant }}
+                {{ enseignant.name ?? enseignant.idProf }}
             </div>
         </header>
 
@@ -37,12 +37,12 @@
 
                         <td>
                             <form id="form-{{ classe.id }}" action="{{ path('classe_edit', {id: classe.id}) }}" method="POST" style="display:flex;align-items:center;" onclick="event.stopPropagation();">
-                                <input id="input-{{ classe.id }}" type="text" name="nom" value="{{ classe.nom }}" readonly class="edit-input">
+                                <input id="input-{{ classe.id }}" type="text" name="nom" value="{{ classe.nom ?? '' }}" readonly class="edit-input">
                             </form>
                         </td>
 
-                        <td>{{ classe.eleves|length }}</td>
-                        <td class="identifiant">{{ classe.identifiant }}</td>
+                        <td>{{ classe.eleves is defined ? classe.eleves|length : 0 }}</td>
+                        <td class="identifiant">{{ classe.identifiant ?? '—' }}</td>
 
                         <td>
                             <form action="{{ path('classe_delete', {id: classe.id}) }}" method="POST" onclick="event.stopPropagation();" onsubmit="return confirm('Supprimer cette classe ?');">
@@ -86,7 +86,6 @@
         </div>
     </div>
 
-
     <script>
         function enableEdit(id) {
             const input = document.getElementById('input-' + id);
@@ -102,19 +101,16 @@
             return base + random;
         }
 
-        // Quand on ouvre la pop-up
         document.getElementById('openAddModal').addEventListener('click', () => {
             document.getElementById('addModal').style.display = 'flex';
             document.getElementById('className').value = '';
             document.getElementById('classIdentifiant').value = '';
         });
 
-        // Fermer la pop-up
         document.getElementById('closeAddModal').addEventListener('click', () => {
             document.getElementById('addModal').style.display = 'none';
         });
 
-        // Générer identifiant quand on tape le nom (si le champ identifiant est encore vide)
         document.getElementById('className').addEventListener('input', (e) => {
             const nom = e.target.value.trim();
             const identField = document.getElementById('classIdentifiant');
@@ -123,14 +119,6 @@
                 identField.value = generateIdentifiant(nom);
             }
         });
-
-        function enableEdit(id) {
-            const input = document.getElementById('input-' + id);
-            const form = document.getElementById('form-' + id);
-            input.removeAttribute('readonly');
-            input.focus();
-            input.addEventListener('blur', () => form.submit());
-        }
 
         function goToEleves(classeId) {
             window.location.href = "/enseignant/classe/" + classeId + "/eleves";

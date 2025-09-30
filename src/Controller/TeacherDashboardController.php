@@ -1,6 +1,7 @@
 <?php
 namespace App\Controller;
 
+use App\Service\ApiClient;
 use App\Entity\Classe;
 use App\Repository\EnseignantRepository;
 use App\Repository\ClasseRepository;
@@ -14,21 +15,25 @@ use Symfony\Component\Routing\Annotation\Route;
 class TeacherDashboardController extends AbstractController
 {
     #[Route('/enseignant/dashboard', name: 'teacher_dashboard')]
-    public function index(SessionInterface $session, EnseignantRepository $enseignantRepository): Response
+    public function index(SessionInterface $session, ApiClient $apiClient): Response
     {
         $teacherId = $session->get('teacher_id');
         if (!$teacherId) {
             return $this->redirectToRoute('teacher_login');
         }
 
-        $enseignant = $enseignantRepository->find($teacherId);
+        // Appel API pour récupérer l'enseignant
+        $enseignant = $apiClient->getTeacher($teacherId);
         if (!$enseignant) {
             return $this->redirectToRoute('teacher_login');
         }
 
+        // Ici il faudra aussi ajouter une méthode getClassesByTeacher($teacherId) dans ApiClient
+        $classes = $apiClient->getClassesByTeacher($teacherId);
+
         return $this->render('teacher/dashboard.html.twig', [
             'enseignant' => $enseignant,
-            'classes' => $enseignant->getClasses(),
+            'classes' => $classes,
         ]);
     }
 

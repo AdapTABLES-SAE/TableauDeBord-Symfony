@@ -12,6 +12,9 @@
         <header class="hero">
             <div class="logo">Adap<span>TABLES</span></div>
             <h1>Gestion et suivi des parcours d'entrainement</h1>
+            <div class="teacher-info">
+                Bonjour {{ app.session.get('teacher_name') ?? 'Enseignant' }}
+            </div>
         </header>
 
         <main class="login-box">
