@@ -26,4 +26,16 @@ class Eleve
 
     #[ORM\OneToMany(mappedBy: "eleve", targetEntity: Entrainement::class)]
     private iterable $entrainements;
+
+    public function getLearnerId(): ?string { return $this->learnerId; }
+    public function setLearnerId(string $learnerId): self { $this->learnerId = $learnerId; return $this; }
+
+    public function getNomEleve(): ?string { return $this->nomEleve; }
+    public function setNomEleve(string $nomEleve): self { $this->nomEleve = $nomEleve; return $this; }
+
+    public function getPrenomEleve(): ?string { return $this->prenomEleve; }
+    public function setPrenomEleve(string $prenomEleve): self { $this->prenomEleve = $prenomEleve; return $this; }
+
+    public function setClasse(?Classe $classe): self { $this->classe = $classe; return $this; }
+
 }

@@ -23,4 +23,13 @@ class Classe
 
     #[ORM\ManyToOne(targetEntity: Enseignant::class, inversedBy: "classes")]
     private ?Enseignant $enseignant = null;
+
+    public function getIdClasse(): ?string { return $this->idClasse; }
+    public function setIdClasse(string $idClasse): self { $this->idClasse = $idClasse; return $this; }
+
+    public function getName(): ?string { return $this->name; }
+    public function setName(string $name): self { $this->name = $name; return $this; }
+
+    public function setEnseignant(?Enseignant $enseignant): self { $this->enseignant = $enseignant; return $this; }
+
 }
