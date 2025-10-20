@@ -8,120 +8,25 @@
 {% endblock %}
 
 {% block body %}
-    <div class="dashboard">
-        <header class="dashboard-header">
-            <a href="{{ path('teacher_logout') }}" class="back-btn">⬅</a>
-            <div class="logo">Mes <span>classes</span></div>
-            <div class="teacher-info">
-                {{ enseignant.name ?? enseignant.idProf }}
+    <div class="dashboard-container">
+
+        <!-- Colonne gauche : Liste des classes -->
+        <aside class="sidebar">
+            <h2>Liste des classes</h2>
+
+            <div class="class-list">
+                <p class="no-class">Aucune classe disponible</p>
             </div>
-        </header>
 
-        <main class="dashboard-main">
-            <table class="classes-table">
-                <thead>
-                <tr>
-                    <th></th>
-                    <th>Nom de la classe</th>
-                    <th>Nombre d’élèves</th>
-                    <th>Identifiant</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                {% for classe in classes %}
-                    <tr class="class-row" onclick="goToEleves({{ classe.id }})" style="cursor:pointer;">
-                        <td>
-                            <button class="edit-btn" onclick="event.stopPropagation(); enableEdit({{ classe.id }})">✏️</button>
-                        </td>
+            <button class="add-class-btn">
+                Ajouter une classe <span class="plus-icon">＋</span>
+            </button>
+        </aside>
 
-                        <td>
-                            <form id="form-{{ classe.id }}" action="{{ path('classe_edit', {id: classe.id}) }}" method="POST" style="display:flex;align-items:center;" onclick="event.stopPropagation();">
-                                <input id="input-{{ classe.id }}" type="text" name="nom" value="{{ classe.nom ?? '' }}" readonly class="edit-input">
-                            </form>
-                        </td>
-
-                        <td>{{ classe.eleves is defined ? classe.eleves|length : 0 }}</td>
-                        <td class="identifiant">{{ classe.identifiant ?? '—' }}</td>
-
-                        <td>
-                            <form action="{{ path('classe_delete', {id: classe.id}) }}" method="POST" onclick="event.stopPropagation();" onsubmit="return confirm('Supprimer cette classe ?');">
-                                <button class="delete-btn">❌</button>
-                            </form>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr>
-                        <td colspan="5" style="text-align:center; color:#888;">
-                            Aucune classe enregistrée
-                        </td>
-                    </tr>
-                {% endfor %}
-                </tbody>
-            </table>
-
-            <div class="add-btn-wrapper">
-                <button id="openAddModal" class="btn-plus">➕</button>
-            </div>
+        <!-- Colonne droite : Détail de la classe -->
+        <main class="class-detail">
+            <p>Contenu détaillé de la classe à venir...</p>
         </main>
+
     </div>
-
-    <div id="addModal" class="modal">
-        <div class="modal-content">
-            <h2>Ajout d'une <span class="highlight">classe</span></h2>
-            <form action="{{ path('classe_add') }}" method="POST" id="addClassForm">
-                <!-- Nom -->
-                <input type="text" id="className" name="nom" placeholder="Nom" required class="modal-input">
-
-                <!-- Identifiant (modifiable) -->
-                <input type="text" id="classIdentifiant" name="identifiant"
-                       placeholder="Identifiant de connexion (unique)"
-                       class="modal-input identifiant-field">
-
-                <div class="modal-actions">
-                    <button type="submit" class="btn-create">Créer</button>
-                    <button type="button" id="closeAddModal" class="btn-cancel">Annuler</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <script>
-        function enableEdit(id) {
-            const input = document.getElementById('input-' + id);
-            const form = document.getElementById('form-' + id);
-            input.removeAttribute('readonly');
-            input.focus();
-            input.addEventListener('blur', () => form.submit());
-        }
-
-        function generateIdentifiant(nom) {
-            const base = nom.toLowerCase().replace(/\s+/g, '').substring(0, 5); // 5 premières lettres
-            const random = Math.floor(1000 + Math.random() * 9000); // 4 chiffres
-            return base + random;
-        }
-
-        document.getElementById('openAddModal').addEventListener('click', () => {
-            document.getElementById('addModal').style.display = 'flex';
-            document.getElementById('className').value = '';
-            document.getElementById('classIdentifiant').value = '';
-        });
-
-        document.getElementById('closeAddModal').addEventListener('click', () => {
-            document.getElementById('addModal').style.display = 'none';
-        });
-
-        document.getElementById('className').addEventListener('input', (e) => {
-            const nom = e.target.value.trim();
-            const identField = document.getElementById('classIdentifiant');
-
-            if (nom.length > 0 && identField.value.trim() === '') {
-                identField.value = generateIdentifiant(nom);
-            }
-        });
-
-        function goToEleves(classeId) {
-            window.location.href = "/enseignant/classe/" + classeId + "/eleves";
-        }
-    </script>
 {% endblock %}
