@@ -20,4 +20,26 @@ class Enseignant
 
     #[ORM\OneToMany(mappedBy: "enseignant", targetEntity: Classe::class)]
     private iterable $classes;
+
+    public function getIdProf(): ?string
+    {
+        return $this->idProf;
+    }
+
+    public function setIdProf(string $idProf): self
+    {
+        $this->idProf = $idProf;
+        return $this;
+    }
+
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        return $this;
+    }
 }

@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Service\ApiClient;
+use App\Service\TeacherSyncService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,10 +13,12 @@ use Symfony\Component\Routing\Annotation\Route;
 class TeacherAuthController extends AbstractController
 {
     private ApiClient $apiClient;
+    private TeacherSyncService $teacherSync;
 
-    public function __construct(ApiClient $apiClient)
+    public function __construct(ApiClient $apiClient, TeacherSyncService $teacherSync)
     {
         $this->apiClient = $apiClient;
+        $this->teacherSync = $teacherSync;
     }
 
     #[Route('/enseignant/login', name: 'teacher_login', methods: ['GET','POST'])]
@@ -30,13 +33,16 @@ class TeacherAuthController extends AbstractController
             if ($identifier === '') {
                 $error = 'Veuillez saisir votre identifiant enseignant.';
             } else {
-                // Appel API
-                $enseignant = $this->apiClient->getTeacher($identifier);
+                // Appel API pour récupérer les infos enseignant
+                $enseignantData = $this->apiClient->fetchTeacherData($identifier);
 
-                if ($enseignant) {
-                    // Sauvegarde des infos dans la session
-                    $session->set('teacher_id', $enseignant['idProf']);
-                    $session->set('teacher_name', $enseignant['name']);
+                if ($enseignantData) {
+                    // Synchronisation avec la base Doctrine
+                    $enseignant = $this->teacherSync->syncTeacher($enseignantData);
+
+                    // Enregistre en session
+                    $session->set('teacher_id', $enseignant->getIdProf());
+                    $session->set('teacher_name', $enseignant->getName());
 
                     return $this->redirectToRoute('teacher_dashboard');
                 }

@@ -32,16 +32,16 @@ class ApiClient
         return null;
     }
 
-
-    public function getClassesByTeacher(string $teacherId): array
+    public function fetchTeacherData(string $teacherId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . 'data/students/teacher/' . $teacherId;
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHER . $teacherId;
+
         $response = $this->client->request('GET', $url);
 
         if ($response->getStatusCode() === 200) {
             return $response->toArray();
         }
 
-        return [];
+        return null;
     }
 }
