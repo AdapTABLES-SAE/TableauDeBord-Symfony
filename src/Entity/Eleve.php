@@ -27,15 +27,73 @@ class Eleve
     #[ORM\OneToMany(mappedBy: "eleve", targetEntity: Entrainement::class)]
     private iterable $entrainements;
 
-    public function getLearnerId(): ?string { return $this->learnerId; }
-    public function setLearnerId(string $learnerId): self { $this->learnerId = $learnerId; return $this; }
+    // ----------------------------------------------------
+    // Getters / Setters
+    // ----------------------------------------------------
 
-    public function getNomEleve(): ?string { return $this->nomEleve; }
-    public function setNomEleve(string $nomEleve): self { $this->nomEleve = $nomEleve; return $this; }
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
 
-    public function getPrenomEleve(): ?string { return $this->prenomEleve; }
-    public function setPrenomEleve(string $prenomEleve): self { $this->prenomEleve = $prenomEleve; return $this; }
+    public function getLearnerId(): string
+    {
+        return $this->learnerId;
+    }
 
-    public function setClasse(?Classe $classe): self { $this->classe = $classe; return $this; }
+    public function setLearnerId(string $learnerId): self
+    {
+        $this->learnerId = $learnerId;
+        return $this;
+    }
 
+    public function getNomEleve(): string
+    {
+        return $this->nomEleve;
+    }
+
+    public function setNomEleve(string $nomEleve): self
+    {
+        $this->nomEleve = $nomEleve;
+        return $this;
+    }
+
+    public function getPrenomEleve(): string
+    {
+        return $this->prenomEleve;
+    }
+
+    public function setPrenomEleve(string $prenomEleve): self
+    {
+        $this->prenomEleve = $prenomEleve;
+        return $this;
+    }
+
+    public function getClasse(): ?Classe
+    {
+        return $this->classe;
+    }
+
+    public function setClasse(?Classe $classe): self
+    {
+        $this->classe = $classe;
+        return $this;
+    }
+
+    public function getEntrainements(): iterable
+    {
+        return $this->entrainements;
+    }
+
+    public function addEntrainement(Entrainement $entrainement): self
+    {
+        $this->entrainements[] = $entrainement;
+        return $this;
+    }
+
+    public function removeEntrainement(Entrainement $entrainement): self
+    {
+        $this->entrainements = array_filter($this->entrainements, fn($e) => $e !== $entrainement);
+        return $this;
+    }
 }

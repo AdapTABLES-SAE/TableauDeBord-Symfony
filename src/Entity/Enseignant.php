@@ -21,7 +21,16 @@ class Enseignant
     #[ORM\OneToMany(mappedBy: "enseignant", targetEntity: Classe::class)]
     private iterable $classes;
 
-    public function getIdProf(): ?string
+    // ----------------------------------------------------
+    // Getters / Setters
+    // ----------------------------------------------------
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getIdProf(): string
     {
         return $this->idProf;
     }
@@ -32,7 +41,7 @@ class Enseignant
         return $this;
     }
 
-    public function getName(): ?string
+    public function getName(): string
     {
         return $this->name;
     }
@@ -40,6 +49,23 @@ class Enseignant
     public function setName(string $name): self
     {
         $this->name = $name;
+        return $this;
+    }
+
+    public function getClasses(): iterable
+    {
+        return $this->classes;
+    }
+
+    public function addClasse(Classe $classe): self
+    {
+        $this->classes[] = $classe;
+        return $this;
+    }
+
+    public function removeClasse(Classe $classe): self
+    {
+        $this->classes = array_filter($this->classes, fn($c) => $c !== $classe);
         return $this;
     }
 }

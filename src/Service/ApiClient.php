@@ -73,4 +73,17 @@ class ApiClient
         // Sinon, on retourne un tableau vide (pas d'élèves ou erreur API)
         return [];
     }
+
+
+    public function fetchLearningPathByLearner(string $learnerId): ?array
+    {
+        $url = ApiEndpoints::BASE_URL . 'path/training/learner/' . $learnerId;
+        $response = $this->client->request('GET', $url);
+
+        if ($response->getStatusCode() === 200) {
+            return $response->toArray();
+        }
+
+        return null;
+    }
 }

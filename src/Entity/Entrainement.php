@@ -20,4 +20,46 @@ class Entrainement
 
     #[ORM\ManyToOne(targetEntity: Objectif::class, inversedBy: "entrainements")]
     private ?Objectif $objectif = null;
+
+    // ----------------------------------------------------
+    // Getters / Setters
+    // ----------------------------------------------------
+
+    public function getId(): ?int
+    {
+        return $this->id;
+    }
+
+    public function getLearningPathID(): string
+    {
+        return $this->learningPathID;
+    }
+
+    public function setLearningPathID(string $learningPathID): self
+    {
+        $this->learningPathID = $learningPathID;
+        return $this;
+    }
+
+    public function getEleve(): ?Eleve
+    {
+        return $this->eleve;
+    }
+
+    public function setEleve(?Eleve $eleve): self
+    {
+        $this->eleve = $eleve;
+        return $this;
+    }
+
+    public function getObjectif(): ?Objectif
+    {
+        return $this->objectif;
+    }
+
+    public function setObjectif(?Objectif $objectif): self
+    {
+        $this->objectif = $objectif;
+        return $this;
+    }
 }

@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Service\ApiClient;
 use App\Service\TeacherSyncService;
 use App\Service\ClassroomSyncService;
+use App\Service\TrainingSyncService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -20,21 +21,25 @@ class TeacherAuthController extends AbstractController
     private ApiClient $apiClient;
     private TeacherSyncService $teacherSync;
     private ClassroomSyncService $classroomSync;
+    private TrainingSyncService $trainingSync;
 
     /**
      * Injection des services nécessaires :
      * - ApiClient : pour interroger l’API
      * - TeacherSyncService : pour sauvegarder l’enseignant dans la base
      * - ClassroomSyncService : pour synchroniser les classes et élèves
+     * - TrainingSyncService : pour synchroniser les parcours d’apprentissage (objectifs, niveaux…)
      */
     public function __construct(
         ApiClient $apiClient,
         TeacherSyncService $teacherSync,
-        ClassroomSyncService $classroomSync
+        ClassroomSyncService $classroomSync,
+        TrainingSyncService $trainingSync
     ) {
         $this->apiClient = $apiClient;
         $this->teacherSync = $teacherSync;
         $this->classroomSync = $classroomSync;
+        $this->trainingSync = $trainingSync;
     }
 
     /**
@@ -43,9 +48,13 @@ class TeacherAuthController extends AbstractController
      * - Affiche le formulaire (GET)
      * - Vérifie l'identifiant envoyé (POST)
      * - Appelle l'API pour vérifier l'existence de l’enseignant
-     * - Synchronise ensuite toutes les données liées
+     * - Synchronise ensuite toutes les données liées :
+     *     > Enseignant
+     *     > Classes
+     *     > Élèves
+     *     > Entrainements / Objectifs / Niveaux / Tâches
      */
-    #[Route('/enseignant/login', name: 'teacher_login', methods: ['GET','POST'])]
+    #[Route('/enseignant/login', name: 'teacher_login', methods: ['GET', 'POST'])]
     public function login(Request $request, SessionInterface $session): Response
     {
         $error = null;
@@ -53,7 +62,7 @@ class TeacherAuthController extends AbstractController
 
         if ($request->isMethod('POST')) {
             // Récupère et nettoie l'identifiant saisi dans le formulaire
-            $identifier = trim((string)$request->request->get('identifier', ''));
+            $identifier = trim((string) $request->request->get('identifier', ''));
 
             if ($identifier === '') {
                 $error = 'Veuillez saisir votre identifiant enseignant.';
@@ -68,6 +77,22 @@ class TeacherAuthController extends AbstractController
                     // Synchronise les classes et les élèves liés
                     $this->classroomSync->syncClassesAndStudents($enseignant, $enseignantData);
 
+                    /**
+                     * Nouvelle étape : synchronisation des parcours d’apprentissage de chaque élève
+                     * Pour chaque élève importé dans les classes, on récupère son parcours complet
+                     * via /path/training/learner/{learnerID}
+                     */
+                    foreach ($enseignant->getClasses() as $classe) {
+                        foreach ($classe->getEleves() as $eleve) {
+                            $learnerId = $eleve->getLearnerId();
+                            $learningPath = $this->apiClient->fetchLearningPathByLearner($learnerId);
+
+                            if ($learningPath) {
+                                $this->trainingSync->syncTraining($eleve, $learningPath);
+                            }
+                        }
+                    }
+
                     // Sauvegarde les infos en session (utilisées pour le dashboard)
                     $session->set('teacher_id', $enseignant->getIdProf());
                     $session->set('teacher_name', $enseignant->getName());
@@ -77,7 +102,7 @@ class TeacherAuthController extends AbstractController
                 }
 
                 // Si aucun enseignant trouvé, message d’erreur
-                $error = 'Identifiant enseignant introuvable';
+                $error = 'Identifiant enseignant introuvable dans l’API.';
             }
         }
 
