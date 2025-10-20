@@ -8,29 +8,36 @@
 {% endblock %}
 
 {% block body %}
-    <div class="login-page">
-        <header class="hero">
-            <div class="logo">Adap<span>TABLES</span></div>
-            <h1>Gestion et suivi des parcours d'entrainement</h1>
-            <div class="teacher-info">
-                Bonjour {{ app.session.get('teacher_name') ?? 'Enseignant' }}
-            </div>
-        </header>
+    <div class="container d-flex justify-content-center align-items-center vh-100">
+        <div class="card shadow p-4" style="max-width: 400px; width: 100%;">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-3">
+                    <span class="text-primary fw-bold">Adap</span><span class="text-dark">TABLES</span>
+                </h2>
+                <h5 class="card-subtitle text-center mb-4 text-muted">Connexion Professeurs</h5>
 
-        <main class="login-box">
-            <form method="post" action="{{ path('teacher_login') }}" class="login-form" autocomplete="off">
-                <div class="input-pill">
-                    <input type="text" name="identifier" id="identifier" value="{{ identifier|e }}" placeholder="Identifiant enseignant" />
+                <form method="post" action="{{ path('teacher_login') }}" class="login-form" autocomplete="off">
+                    <div class="mb-3">
+                        <label for="identifier" class="form-label fw-semibold">Identifiant Professeur</label>
+                        <input type="text" name="identifier" id="identifier"
+                               value="{{ identifier|e }}"
+                               class="form-control"
+                               placeholder="Identifiant">
+                    </div>
+
+                    {% if error %}
+                        <div class="alert alert-danger py-2">{{ error }}</div>
+                    {% endif %}
+
+                    <div class="d-grid">
+                        <button class="btn btn-primary" type="submit">Se connecter ➔</button>
+                    </div>
+                </form>
+
+                <div class="text-center text-muted small mt-3">
+                    Version 0.4.1 — Octobre 2024
                 </div>
-
-                {% if error %}
-                    <div class="flash-error">{{ error }}</div>
-                {% endif %}
-
-                <button class="btn-ok" type="submit">Ok</button>
-            </form>
-
-            <div class="version">Version 0.4.1 — Octobre 2024</div>
-        </main>
+            </div>
+        </div>
     </div>
 {% endblock %}

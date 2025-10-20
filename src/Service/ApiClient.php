@@ -21,12 +21,17 @@ class ApiClient
 
         $response = $this->client->request('GET', $url);
 
+        // Debug
+        dump($url, $response->getStatusCode(), $response->getContent(false));
+        // die; // temporaire pour voir le résultat
+
         if ($response->getStatusCode() === 200) {
-            return $response->toArray(); // transforme la réponse JSON en tableau
+            return $response->toArray();
         }
 
         return null;
     }
+
 
     public function getClassesByTeacher(string $teacherId): array
     {
