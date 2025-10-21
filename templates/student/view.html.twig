@@ -1,0 +1,108 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Fiche Élève - AdapTABLES{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/student_view.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div class="student-page">
+
+        <!-- En-tête avec logo -->
+        <header class="header">
+            <img src="{{ asset('Logo.png') }}" alt="AdapTABLES" class="logo">
+        </header>
+
+        <!-- Carte élève -->
+        <section class="student-card">
+            <div class="student-header">
+                <h2>Fiche élève</h2>
+                <span class="class-badge">{{ classe.name }}</span>
+            </div>
+
+            <div class="student-grid">
+                <div>
+                    <label>Prénom</label>
+                    <input type="text" value="{{ eleve.prenomEleve }}" readonly>
+                </div>
+                <div>
+                    <label>Nom</label>
+                    <input type="text" value="{{ eleve.nomEleve }}" readonly>
+                </div>
+                <div>
+                    <label>Identifiant</label>
+                    <input type="text" value="{{ eleve.learnerId }}" readonly>
+                </div>
+                <div>
+                    <label>Classe</label>
+                    <input type="text" value="{{ classe.name }}" readonly>
+                </div>
+            </div>
+
+            <div class="training-section">
+                <h3>Entraînement attribué</h3>
+                <div class="training-box">
+                    {{ entrainement ? entrainement.objectif.name : 'Aucun entraînement' }}
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-button active" data-tab="training">Progression Entraînements</button>
+                <button class="tab-button" data-tab="game">Progression Jeu</button>
+                <button class="tab-button" data-tab="store">Équipements</button>
+            </div>
+
+            <div class="tab-content active" id="tab-training">
+                {% if entrainement %}
+                    <div class="info-box">
+                        <p><strong>Objectif :</strong> {{ entrainement.objectif.name }}</p>
+                        <p><strong>Learning Path :</strong> {{ entrainement.learningPathID }}</p>
+                    </div>
+                {% else %}
+                    <p>Aucun entraînement attribué.</p>
+                {% endif %}
+            </div>
+
+            <div class="tab-content" id="tab-game">
+                {% if stats %}
+                    <div class="info-box">
+                        <p><strong>Score global :</strong> {{ stats.totalScore ?? '—' }}</p>
+                        <p><strong>Temps de jeu :</strong> {{ stats.totalTime ?? '—' }} min</p>
+                        <p><strong>Nombre de sessions :</strong> {{ stats.sessions ?? '—' }}</p>
+                    </div>
+                {% else %}
+                    <p>Aucune donnée de jeu disponible.</p>
+                {% endif %}
+            </div>
+
+            <div class="tab-content" id="tab-store">
+                <div class="coins-display">
+                    Coins : <span>{{ coins.newBalance ?? 0 }}</span>
+                </div>
+
+                {% if store %}
+                    <ul class="store-list">
+                        {% for item in store.items %}
+                            <li class="{{ item.isActivated ? 'active' : '' }}">
+                                <span>{{ item.id }}</span>
+                                {% if item.isActivated %}
+                                    <span class="badge activated">Activé</span>
+                                {% elseif item.isBought %}
+                                    <span class="badge bought">Acheté</span>
+                                {% else %}
+                                    <span class="badge locked">Non obtenu</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p>Aucun équipement trouvé.</p>
+                {% endif %}
+            </div>
+        </section>
+    </div>
+
+    <script src="{{ asset('js/student_tabs.js') }}"></script>
+{% endblock %}

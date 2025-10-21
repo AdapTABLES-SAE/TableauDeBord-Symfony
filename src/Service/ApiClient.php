@@ -86,4 +86,27 @@ class ApiClient
 
         return null;
     }
+
+
+    public function fetchLearnerStatistics(string $learnerId): ?array
+    {
+        $url = ApiEndpoints::BASE_URL . 'statistics/learner/' . $learnerId;
+        $response = $this->client->request('GET', $url);
+        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+    }
+
+    public function fetchLearnerStore(string $learnerId): ?array
+    {
+        $url = ApiEndpoints::BASE_URL . 'store/learner/' . $learnerId;
+        $response = $this->client->request('GET', $url);
+        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+    }
+
+    public function fetchLearnerCoins(string $learnerId): ?array
+    {
+        $url = ApiEndpoints::BASE_URL . 'coins/learner/' . $learnerId;
+        $response = $this->client->request('GET', $url);
+        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+    }
+
 }
