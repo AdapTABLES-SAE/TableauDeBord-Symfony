@@ -94,8 +94,7 @@ class TeacherAuthController extends AbstractController
                     }
 
                     // Sauvegarde les infos en session (utilisées pour le dashboard)
-                    $session->set('teacher_id', $enseignant->getIdProf());
-                    $session->set('teacher_name', $enseignant->getName());
+                    $session->set('teacher_id', $enseignant->getId());
 
                     // Redirection vers la page d'accueil du tableau de bord enseignant
                     return $this->redirectToRoute('teacher_dashboard');
