@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
 class Classe
@@ -18,11 +20,17 @@ class Classe
     #[ORM\Column(length: 255)]
     private string $name;
 
+    /** @var Collection<int, Eleve> */
     #[ORM\OneToMany(mappedBy: "classe", targetEntity: Eleve::class)]
-    private iterable $eleves;
+    private Collection $eleves;
 
     #[ORM\ManyToOne(targetEntity: Enseignant::class, inversedBy: "classes")]
     private ?Enseignant $enseignant = null;
+
+    public function __construct()
+    {
+        $this->eleves = new ArrayCollection();
+    }
 
     // ----------------------------------------------------
     // Getters / Setters

@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
 class Enseignant
@@ -20,6 +22,11 @@ class Enseignant
 
     #[ORM\OneToMany(mappedBy: "enseignant", targetEntity: Classe::class)]
     private iterable $classes;
+
+    public function __construct()
+    {
+        $this->classes = new ArrayCollection();
+    }
 
     // ----------------------------------------------------
     // Getters / Setters

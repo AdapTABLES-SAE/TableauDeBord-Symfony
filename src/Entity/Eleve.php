@@ -24,8 +24,11 @@ class Eleve
     #[ORM\ManyToOne(targetEntity: Classe::class, inversedBy: "eleves")]
     private ?Classe $classe = null;
 
-    #[ORM\OneToMany(mappedBy: "eleve", targetEntity: Entrainement::class)]
-    private iterable $entrainements;
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $currentLearningPathID = null;
+
+    #[ORM\ManyToOne(targetEntity: Entrainement::class, inversedBy: "eleves")]
+    private ?Entrainement $entrainement = null;
 
     // ----------------------------------------------------
     // Getters / Setters
@@ -80,20 +83,23 @@ class Eleve
         return $this;
     }
 
-    public function getEntrainements(): iterable
+    public function getCurrentLearningPathID(): ?string
     {
-        return $this->entrainements;
+        return $this->currentLearningPathID;
     }
-
-    public function addEntrainement(Entrainement $entrainement): self
+    public function setCurrentLearningPathID(?string $id): self
     {
-        $this->entrainements[] = $entrainement;
+        $this->currentLearningPathID = $id;
         return $this;
     }
 
-    public function removeEntrainement(Entrainement $entrainement): self
+    public function getEntrainement(): ?Entrainement
     {
-        $this->entrainements = array_filter($this->entrainements, fn($e) => $e !== $entrainement);
+        return $this->entrainement;
+    }
+    public function setEntrainement(?Entrainement $entrainement): self
+    {
+        $this->entrainement = $entrainement;
         return $this;
     }
 }
