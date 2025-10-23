@@ -38,7 +38,7 @@ class ClassroomSyncService
             $classId = (string) ($classData['id'] ?? 'default');
             $className = (string) ($classData['name'] ?? $classId);
 
-            // 🔹 Trouve ou crée la classe
+            // Trouve ou crée la classe
             $classe = $this->em->getRepository(Classe::class)->findOneBy(['idClasse' => $classId]) ?? new Classe();
             $classe->setIdClasse($classId);
             $classe->setName($className);
@@ -46,11 +46,11 @@ class ClassroomSyncService
 
             $this->em->persist($classe);
 
-            // 🔹 Récupère les élèves de cette classe via l’API
+            // Récupère les élèves de cette classe via l’API
             $students = $this->api->fetchStudentsByTeacherAndClass($enseignant->getIdProf(), $classId);
 
             foreach ($students as $student) {
-                // ✅ L'API renvoie "id", "nom", "prenom", "idClasse"
+                // L'API renvoie "id", "nom", "prenom", "idClasse"
                 $learnerId = $student['id'] ?? null;
                 $lastName  = $student['nom'] ?? '';
                 $firstName = $student['prenom'] ?? '';
@@ -60,7 +60,7 @@ class ClassroomSyncService
                     continue;
                 }
 
-                // 🔹 Trouve ou crée l'élève
+                // Trouve ou crée l'élève
                 $eleve = $this->em->getRepository(Eleve::class)
                     ->findOneBy(['learnerId' => $learnerId]) ?? new Eleve();
 
