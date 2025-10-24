@@ -21,7 +21,7 @@ class StudentController extends AbstractController
         $this->apiClient = $apiClient;
     }
 
-    #[Route('/enseignant/classe/{learnerId}', name: 'teacher_student_view')]
+    #[Route('/enseignant/classes/{learnerId}', name: 'teacher_student_view')]
     public function view(string $learnerId, EntityManagerInterface $em, Request $request): Response
     {
         $eleve = $em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
@@ -77,7 +77,7 @@ class StudentController extends AbstractController
         ]);
     }
 
-    #[Route('/enseignant/classe/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
+    #[Route('/enseignant/classes/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
     public function updateTrainingAjax(string $learnerId, Request $request, EntityManagerInterface $em): JsonResponse
     {
         $data = json_decode($request->getContent(), true);

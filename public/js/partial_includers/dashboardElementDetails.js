@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Given in twig (ex):
                 // // const fetchUrlTemplate = '/api/student/{id}/edit';
 
-                const fetchURL = interpolate(fetchUrlTemplate);
+                const fetchURL = interpolate(fetchUrlTemplate, {"id": elementId});
                 const response = await fetch(fetchURL);
                 if (!response.ok) throw new Error('Erreur réseau');
                 detailContainer.innerHTML = await response.text();

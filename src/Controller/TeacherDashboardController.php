@@ -22,6 +22,11 @@ class TeacherDashboardController extends AbstractController
     #[Route('/enseignant/classes', name: 'class_dashboard')]
     public function index(EnseignantRepository $repo, RouterInterface $router, SessionInterface $session, Packages $assets): Response
     {
+        if (!$session->get('teacher_id')) {
+            // Redirige vers la page de login
+            return $this->redirectToRoute('teacher_login');
+        }
+
         //Get login ID
         $teacherId = $session->get('teacher_id');
         dump($teacherId);
@@ -34,6 +39,13 @@ class TeacherDashboardController extends AbstractController
         // Route Path must have {id} that will be interpolated
         $route = $router->getRouteCollection()->get('class_details')->getPath();
 
+        $breadcrumbItems = [
+            [
+                'label' => 'Mes Classes',
+                'url' => $this->generateUrl('class_dashboard')
+            ]
+        ];
+
         return $this->render('components/element_dashboard.html.twig',
         [
             "partial_script" => "$publicUrl",
@@ -41,6 +53,8 @@ class TeacherDashboardController extends AbstractController
             "elements" => $classes,
 
             "fetchUrlTemplate" => "$route",
+
+            "breadcrumbItems" => $breadcrumbItems,
 
             "label_element_list_title" => "Liste des classes",
             "label_element_list_add" => "Ajouter une classe",
