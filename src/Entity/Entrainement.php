@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
 class Entrainement
@@ -15,51 +17,47 @@ class Entrainement
     #[ORM\Column(length: 255)]
     private string $learningPathID;
 
-    #[ORM\ManyToOne(targetEntity: Eleve::class, inversedBy: "entrainements")]
-    private ?Eleve $eleve = null;
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $structureHash = null;
 
-    #[ORM\ManyToOne(targetEntity: Objectif::class, inversedBy: "entrainements")]
-    private ?Objectif $objectif = null;
+    /** @var Collection<int, Objectif> */
+    #[ORM\OneToMany(mappedBy: "entrainement", targetEntity: Objectif::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $objectifs;
 
-    // ----------------------------------------------------
-    // Getters / Setters
-    // ----------------------------------------------------
-
-    public function getId(): ?int
+    public function __construct()
     {
-        return $this->id;
+        $this->objectifs = new ArrayCollection();
     }
 
-    public function getLearningPathID(): string
-    {
-        return $this->learningPathID;
-    }
+    // ----------- GETTERS / SETTERS -----------
 
-    public function setLearningPathID(string $learningPathID): self
+    public function getId(): ?int { return $this->id; }
+
+    public function getLearningPathID(): string { return $this->learningPathID; }
+    public function setLearningPathID(string $id): self { $this->learningPathID = $id; return $this; }
+
+    public function getStructureHash(): ?string { return $this->structureHash; }
+    public function setStructureHash(?string $hash): self { $this->structureHash = $hash; return $this; }
+
+    /** @return Collection<int, Objectif> */
+    public function getObjectifs(): Collection { return $this->objectifs; }
+
+    public function addObjectif(Objectif $objectif): self
     {
-        $this->learningPathID = $learningPathID;
+        if (!$this->objectifs->contains($objectif)) {
+            $this->objectifs->add($objectif);
+            $objectif->setEntrainement($this);
+        }
         return $this;
     }
 
-    public function getEleve(): ?Eleve
+    public function removeObjectif(Objectif $objectif): self
     {
-        return $this->eleve;
-    }
-
-    public function setEleve(?Eleve $eleve): self
-    {
-        $this->eleve = $eleve;
-        return $this;
-    }
-
-    public function getObjectif(): ?Objectif
-    {
-        return $this->objectif;
-    }
-
-    public function setObjectif(?Objectif $objectif): self
-    {
-        $this->objectif = $objectif;
+        if ($this->objectifs->removeElement($objectif)) {
+            if ($objectif->getEntrainement() === $this) {
+                $objectif->setEntrainement(null);
+            }
+        }
         return $this;
     }
 }

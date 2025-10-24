@@ -3,6 +3,8 @@
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 
 #[ORM\Entity]
 class Objectif
@@ -18,94 +20,51 @@ class Objectif
     #[ORM\Column(length: 255)]
     private string $name;
 
-    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Entrainement::class)]
-    private iterable $entrainements;
+    #[ORM\ManyToOne(targetEntity: Entrainement::class, inversedBy: "objectifs")]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
+    private ?Entrainement $entrainement = null;
 
-    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Prerequis::class)]
-    private iterable $prerequis;
+    /** @var Collection<int, Niveau> */
+    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Niveau::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $niveaux;
 
-    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Niveau::class)]
-    private iterable $niveaux;
-
-    // ----------------------------------------------------
-    // Getters / Setters
-    // ----------------------------------------------------
-
-    public function getId(): ?int
+    public function __construct()
     {
-        return $this->id;
+        $this->niveaux = new ArrayCollection();
     }
 
-    public function getObjID(): string
-    {
-        return $this->objID;
-    }
+    // ----------- GETTERS / SETTERS -----------
 
-    public function setObjID(string $objID): self
-    {
-        $this->objID = $objID;
-        return $this;
-    }
+    public function getId(): ?int { return $this->id; }
 
-    public function getName(): string
-    {
-        return $this->name;
-    }
+    public function getObjID(): string { return $this->objID; }
+    public function setObjID(string $id): self { $this->objID = $id; return $this; }
 
-    public function setName(string $name): self
-    {
-        $this->name = $name;
-        return $this;
-    }
+    public function getName(): string { return $this->name; }
+    public function setName(string $name): self { $this->name = $name; return $this; }
 
-    public function getEntrainements(): iterable
-    {
-        return $this->entrainements;
-    }
+    public function getEntrainement(): ?Entrainement { return $this->entrainement; }
+    public function setEntrainement(?Entrainement $entrainement): self { $this->entrainement = $entrainement; return $this; }
 
-    public function addEntrainement(Entrainement $entrainement): self
-    {
-        $this->entrainements[] = $entrainement;
-        return $this;
-    }
-
-    public function removeEntrainement(Entrainement $entrainement): self
-    {
-        $this->entrainements = array_filter($this->entrainements, fn($e) => $e !== $entrainement);
-        return $this;
-    }
-
-    public function getPrerequis(): iterable
-    {
-        return $this->prerequis;
-    }
-
-    public function addPrerequis(Prerequis $prerequis): self
-    {
-        $this->prerequis[] = $prerequis;
-        return $this;
-    }
-
-    public function removePrerequis(Prerequis $prerequis): self
-    {
-        $this->prerequis = array_filter($this->prerequis, fn($p) => $p !== $prerequis);
-        return $this;
-    }
-
-    public function getNiveaux(): iterable
-    {
-        return $this->niveaux;
-    }
+    /** @return Collection<int, Niveau> */
+    public function getNiveaux(): Collection { return $this->niveaux; }
 
     public function addNiveau(Niveau $niveau): self
     {
-        $this->niveaux[] = $niveau;
+        if (!$this->niveaux->contains($niveau)) {
+            $this->niveaux->add($niveau);
+            $niveau->setObjectif($this);
+        }
         return $this;
     }
 
     public function removeNiveau(Niveau $niveau): self
     {
-        $this->niveaux = array_filter($this->niveaux, fn($n) => $n !== $niveau);
+        if ($this->niveaux->removeElement($niveau)) {
+            if ($niveau->getObjectif() === $this) {
+                $niveau->setObjectif(null);
+            }
+        }
         return $this;
     }
 }

@@ -7,76 +7,66 @@ use App\Entity\Eleve;
 use App\Entity\Enseignant;
 use Doctrine\ORM\EntityManagerInterface;
 
-/**
- * Service responsable de la synchronisation des classes et élèves
- * depuis l’API AdapTABLES vers la base de données Doctrine.
- */
 class ClassroomSyncService
 {
     private EntityManagerInterface $em;
-    private ApiClient $apiClient;
+    private ApiClient $api;
 
-    /**
-     * Injection du gestionnaire d'entités Doctrine (EntityManagerInterface)
-     * et du service ApiClient pour interagir avec l’API externe.
-     */
-    public function __construct(EntityManagerInterface $em, ApiClient $apiClient)
+    public function __construct(EntityManagerInterface $em, ApiClient $api)
     {
         $this->em = $em;
-        $this->apiClient = $apiClient;
+        $this->api = $api;
     }
 
     /**
-     * Synchronise toutes les classes et élèves d’un enseignant à partir des données API
+     * Synchronise les classes et élèves d’un enseignant à partir de l’API externe.
      *
-     * - On récupère les classes dans le tableau $data['classes']
-     * - Pour chaque classe :
-     *     • on crée ou met à jour l’entité Classe
-     *     • on appelle l’API pour récupérer les élèves correspondants
-     *     • on crée ou met à jour chaque Élève
-     *
-     * @param Enseignant $enseignant  L’entité enseignant à lier
-     * @param array $data             Les données de l’API (retour de fetchTeacherData)
+     * Exemple API /data/teacher/{teacherID} :
+     * {
+     *   "idProf": "sandrag",
+     *   "classes": [
+     *     { "nbStudents": 8, "name": "DEFAULT", "id": "default" }
+     *   ],
+     *   "name": "Sandra Gravouille"
+     * }
      */
-    public function syncClassesAndStudents(Enseignant $enseignant, array $data): void
+    public function syncClassesAndStudents(Enseignant $enseignant, array $enseignantData): void
     {
+        $classes = $enseignantData['classes'] ?? [];
 
-        // Repositories Doctrine pour rechercher des entités existantes
-        $classeRepo = $this->em->getRepository(Classe::class);
-        $eleveRepo = $this->em->getRepository(Eleve::class);
+        foreach ($classes as $classData) {
+            $classId = (string) ($classData['id'] ?? 'default');
+            $className = (string) ($classData['name'] ?? $classId);
 
-        // Parcourt toutes les classes du professeur
-        foreach ($data['classes'] as $classData) {
-            $classId = $classData['id'] ?? null;
-            $className = $classData['name'] ?? '';
-
-            if (!$classId) continue;
-
-            // Recherche une classe existante ou crée une nouvelle
-            $classe = $classeRepo->findOneBy(['idClasse' => $classId]) ?? new Classe();
-
+            // Trouve ou crée la classe
+            $classe = $this->em->getRepository(Classe::class)->findOneBy(['idClasse' => $classId]) ?? new Classe();
             $classe->setIdClasse($classId);
             $classe->setName($className);
             $classe->setEnseignant($enseignant);
+
             $this->em->persist($classe);
 
-            // Récupère les élèves de cette classe via l'API
-            $studentsData = $this->apiClient->fetchStudentsByTeacherAndClass(
-                $enseignant->getIdProf(),
-                $classId
-            );
+            // Récupère les élèves de cette classe via l’API
+            $students = $this->api->fetchStudentsByTeacherAndClass($enseignant->getIdProf(), $classId);
 
-            // Boucle sur chaque élève retourné
-            foreach ($studentsData as $student) {
+            foreach ($students as $student) {
+                // L'API renvoie "id", "nom", "prenom", "idClasse"
                 $learnerId = $student['id'] ?? null;
-                if (!$learnerId) continue;
+                $lastName  = $student['nom'] ?? '';
+                $firstName = $student['prenom'] ?? '';
 
-                // Recherche ou création d’un élève
-                $eleve = $eleveRepo->findOneBy(['learnerId' => $learnerId]) ?? new Eleve();
+                if (!$learnerId) {
+                    dump("⚠️ Élève ignoré (pas d'ID) :", $student);
+                    continue;
+                }
+
+                // Trouve ou crée l'élève
+                $eleve = $this->em->getRepository(Eleve::class)
+                    ->findOneBy(['learnerId' => $learnerId]) ?? new Eleve();
 
                 $eleve->setLearnerId($learnerId);
-                $eleve->setNomEleve($student['nom'] ?? '');
-                $eleve->setPrenomEleve($student['prenom'] ?? '');
+                $eleve->setNomEleve($lastName);
+                $eleve->setPrenomEleve($firstName);
                 $eleve->setClasse($classe);
 
                 $this->em->persist($eleve);
