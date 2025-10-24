@@ -1,0 +1,92 @@
+/* === Header général === */
+.header-wrapper {
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    position: relative;
+    min-height: 70px;
+}
+
+/* === Logo centré === */
+.header-logo {
+    height: 45px;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+}
+
+.header-logo:hover {
+    transform: scale(1.05);
+}
+
+/* Couleur violette AdapTABLES */
+.text-violet {
+    color: #6a47f8 !important;
+}
+
+/* === Breadcrumb === */
+.breadcrumb {
+    margin-bottom: 0;
+    background: none;
+    font-size: 0.95rem;
+    line-height: 1.5rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    color: #6a47f8;
+}
+
+.breadcrumb-item a {
+    color: #6c757d;
+}
+
+.breadcrumb-item a:hover {
+    color: #4b3bbd;
+}
+
+/* === Zone Professeur === */
+.teacher-info {
+    font-size: 0.95rem;
+}
+
+.teacher-name {
+    display: flex;
+    align-items: center;
+}
+
+.btn-outline-violet {
+    border: 1px solid #7a5af8;
+    color: #7a5af8;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-violet:hover {
+    background-color: #7a5af8;
+    color: #fff;
+}
+
+/* Responsive : empile le logo et les infos sur petit écran */
+@media (max-width: 768px) {
+    .header-wrapper .container-fluid {
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        gap: 0.5rem;
+    }
+
+    .header-wrapper nav[aria-label="breadcrumb"] {
+        position: static !important;
+        order: 2;
+    }
+
+    .teacher-info {
+        position: static !important;
+        order: 3;
+        justify-content: center;
+    }
+
+    .header-logo {
+        order: 1;
+        height: 40px;
+    }
+}

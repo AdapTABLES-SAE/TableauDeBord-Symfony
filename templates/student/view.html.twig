@@ -8,12 +8,14 @@
 {% endblock %}
 
 {% block body %}
-    <div class="page-wrapper py-4">
+    {% include 'components/header.html.twig' with {
+        breadcrumb_items: [
+            {'label': 'Accueil', 'url': path('class_dashboard')},
+            {'label': 'Fiche Élève', 'url': '#'}
+        ]
+    } %}
 
-        <!-- Logo + titre -->
-        <div class="text-center mb-4">
-            <img src="{{ asset('images/logo.png') }}" alt="AdapTABLES" class="logo mb-2">
-        </div>
+    <div class="page-wrapper py-4">
 
         <!-- Bloc principal -->
         <div class="container card shadow section-card p-4">

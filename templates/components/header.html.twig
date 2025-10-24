@@ -1,0 +1,42 @@
+{% set header_logo_path = header_logo_path|default(asset('images/logo.png')) %}
+{% set header_logo_alt = header_logo_alt|default('AdapTABLES') %}
+{% set header_logo_height = header_logo_height|default('45px') %}
+{% set breadcrumb_items = breadcrumb_items|default([
+    {'label': 'Accueil', 'url': path('class_dashboard')}
+]) %}
+{% set teacher_name = teacher_name|default(app.user ? app.user.nom ~ ' ' ~ app.user.prenom : 'Professeur') %}
+
+<header class="header-wrapper bg-white shadow-sm py-2 px-4 mb-4">
+    <div class="container-fluid position-relative d-flex align-items-center justify-content-center">
+
+        <!-- Breadcrumb à gauche -->
+        <nav aria-label="breadcrumb" class="position-absolute start-0">
+            <ol class="breadcrumb mb-0">
+                {% for item in breadcrumb_items %}
+                    {% if loop.last %}
+                        <li class="breadcrumb-item active text-violet" aria-current="page">{{ item.label }}</li>
+                    {% else %}
+                        <li class="breadcrumb-item">
+                            <a href="{{ item.url }}" class="text-decoration-none text-secondary">{{ item.label }}</a>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </nav>
+
+        <!-- Logo centré -->
+        <img src="{{ header_logo_path }}" alt="{{ header_logo_alt }}" class="header-logo">
+
+        <!-- Profil professeur à droite -->
+        <div class="teacher-info position-absolute end-0 d-flex align-items-center gap-3">
+            <span class="teacher-name fw-semibold text-secondary">
+                <i class="bi bi-person-circle me-1 text-violet"></i>
+                {{ current_teacher_name ?? 'Professeur' }}
+            </span>
+
+            <a href="{{ path('teacher_logout') }}" class="btn btn-outline-violet btn-sm">
+                <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
+            </a>
+        </div>
+    </div>
+</header>

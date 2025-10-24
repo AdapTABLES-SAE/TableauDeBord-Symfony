@@ -19,7 +19,7 @@ use Symfony\Component\Routing\RouterInterface;
 
 class TeacherDashboardController extends AbstractController
 {
-    #[Route('/class/dashboard', name: 'class_dashboard')]
+    #[Route('/enseignant/classes', name: 'class_dashboard')]
     public function index(EnseignantRepository $repo, RouterInterface $router, SessionInterface $session, Packages $assets): Response
     {
         //Get login ID
