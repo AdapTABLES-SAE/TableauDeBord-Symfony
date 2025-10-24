@@ -21,7 +21,7 @@ class TeacherAuthController extends AbstractController
         private TrainingSyncService $trainingSync
     ) {}
 
-    #[Route('/enseignant/login', name: 'teacher_login', methods: ['GET', 'POST'])]
+    #[Route('/', name: 'teacher_login', methods: ['GET', 'POST'])]
     public function login(Request $request, SessionInterface $session): Response
     {
         $error = null;
@@ -67,7 +67,7 @@ class TeacherAuthController extends AbstractController
         ]);
     }
 
-    #[Route('/enseignant/logout', name: 'teacher_logout')]
+    #[Route('/logout', name: 'teacher_logout')]
     public function logout(SessionInterface $session): Response
     {
         $session->clear();
