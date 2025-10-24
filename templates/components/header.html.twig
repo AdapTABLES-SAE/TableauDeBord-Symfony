@@ -6,7 +6,7 @@
 ]) %}
 {% set teacher_name = teacher_name|default(app.user ? app.user.nom ~ ' ' ~ app.user.prenom : 'Professeur') %}
 
-<header class="header-wrapper bg-white shadow-sm py-2 px-4 mb-4">
+<header class="header-wrapper bg-white shadow-sm w-100 py-2 px-4 mb-2">
     <div class="container-fluid position-relative d-flex align-items-center justify-content-center">
 
         <!-- Breadcrumb à gauche -->
@@ -25,7 +25,7 @@
         </nav>
 
         <!-- Logo centré -->
-        <img src="{{ header_logo_path }}" alt="{{ header_logo_alt }}" class="header-logo">
+        <img src="{{ header_logo_path }}" alt="{{ header_logo_alt }}" class="header-logo" style="height: {{ header_logo_height }}px">
 
         <!-- Profil professeur à droite -->
         <div class="teacher-info position-absolute end-0 d-flex align-items-center gap-3">

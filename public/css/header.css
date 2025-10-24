@@ -9,7 +9,6 @@
 
 /* === Logo centré === */
 .header-logo {
-    height: 45px;
     object-fit: contain;
     transition: transform 0.2s ease;
 }
