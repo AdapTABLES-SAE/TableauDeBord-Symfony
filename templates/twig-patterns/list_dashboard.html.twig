@@ -1,0 +1,78 @@
+{% extends 'base.html.twig' %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/dashboardElementListDetails.css') }}">
+{% endblock %}
+
+{% block body %}
+    {% block header %}
+        <header class="container-fluid mt-4 text-center">
+            <div class="row">
+                <div class="col-1 align-self-start">
+                    <a href="{{ path('teacher_logout') }}">⬅</a>
+                </div>
+                <div class="col-10 align-self-center">
+                    <img src="{{ asset('images/logo.png') }}" alt="logo_adaptable">
+                </div>
+            </div>
+        </header>
+    {% endblock %}
+
+    <div class="container-fluid py-3">
+        <div class="row h-100 g-3">
+            <!-- Liste des classes -->
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="element-list-container shadow-sm dashboard-container">
+                    <h4 class="fw-bold mb-3">{{ element_list_title_label }}</h4>
+                    <div class="element-list overflow-auto">
+                        <div class="d-flex flex-column gap-2">
+                            {% for element_id, element_label in element_id_and_label_map %}
+                                <input
+                                    type="radio"
+                                    class="btn-check"
+                                    name="elementSelection"
+                                    id="element-{{ loop.index }}"
+                                    data-id="{{ element_id }}"
+                                    autocomplete="off"
+                                >
+                                <label
+                                    class="btn btn-light text-start"
+                                    for="element-{{ loop.index }}"
+                                >
+                                    {{ element_label }}
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <hr>
+                        <button class="btn btn-dark w-100 mt-2">
+                            {{ element_list_add_label }}
+                            <!-- ico "+" a mettre -->
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Détails de la classe -->
+            <div class="col-12 col-md-8 col-lg-9">
+                <div id="element-detail" class="element-detail shadow-sm h-100 dashboard-container">
+                    <h2 class="fw-bold mb-3">{{ element_details_not_found_title }}</h2>
+                    <p class="text-primary fs-5">Sélectionner un élément pour voir le détail de celui-ci s’afficher</p>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+{% block javascripts %}
+    {{ parent() }}
+    <script>
+        // Load const from twig
+        const fetchURL_1 = "{{ partial_fetchURL_before|e('js') }}";
+        const fetchURL_2 = "{{ partial_fetchURL_after|e('js') }}";
+    </script>
+    <script src="{{ asset('js/partial_includers/dashboardElementDetails.js') }}"></script>
+    <script src="{{ partial_js_script_path }}"></script>
+{% endblock %}
