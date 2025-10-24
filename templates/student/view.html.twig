@@ -10,12 +10,12 @@
 {% block body %}
     {% include 'components/header.html.twig' with {
         breadcrumb_items: [
-            {'label': 'Accueil', 'url': path('class_dashboard')},
+            {'label': 'Mes Classes', 'url': path('class_dashboard')},
             {'label': 'Fiche Élève', 'url': '#'}
         ]
     } %}
 
-    <div class="page-wrapper py-4">
+    <div class="page-wrapper mt-3 py-4">
 
         <!-- Bloc principal -->
         <div class="container card shadow section-card p-4">
