@@ -26,31 +26,25 @@ class TeacherDashboardController extends AbstractController
         $teacherId = $session->get('teacher_id');
         dump($teacherId);
         $teacher = $repo->find($teacherId);
-        $class_map = [];
-        foreach ($teacher->getClasses() as $class) {
-            $class_map[$class->getId()] = $class->getName();
-        }
-
-        // Get route definition by name
-        $route = $router->getRouteCollection()->get('class_details');
-        $path = $route->getPath();
-        // Split around "{id}"
-        [$before, $after] = explode('{id}', $path);
-
+        $classes = $teacher->getClasses();
 
         $publicUrl = $assets->getUrl('js/partials/classePartial.js');
+        $twigFile = "partials/_class_detail.html.twig";
 
+        // Route Path must have {id} that will be interpolated
+        $route = $router->getRouteCollection()->get('class_details')->getPath();
 
-        return $this->render('twig-patterns/list_dashboard.html.twig',
+        return $this->render('components/element_dashboard.html.twig',
         [
-            "partial_fetchURL_before" => "$before",
-            "partial_fetchURL_after" => "$after",
-            "partial_js_script_path" => "$publicUrl",
+            "partial_script" => "$publicUrl",
+            "partial_twig" => "$twigFile",
+            "elements" => $classes,
 
-            "element_list_title_label" => "Liste des classes",
-            "element_id_and_label_map" => $class_map,
-            "element_list_add_label" => "Ajouter une classe",
-            "element_details_not_found_title" => "Ma classe"
+            "fetchUrlTemplate" => "$route",
+
+            "label_element_list_title" => "Liste des classes",
+            "label_element_list_add" => "Ajouter une classe",
+            "label_element_details_not_found_title" => "Ma classe"
         ]
         );
     }

@@ -24,40 +24,39 @@
             <!-- Liste des classes -->
             <div class="col-12 col-md-4 col-lg-3">
                 <div class="element-list-container shadow-sm dashboard-container">
-                    <h4 class="fw-bold mb-3">{{ element_list_title_label }}</h4>
+                    <h4 class="fw-bold mb-3">{{ label_element_list_title }}</h4>
                     <div class="element-list overflow-auto">
                         <div class="d-flex flex-column gap-2">
-                            {% for element_id, element_label in element_id_and_label_map %}
+                            {% for element in elements %}
                                 <input
                                     type="radio"
                                     class="btn-check"
                                     name="elementSelection"
                                     id="element-{{ loop.index }}"
-                                    data-id="{{ element_id }}"
+                                    data-id="{{ element.id }}"
                                     autocomplete="off"
                                 >
                                 <label
                                     class="btn btn-light text-start"
                                     for="element-{{ loop.index }}"
                                 >
-                                    {{ element_label }}
+                                    {{ element.name }}
                                 </label>
                             {% endfor %}
                         </div>
                         <hr>
                         <button class="btn btn-dark w-100 mt-2">
-                            {{ element_list_add_label }}
+                            {{ label_element_list_add }}
                             <!-- ico "+" a mettre -->
                         </button>
                     </div>
-
                 </div>
             </div>
 
             <!-- Détails de la classe -->
             <div class="col-12 col-md-8 col-lg-9">
                 <div id="element-detail" class="element-detail shadow-sm h-100 dashboard-container">
-                    <h2 class="fw-bold mb-3">{{ element_details_not_found_title }}</h2>
+                    <h2 class="fw-bold mb-3">{{ label_element_details_not_found_title }}</h2>
                     <p class="text-primary fs-5">Sélectionner un élément pour voir le détail de celui-ci s’afficher</p>
                 </div>
             </div>
@@ -69,10 +68,8 @@
 {% block javascripts %}
     {{ parent() }}
     <script>
-        // Load const from twig
-        const fetchURL_1 = "{{ partial_fetchURL_before|e('js') }}";
-        const fetchURL_2 = "{{ partial_fetchURL_after|e('js') }}";
+        const fetchUrlTemplate = {{ fetchUrlTemplate }};
     </script>
     <script src="{{ asset('js/partial_includers/dashboardElementDetails.js') }}"></script>
-    <script src="{{ partial_js_script_path }}"></script>
+    <script src="{{ partial_script }}"></script>
 {% endblock %}

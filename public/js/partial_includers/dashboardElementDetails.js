@@ -18,12 +18,14 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
 
             try {
-                const fetchURL = `${fetchURL_1}${elementId}${fetchURL_2}`;
+                // Given in twig (ex):
+                // // const fetchUrlTemplate = '/api/student/{id}/edit';
+
+                const fetchURL = interpolate(fetchUrlTemplate);
                 const response = await fetch(fetchURL);
                 if (!response.ok) throw new Error('Erreur réseau');
-                const html = await response.text();
+                detailContainer.innerHTML = await response.text();
 
-                detailContainer.innerHTML = html;
                 // Custom event
                 document.dispatchEvent(new CustomEvent('partial:loaded', {
                     detail: { target: detailContainer }
@@ -37,3 +39,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 });
+
+function interpolate(template, vars) {
+    return template.replace(/\{([^}]+)}/g, (_, key) => {
+        const value = vars[key.trim()];
+        return value !== undefined ? value : `{${key}}`; // garde {clé} si manquant
+    });
+}

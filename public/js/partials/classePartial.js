@@ -98,6 +98,9 @@ document.addEventListener('partial:loaded', e => {
 
             if (result.success) {
                 alert("Modifications enregistrées !");
+                setTimeout(() => {
+                    window.location.reload();
+                }, 300)
             } else {
                 alert("⚠️ Une erreur est survenue lors de la sauvegarde.");
             }

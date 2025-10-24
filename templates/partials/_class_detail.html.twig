@@ -52,24 +52,22 @@
                             </td>
 
                             <!-- Identifiant -->
-                            <td class="w-25 text-center">
-                                <label>
-                                    <input type="text" class="w-75 form-control text-center fw-bold border-dark-subtle align-self-center m-auto"
-                                           value="{{ student.learnerId  }}">
-                                </label>
+                            <td class="w-25 ps-4 fw-medium text-center">
+                                {{ student.learnerId  }}">
                             </td>
 
                             <!-- Entrainement -->
                             <td class="w-auto text-center">
-                                {% if student.entrainement is defined and student.entrainement is not null %}
+                                {% if student.entrainement is defined %}
                                     <select data-db-id="{{ student.entrainement.id ?? ''}}" class="align-self-center m-auto w-75 form-select" aria-label="Training selector">
-                                        <option selected>{{ student.entrainement.nom ?? 'Chapitre inconnu' }}</option>
-                                        <option value="1">One</option>
+                                        <option selected>{{ student.entrainement.nom ?? '' }}</option>
+{#                                        {% for training in global_trainings %}#}
+                                        <option value=""></option>
                                         <option value="2">Two</option>
                                         <option value="3">Three</option>
                                     </select>
                                 {% else %}
-                                    <span class="text-muted">Non attribué</span>
+                                    <span class="text-muted">ERREUR</span>
                                 {% endif %}
                             </td>
                         </tr>
