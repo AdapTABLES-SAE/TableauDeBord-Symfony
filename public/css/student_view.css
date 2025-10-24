@@ -43,61 +43,6 @@
     cursor: not-allowed;
 }
 
-/* === Toast Notification === */
-.custom-toast {
-    position: fixed;
-    bottom: 1.5rem;
-    right: 1.5rem;
-    min-width: 340px;
-    max-width: 420px;
-    background-color: #eaf8ef;
-    border-left: 5px solid #198754;
-    color: #0b5138;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    border-radius: .5rem;
-    padding: 1rem 1.2rem;
-    display: none;
-    z-index: 2000;
-}
-
-.custom-toast.error {
-    background-color: #f8e9e9;
-    border-left-color: #dc3545;
-    color: #58151c;
-}
-
-.custom-toast .toast-title {
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    font-size: 1rem;
-}
-
-.custom-toast .toast-title i {
-    margin-right: .5rem;
-    font-size: 1.2rem;
-}
-
-.custom-toast .toast-message {
-    font-size: 0.875rem;
-    color: #0b5138;
-}
-
-.custom-toast.error .toast-message {
-    color: #58151c;
-}
-
-.custom-toast button.close-btn {
-    background: none;
-    border: none;
-    font-size: 1rem;
-    position: absolute;
-    top: .6rem;
-    right: .8rem;
-    color: inherit;
-    cursor: pointer;
-}
-
 /*
 
 Pop-up des entrainements

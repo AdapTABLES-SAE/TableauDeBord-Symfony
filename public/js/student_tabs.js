@@ -1,31 +1,13 @@
+import { showToast } from './toast/toast.js';
+
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('studentForm');
     const saveButton = document.getElementById('saveButton');
     const prenom = document.getElementById('prenomEleve');
     const nom = document.getElementById('nomEleve');
 
-    const toast = document.getElementById('toast');
-    const toastTitle = document.getElementById('toastTitle');
-    const toastMessage = document.getElementById('toastMessage');
-    const closeBtn = toast.querySelector('.close-btn');
-
     const initialPrenom = prenom.value.trim();
     const initialNom = nom.value.trim();
-
-    function showToast(success = true) {
-        toast.classList.toggle('error', !success);
-        toastTitle.textContent = success
-            ? 'La modification est réussie'
-            : 'Échec de la mise à jour';
-        toastMessage.textContent = success
-            ? "L’élève a bien été mis à jour dans la base de données."
-            : "Une erreur est survenue lors de la mise à jour de l’élève.";
-
-        toast.style.display = 'block';
-        setTimeout(() => toast.style.display = 'none', 4000);
-    }
-
-    closeBtn.addEventListener('click', () => toast.style.display = 'none');
 
     function checkChanges() {
         const changed = prenom.value.trim() !== initialPrenom || nom.value.trim() !== initialNom;
@@ -58,69 +40,55 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 // === Gestion attribution d'entraînement ===
-const assignButtons = document.querySelectorAll('.select-entrainement');
-const entrainementInput = document.getElementById('entrainementActuel');
-const modal = document.getElementById('entrainementModal');
+document.addEventListener('DOMContentLoaded', () => {
+    const assignButtons = document.querySelectorAll('.select-entrainement');
+    const entrainementInput = document.getElementById('entrainementActuel');
+    const modal = document.getElementById('entrainementModal');
 
-assignButtons.forEach(button => {
-    button.addEventListener('click', async (e) => {
-        const card = e.target.closest('.card');
-        const entrainementId = card.dataset.id;
-        const entrainementName = card.querySelector('.card-title').textContent.trim();
+    assignButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const card = e.target.closest('.training-card');
+            const entrainementId = card.dataset.id;
+            const entrainementName = card.querySelector('.card-title').textContent.trim();
 
-        try {
-            const response = await fetch(`${window.location.pathname}/entrainement`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ entrainementId })
-            });
+            button.disabled = true;
+            button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Attribution...';
 
-            if (response.ok) {
-                entrainementInput.value = entrainementName;
-                showToast(true);
-                const bootstrapModal = bootstrap.Modal.getInstance(modal);
-                bootstrapModal.hide();
-            } else {
+            try {
+                const response = await fetch(`${window.location.pathname}/entrainement`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ entrainementId })
+                });
+
+                if (response.ok) {
+                    entrainementInput.value = entrainementName;
+                    showToast(true);
+
+                    // Fermeture sécurisée de la modale
+                    let bootstrapModal = bootstrap.Modal.getInstance(modal);
+                    if (!bootstrapModal) {
+                        bootstrapModal = new bootstrap.Modal(modal);
+                    }
+                    bootstrapModal.hide();
+
+                    // Nettoyage du backdrop
+                    setTimeout(() => {
+                        const backdrop = document.querySelector('.modal-backdrop');
+                        if (backdrop) backdrop.remove();
+                        document.body.classList.remove('modal-open');
+                        document.body.style.removeProperty('overflow');
+                        document.body.style.removeProperty('padding-right');
+                    }, 400);
+                } else {
+                    showToast(false);
+                }
+            } catch (error) {
                 showToast(false);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = '<i class="bi bi-check-circle me-1"></i>Attribuer';
             }
-        } catch (error) {
-            showToast(false);
-        }
+        });
     });
 });
-
-assignButtons.forEach(button => {
-    button.addEventListener('click', async (e) => {
-        const card = e.target.closest('.training-card');
-        const entrainementId = card.dataset.id;
-        const entrainementName = card.querySelector('.card-title').textContent.trim();
-
-        // petite animation d'état en cours
-        button.disabled = true;
-        button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Attributions...';
-
-        try {
-            const response = await fetch(`${window.location.pathname}/entrainement`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ entrainementId })
-            });
-
-            if (response.ok) {
-                entrainementInput.value = entrainementName;
-                showToast(true);
-                const bootstrapModal = bootstrap.Modal.getInstance(modal);
-                bootstrapModal.hide();
-            } else {
-                showToast(false);
-            }
-        } catch (error) {
-            showToast(false);
-        } finally {
-            // reset du bouton
-            button.disabled = false;
-            button.innerHTML = '<i class="bi bi-check-circle me-1"></i>Attribuer';
-        }
-    });
-});
-

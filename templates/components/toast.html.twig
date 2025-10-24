@@ -1,0 +1,29 @@
+{# Valeurs par défaut, modifiables depuis la vue #}
+{% set toast_success_title = toast_success_title|default('Succès') %}
+{% set toast_success_message = toast_success_message|default("L’opération s’est bien déroulée.") %}
+{% set toast_error_title = toast_error_title|default('Erreur') %}
+{% set toast_error_message = toast_error_message|default("Une erreur est survenue, veuillez réessayer.") %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('css/toast/toast.css') }}">
+{% endblock %}
+
+{% block body %}
+<div id="toast"
+     class="custom-toast"
+     data-success-title="{{ toast_success_title }}"
+     data-success-message="{{ toast_success_message }}"
+     data-error-title="{{ toast_error_title }}"
+     data-error-message="{{ toast_error_message }}">
+    <button class="close-btn" aria-label="Fermer">&times;</button>
+    <div class="toast-title">
+        <i class="bi bi-check-circle-fill"></i>
+        <span id="toastTitle">{{ toast_success_title }}</span>
+    </div>
+    <div class="toast-message" id="toastMessage">{{ toast_success_message }}</div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    <script type="module" src="{{ asset('js/toast/toast.js') }}"></script>
+{% endblock %}

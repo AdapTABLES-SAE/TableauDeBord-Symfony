@@ -14,6 +14,9 @@ class Entrainement
     #[ORM\Column(type: "integer")]
     private ?int $id = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private string $name;
+
     #[ORM\Column(length: 255)]
     private string $learningPathID;
 
@@ -32,6 +35,17 @@ class Entrainement
     // ----------- GETTERS / SETTERS -----------
 
     public function getId(): ?int { return $this->id; }
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+
+    public function setName(string $name): self
+    {
+        $this->name = $name;
+        return $this;
+    }
 
     public function getLearningPathID(): string { return $this->learningPathID; }
     public function setLearningPathID(string $id): self { $this->learningPathID = $id; return $this; }
