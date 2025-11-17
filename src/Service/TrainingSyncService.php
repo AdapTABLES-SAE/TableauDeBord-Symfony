@@ -13,52 +13,74 @@ class TrainingSyncService
 {
     public function __construct(private EntityManagerInterface $em) {}
 
-    /**
-     * Synchronise le parcours d'apprentissage d'un élève depuis l'API.
-     * Si un entraînement identique (même structure JSON) existe déjà, il est réutilisé.
-     */
     public function syncTraining(Eleve $eleve, array $data): void
     {
         if (!isset($data['learningPathID']) || empty($data['objectives'])) {
             return;
         }
 
-        // Hash de la structure JSON (sans l’ID unique)
-        $structure = $data;
-        unset($structure['learningPathID']);
-        $hash = hash('sha256', json_encode($structure));
+        $enseignant = $eleve->getClasse()?->getEnseignant();
+        if (!$enseignant) return;
 
-        $repo = $this->em->getRepository(Entrainement::class);
-        $entrainement = $repo->findOneBy(['structureHash' => $hash]);
+        $learningPathID = $data['learningPathID'];
+
+        // Recherche par LearningPathID + enseignant
+        $entrainement = $this->em->getRepository(Entrainement::class)->findOneBy([
+            'learningPathID' => $learningPathID,
+            'enseignant' => $enseignant
+        ]);
 
         if (!$entrainement) {
             $entrainement = new Entrainement();
-            $entrainement->setLearningPathID($data['learningPathID']);
-            $entrainement->setStructureHash($hash);
+            $entrainement->setLearningPathID($learningPathID);
+            $entrainement->setEnseignant($enseignant);
 
-            // Crée tous les Objectifs / Niveaux / Tâches
             foreach ($data['objectives'] as $objData) {
+
                 $objectif = new Objectif();
-                $objectif->setObjID($objData['objective'] ?? uniqid('O_'));
+                $objectif->setObjID($objData['objective'] ?? uniqid("OBJ_"));
                 $objectif->setName($objData['name'] ?? '');
-                $objectif->setEntrainement($entrainement);
                 $entrainement->addObjectif($objectif);
 
-                foreach (($objData['levels'] ?? []) as $lvlData) {
+                foreach ($objData['levels'] ?? [] as $lvlData) {
+
                     $niveau = new Niveau();
-                    $niveau->setLevelID($lvlData['level'] ?? uniqid('L_'));
-                    $niveau->setName($lvlData['name'] ?? '');
-                    $niveau->setObjectif($objectif);
+                    $niveau->setLevelID($lvlData['level'] ?? uniqid("LVL_"));
+                    $niveau->setName($lvlData['name'] ?? null);
                     $objectif->addNiveau($niveau);
 
-                    foreach (($lvlData['setupParameters']['tasksParameters'] ?? []) as $t) {
+                    // -------------------------------
+                    // 🔥 Enregistrement des paramètres Achievement
+                    // -------------------------------
+                    $ach = $lvlData['setupParameters']['achievementParameters'] ?? null;
+                    if ($ach) {
+                        $niveau->setSuccessCompletionCriteria($ach['successCompletionCriteria'] ?? null);
+                        $niveau->setEncounterCompletionCriteria($ach['encounterCompletionCriteria'] ?? null);
+                    }
+
+                    // -------------------------------
+                    // 🔥 Enregistrement des paramètres Building
+                    // -------------------------------
+                    $build = $lvlData['setupParameters']['buildingParameters'] ?? null;
+                    if ($build) {
+                        $niveau->setTables($build['tables'] ?? null);
+                        $niveau->setResultLocation($build['resultLocation'] ?? null);
+                        $niveau->setLeftOperand($build['leftOperand'] ?? null);
+                        $niveau->setIntervalMin($build['intervalMin'] ?? null);
+                        $niveau->setIntervalMax($build['intervalMax'] ?? null);
+                    }
+
+                    // -------------------------------
+                    // 🔥 Enregistrement des tâches
+                    // -------------------------------
+                    foreach ($lvlData['setupParameters']['tasksParameters'] ?? [] as $t) {
                         $tache = new Tache();
                         $tache->setNiveau($niveau);
                         $tache->setTaskType($t['taskType'] ?? null);
-                        $tache->setTimeMaxSecond((int)($t['maxTime'] ?? 0));
-                        $tache->setRepartitionPercent((int)($t['repartitionPercent'] ?? 0));
-                        $tache->setSuccessiveSuccessesToReach((int)($t['successiveSuccessesToReach'] ?? 0));
-                        $tache->setTargets($t['targets'] ?? []);
+                        $tache->setTimeMaxSecond($t['maxTime'] ?? null);
+                        $tache->setRepartitionPercent($t['repartitionPercent'] ?? null);
+                        $tache->setSuccessiveSuccessesToReach($t['successiveSuccessesToReach'] ?? null);
+                        $tache->setTargets($t['targets'] ?? null);
                         $tache->setAnswerModality($t['answerModality'] ?? null);
                         $tache->setNbIncorrectChoices($t['nbIncorrectChoices'] ?? null);
                         $tache->setNbCorrectChoices($t['nbCorrectChoices'] ?? null);
@@ -70,15 +92,15 @@ class TrainingSyncService
                     }
                 }
             }
+
             $this->em->persist($entrainement);
         }
 
-        // Associe l'élève à l'entraînement mutualisé
+        // Attribution à l'élève
         $eleve->setEntrainement($entrainement);
-        $eleve->setCurrentLearningPathID($data['learningPathID']);
-        $this->em->persist($eleve);
+        $eleve->setCurrentLearningPathID($learningPathID);
 
-        // Un seul flush à la fin
+        $this->em->persist($eleve);
         $this->em->flush();
     }
 }

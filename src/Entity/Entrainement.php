@@ -5,6 +5,7 @@ namespace App\Entity;
 use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use App\Entity\Enseignant;
 
 #[ORM\Entity]
 class Entrainement
@@ -20,9 +21,6 @@ class Entrainement
     #[ORM\Column(length: 255)]
     private string $learningPathID;
 
-    #[ORM\Column(length: 64, unique: true, nullable: true)]
-    private ?string $structureHash = null;
-
     /** @var Collection<int, Objectif> */
     #[ORM\OneToMany(mappedBy: "entrainement", targetEntity: Objectif::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $objectifs;
@@ -30,6 +28,9 @@ class Entrainement
     /** @var Collection<int, Eleve> */
     #[ORM\OneToMany(mappedBy: "entrainement", targetEntity: Eleve::class)]
     private Collection $eleves;
+
+    #[ORM\ManyToOne(targetEntity: Enseignant::class)]
+    private ?Enseignant $enseignant = null;
 
     public function __construct()
     {
@@ -63,17 +64,6 @@ class Entrainement
     public function setLearningPathID(string $id): self
     {
         $this->learningPathID = $id;
-        return $this;
-    }
-
-    public function getStructureHash(): ?string
-    {
-        return $this->structureHash;
-    }
-
-    public function setStructureHash(?string $hash): self
-    {
-        $this->structureHash = $hash;
         return $this;
     }
 
@@ -124,6 +114,17 @@ class Entrainement
                 $eleve->setEntrainement(null);
             }
         }
+        return $this;
+    }
+
+    public function getEnseignant(): ?Enseignant
+    {
+        return $this->enseignant;
+    }
+
+    public function setEnseignant(?Enseignant $enseignant): self
+    {
+        $this->enseignant = $enseignant;
         return $this;
     }
 }
