@@ -28,9 +28,14 @@ class Objectif
     #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Niveau::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     private Collection $niveaux;
 
+    /** @var Collection<int, Prerequis> */
+    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Prerequis::class, cascade: ["persist", "remove"], orphanRemoval: true)]
+    private Collection $prerequis;
+
     public function __construct()
     {
         $this->niveaux = new ArrayCollection();
+        $this->prerequis = new ArrayCollection();
     }
 
     // ----------- GETTERS / SETTERS -----------
@@ -60,10 +65,31 @@ class Objectif
 
     public function removeNiveau(Niveau $niveau): self
     {
-        if ($this->niveaux->removeElement($niveau)) {
-            if ($niveau->getObjectif() === $this) {
-                $niveau->setObjectif(null);
-            }
+        if ($this->niveaux->removeElement($niveau) && $niveau->getObjectif() === $this) {
+            $niveau->setObjectif(null);
+        }
+        return $this;
+    }
+
+    /** @return Collection<int, Prerequis> */
+    public function getPrerequis(): Collection
+    {
+        return $this->prerequis;
+    }
+
+    public function addPrerequis(Prerequis $p): self
+    {
+        if (!$this->prerequis->contains($p)) {
+            $this->prerequis->add($p);
+            $p->setObjectif($this);
+        }
+        return $this;
+    }
+
+    public function removePrerequis(Prerequis $p): self
+    {
+        if ($this->prerequis->removeElement($p) && $p->getObjectif() === $this) {
+            $p->setObjectif(null);
         }
         return $this;
     }

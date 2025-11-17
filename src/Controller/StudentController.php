@@ -30,8 +30,22 @@ class StudentController extends AbstractController
             throw $this->createNotFoundException("Élève introuvable");
         }
 
-        $entrainementsDisponibles = $em->getRepository(Entrainement::class)->findAll();
+        // Récupère l’enseignant de cet élève
+        $enseignant = $eleve->getClasse()?->getEnseignant();
 
+        if (!$enseignant) {
+            throw $this->createNotFoundException("Aucun enseignant associé à cet élève.");
+        }
+
+        // Récupère uniquement les entraînements de cet enseignant
+        $entrainementsDisponibles = $em->getRepository(Entrainement::class)->findBy([
+            'enseignant' => $enseignant
+        ]);
+
+
+        // ---------------------------
+        // Mise à jour nom/prénom
+        // ---------------------------
         if ($request->isMethod('POST')) {
             $prenom = trim($request->request->get('prenomEleve'));
             $nom = trim($request->request->get('nomEleve'));
@@ -50,7 +64,7 @@ class StudentController extends AbstractController
             if ($hasChanged) {
                 $em->flush();
 
-                // Appel à l’API externe pour mettre à jour l’élève
+                // Mise à jour API externe
                 $classId = $eleve->getClasse()?->getIdClasse() ?? 'default';
                 $success = $this->apiClient->updateLearnerData(
                     $classId,
@@ -59,15 +73,18 @@ class StudentController extends AbstractController
                     $nom
                 );
 
-                if ($success) {
-                    $this->addFlash('success', 'Informations mises à jour localement et sur l’API.');
-                } else {
-                    $this->addFlash('warning', 'Sauvegardé localement, mais échec de mise à jour sur l’API.');
-                }
+                $this->addFlash(
+                    $success ? 'success' : 'warning',
+                    $success
+                        ? 'Informations mises à jour localement et sur l’API.'
+                        : 'Sauvegarde locale OK, mais mise à jour API échouée.'
+                );
+
             } else {
                 $this->addFlash('info', 'Aucune modification détectée.');
             }
         }
+
 
         return $this->render('student/view.html.twig', [
             'eleve' => $eleve,
@@ -76,6 +93,9 @@ class StudentController extends AbstractController
             'entrainementActuel' => $eleve->getEntrainement()
         ]);
     }
+
+
+
 
     #[Route('/enseignant/classes/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
     public function updateTrainingAjax(string $learnerId, Request $request, EntityManagerInterface $em): JsonResponse
@@ -87,6 +107,7 @@ class StudentController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Aucun ID entraînement fourni'], 400);
         }
 
+        // Élève et entraînement
         $eleve = $em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
         $entrainement = $em->getRepository(Entrainement::class)->find($entrainementId);
 
@@ -94,13 +115,24 @@ class StudentController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Élève ou entraînement introuvable'], 404);
         }
 
+        // Vérification : l’entraînement appartient-il bien à l’enseignant ?
+        if ($entrainement->getEnseignant()->getId() !== $eleve->getClasse()->getEnseignant()->getId()) {
+            return new JsonResponse(['success' => false, 'message' => "Cet entraînement n'appartient pas au professeur."], 403);
+        }
+
+        // Attribution
         $eleve->setEntrainement($entrainement);
         $em->flush();
 
+        // Nom de l'objectif principal
+        $objectifName =
+            $entrainement->getObjectifs()->first()?->getName()
+            ?? 'Sans nom';
+
         return new JsonResponse([
             'success' => true,
-            'message' => 'Nouvel entraînement attribué avec succès (local).',
-            'entrainementName' => $entrainement->getObjectifs()->first()?->getName() ?? 'Sans nom',
+            'message' => 'Nouvel entraînement attribué avec succès.',
+            'entrainementName' => $objectifName,
         ]);
     }
 }

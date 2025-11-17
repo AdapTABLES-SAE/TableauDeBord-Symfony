@@ -7,6 +7,7 @@ use App\Entity\Entrainement;
 use App\Entity\Objectif;
 use App\Entity\Niveau;
 use App\Entity\Tache;
+use App\Entity\Prerequis;
 use Doctrine\ORM\EntityManagerInterface;
 
 class TrainingSyncService
@@ -24,13 +25,14 @@ class TrainingSyncService
 
         $learningPathID = $data['learningPathID'];
 
-        // Recherche par LearningPathID + enseignant
+        // Recherche d’un entraînement existant
         $entrainement = $this->em->getRepository(Entrainement::class)->findOneBy([
             'learningPathID' => $learningPathID,
             'enseignant' => $enseignant
         ]);
 
         if (!$entrainement) {
+
             $entrainement = new Entrainement();
             $entrainement->setLearningPathID($learningPathID);
             $entrainement->setEnseignant($enseignant);
@@ -42,6 +44,24 @@ class TrainingSyncService
                 $objectif->setName($objData['name'] ?? '');
                 $entrainement->addObjectif($objectif);
 
+                // -------------------------------------
+                // ENREGISTREMENT DES PREREQUIS
+                // -------------------------------------
+                foreach ($objData['prerequisites'] ?? [] as $preData) {
+                    $pre = new Prerequis();
+                    $pre->setRequiredLevel($preData['requiredLevel'] ?? '');
+                    $pre->setRequiredObjective($preData['requiredObjective'] ?? '');
+                    $pre->setSuccessPercent($preData['successPercent'] ?? 0);
+                    $pre->setEncountersPercent($preData['encountersPercent'] ?? 0);
+                    $pre->setObjectif($objectif);
+
+                    $this->em->persist($pre);
+                    $objectif->addPrerequis($pre);
+                }
+
+                // -------------------------------------
+                // NIVEAUX
+                // -------------------------------------
                 foreach ($objData['levels'] ?? [] as $lvlData) {
 
                     $niveau = new Niveau();
@@ -49,18 +69,14 @@ class TrainingSyncService
                     $niveau->setName($lvlData['name'] ?? null);
                     $objectif->addNiveau($niveau);
 
-                    // -------------------------------
-                    // 🔥 Enregistrement des paramètres Achievement
-                    // -------------------------------
+                    // Achievement Parameters
                     $ach = $lvlData['setupParameters']['achievementParameters'] ?? null;
                     if ($ach) {
                         $niveau->setSuccessCompletionCriteria($ach['successCompletionCriteria'] ?? null);
                         $niveau->setEncounterCompletionCriteria($ach['encounterCompletionCriteria'] ?? null);
                     }
 
-                    // -------------------------------
-                    // 🔥 Enregistrement des paramètres Building
-                    // -------------------------------
+                    // Building Parameters
                     $build = $lvlData['setupParameters']['buildingParameters'] ?? null;
                     if ($build) {
                         $niveau->setTables($build['tables'] ?? null);
@@ -70,9 +86,7 @@ class TrainingSyncService
                         $niveau->setIntervalMax($build['intervalMax'] ?? null);
                     }
 
-                    // -------------------------------
-                    // 🔥 Enregistrement des tâches
-                    // -------------------------------
+                    // Tâches
                     foreach ($lvlData['setupParameters']['tasksParameters'] ?? [] as $t) {
                         $tache = new Tache();
                         $tache->setNiveau($niveau);
@@ -96,11 +110,11 @@ class TrainingSyncService
             $this->em->persist($entrainement);
         }
 
-        // Attribution à l'élève
+        // Lier l'élève à l'entraînement
         $eleve->setEntrainement($entrainement);
         $eleve->setCurrentLearningPathID($learningPathID);
-
         $this->em->persist($eleve);
+
         $this->em->flush();
     }
 }
