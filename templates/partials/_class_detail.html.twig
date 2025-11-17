@@ -45,7 +45,11 @@
                     </thead>
                     <tbody class="h-100">
                     {% for student in students %}
-                        <tr data-row-edited="false" data-db-id="{{ student.id }}"  style="cursor: pointer">
+
+                        <tr
+                            data-row-edited="false" data-db-id="{{ student.id }}"  style="cursor: pointer"
+                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';"
+                        >
                             <!-- Nom prénom -->
                             <td class="w-25 ps-4 fw-medium text-start">
                                 {{ student.prenomEleve }} {{ student.nomEleve }}
@@ -87,7 +91,7 @@
         <!-- DEL/CANCEL -->
         <div class="d-flex gap-2">
             <button class="btn text-black text" style="background-color: rgba(230,97,97,0.58)" >
-                <i class="bi bi-trash"></i>
+                <i class="bi bi-trash me-1"></i> Retirer un élève
             </button>
             <button id="input_cancel_button" class="btn btn-outline-secondary disabled">
                 Annuler
@@ -98,11 +102,11 @@
         <div class="d-flex gap-2">
             <form id="save_form" action="{{ path('class_update') }}" method="POST">
                 <button type="submit" id="input_save_button" class="btn btn-outline-success disabled">
-                    <i class="bi bi-check-circle"></i> Enregistrer les modifications
+                    Enregistrer
                 </button>
             </form>
             <button class="btn btn-dark">
-                <i class="bi bi-plus-circle"></i> Ajouter un élève
+                <i class="bi bi-plus-circle me-1"></i> Ajouter un élève
             </button>
         </div>
     </div>
