@@ -15,14 +15,27 @@
 //     });
 // });
 
-
 document.addEventListener('partial:loaded', e => {
     const container = document.getElementById('includedPartial');
 
-    const form = document.getElementById("save_form");
+    const select_mode_btn = document.getElementById('select-mode-btn')
+    const select_mode_actions_btn = document.getElementById('select-mode-actions-dropdown')
+
+    select_mode_btn.addEventListener('click', e => {
+        select_mode_btn.classList.
+    });
+
+    //remove redirection when clicking on selects in the student list
+    document.querySelectorAll('.ignore-row-click').forEach(el => {
+            el.addEventListener('mousedown', e => e.stopPropagation());
+            el.addEventListener('click', e => e.stopPropagation());
+            el.addEventListener('change', e => e.stopPropagation());
+    });
+
     const saveBtn = document.getElementById("input_save_button");
     const cancelBtn = document.getElementById("input_cancel_button");
 
+    // highlight and marks select and input fields as 'edited'
     container.querySelectorAll('input, select').forEach(element => {
         // Use "input" for text fields, "change" for selects
         const eventType = element.tagName.toLowerCase() === 'select' ? 'change' : 'input';
@@ -30,7 +43,6 @@ document.addEventListener('partial:loaded', e => {
         element.addEventListener(eventType, () => {
             const changed = element.value !== element.defaultValue;
             if (changed) {
-
                 const tr = element.closest('tr');
                 if (tr && container.contains(tr)) {
                     tr.dataset.rowEdited = "true";
@@ -46,6 +58,8 @@ document.addEventListener('partial:loaded', e => {
     cancelBtn.addEventListener('click', () => {
         window.location.reload();
     });
+
+    const form = document.getElementById("save_form");
 
     if (!form || !saveBtn) return;
     // Handle SAVE button

@@ -29,7 +29,6 @@ class TeacherDashboardController extends AbstractController
 
         //Get login ID
         $teacherId = $session->get('teacher_id');
-        dump($teacherId);
         $teacher = $repo->find($teacherId);
         $classes = $teacher->getClasses();
 
@@ -65,20 +64,22 @@ class TeacherDashboardController extends AbstractController
 
     //partial loader
     #[Route('/class/{id}/details', name: 'class_details')]
-    public function details(int $id, ClasseRepository $repo): Response
+    public function details(int $id, EntityManagerInterface $em): Response
     {
-        $class = $repo->find($id);
+        $class = $em->getRepository(Classe::class)->find($id);
 
         if (!$class) {
             throw $this->createNotFoundException('Classe introuvable.');
         }
-
+        $teacherId = $class->getEnseignant()->getId();
+        $trainingPaths = $em->getRepository(Entrainement::class)->findBy(['enseignant' => $teacherId]);
         $students = $class->getEleves();
 
         // todo: check permissions?
         return $this->render('partials/_class_detail.html.twig', [
             'class' => $class,
-            'students' => $students
+            'students' => $students,
+            'trainingPaths' => $trainingPaths
         ]);
     }
 
@@ -86,7 +87,6 @@ class TeacherDashboardController extends AbstractController
     #[Route('/class/update-students', name: 'class_update', methods: ['POST'])]
     public function updateStudents(Request $request, EntityManagerInterface $em): JsonResponse
     {
-        // Get arrays from the request
         $classData = $request->request->all('class');
         $studentsData = $request->request->all('students');
 
@@ -117,6 +117,11 @@ class TeacherDashboardController extends AbstractController
                 }
             }
         }
+
+
+        //todo: edit in API from db changes
+
+
 
         // Persist all changes
         $em->flush();
