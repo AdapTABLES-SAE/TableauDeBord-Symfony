@@ -1,0 +1,68 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Administration – Gestion des enseignants{% endblock %}
+
+{% block body %}
+
+    <div class="container mt-4">
+
+        <h2 class="mb-3">Gestion des enseignants</h2>
+
+        {% for label, messages in app.flashes %}
+            {% for m in messages %}
+                <div class="alert alert-{{ label }}">{{ m }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="card shadow-sm p-4 mb-4">
+            <h4>Ajouter un enseignant</h4>
+
+            <form action="{{ path('admin_teacher_add') }}" method="POST" class="row g-3 mt-3">
+
+                <div class="col-md-4">
+                    <label class="form-label">Identifiant</label>
+                    <input type="text" name="idProf" class="form-control" required>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Nom complet</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+
+                <div class="col-md-4 d-flex align-items-end">
+                    <button class="btn btn-violet w-100">
+                        <i class="bi bi-person-plus"></i> Ajouter
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <div class="card shadow-sm p-4">
+            <h4>Enseignants existants</h4>
+
+            {% if teachers is not empty %}
+                <table class="table mt-3">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nom</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for t in teachers %}
+                        <tr>
+                            <td>{{ t.idProf }}</td>
+                            <td>{{ t.name }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p class="text-muted mt-3">Aucun enseignant trouvé.</p>
+            {% endif %}
+        </div>
+
+    </div>
+
+{% endblock %}

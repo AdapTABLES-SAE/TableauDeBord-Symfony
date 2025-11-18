@@ -24,7 +24,7 @@ class ApiClient
 
     public function fetchStudentsByTeacherAndClass(string $teacherId, string $classId): array
     {
-        $url = ApiEndpoints::BASE_URL . 'data/students/teacher/' . $teacherId . '/classroom/' . $classId;
+        $url = ApiEndpoints::BASE_URL . 'data/students/teachers/' . $teacherId . '/classroom/' . $classId;
         $response = $this->client->request('GET', $url);
 
         return $response->getStatusCode() === 200 ? $response->toArray() : [];
@@ -37,6 +37,37 @@ class ApiClient
 
         return $response->getStatusCode() === 200 ? $response->toArray() : null;
     }
+
+    public function fetchAllTeachers(): array
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHERS;
+        $response = $this->client->request('GET', $url);
+
+        return $response->getStatusCode() === 200 ? $response->toArray() : [];
+    }
+
+    public function createTeacher(string $idProf, string $name): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_PROF;
+
+        $response = $this->client->request('POST', $url, [
+            'json' => [
+                'idProf' => $idProf,
+                'name'   => $name,
+            ],
+        ]);
+
+        $status = $response->getStatusCode();
+        $content = $response->getContent(false);
+
+        // succès API = status 2xx (comme Unity)
+        if ($status >= 200 && $status < 300) {
+            return true;
+        }
+
+        return false;
+    }
+
 
     public function fetchLearnerStatistics(string $learnerId): ?array
     {

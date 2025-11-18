@@ -21,7 +21,7 @@ class ClassroomSyncService
     /**
      * Synchronise les classes et élèves d’un enseignant à partir de l’API externe.
      *
-     * Exemple API /data/teacher/{teacherID} :
+     * Exemple API /data/teachers/{teacherID} :
      * {
      *   "idProf": "sandrag",
      *   "classes": [
