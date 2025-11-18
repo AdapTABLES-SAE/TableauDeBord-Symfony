@@ -14,6 +14,10 @@ class TrainingSyncService
 {
     public function __construct(private EntityManagerInterface $em) {}
 
+    /**
+     * Synchronise le parcours d'un élève depuis l'API dans la base locale.
+     * Mutualisation : 1 Entrainement par (learningPathID, enseignant).
+     */
     public function syncTraining(Eleve $eleve, array $data): void
     {
         if (!isset($data['learningPathID']) || empty($data['objectives'])) {
@@ -21,62 +25,56 @@ class TrainingSyncService
         }
 
         $enseignant = $eleve->getClasse()?->getEnseignant();
-        if (!$enseignant) return;
+        if (!$enseignant) {
+            return;
+        }
 
         $learningPathID = $data['learningPathID'];
 
-        // Recherche d’un entraînement existant
+        // Cherche si cet entraînement existe déjà pour cet enseignant
         $entrainement = $this->em->getRepository(Entrainement::class)->findOneBy([
             'learningPathID' => $learningPathID,
-            'enseignant' => $enseignant
+            'enseignant'     => $enseignant,
         ]);
 
+        // Si non, on le construit entièrement
         if (!$entrainement) {
-
             $entrainement = new Entrainement();
             $entrainement->setLearningPathID($learningPathID);
             $entrainement->setEnseignant($enseignant);
 
             foreach ($data['objectives'] as $objData) {
-
                 $objectif = new Objectif();
-                $objectif->setObjID($objData['objective'] ?? uniqid("OBJ_"));
+                $objectif->setObjID($objData['objective'] ?? uniqid('OBJ_'));
                 $objectif->setName($objData['name'] ?? '');
                 $entrainement->addObjectif($objectif);
 
-                // -------------------------------------
-                // ENREGISTREMENT DES PREREQUIS
-                // -------------------------------------
+                // PREREQUIS
                 foreach ($objData['prerequisites'] ?? [] as $preData) {
                     $pre = new Prerequis();
                     $pre->setRequiredLevel($preData['requiredLevel'] ?? '');
                     $pre->setRequiredObjective($preData['requiredObjective'] ?? '');
-                    $pre->setSuccessPercent($preData['successPercent'] ?? 0);
-                    $pre->setEncountersPercent($preData['encountersPercent'] ?? 0);
-                    $pre->setObjectif($objectif);
-
-                    $this->em->persist($pre);
+                    $pre->setSuccessPercent((float) ($preData['successPercent'] ?? 0));
+                    $pre->setEncountersPercent((float) ($preData['encountersPercent'] ?? 0));
                     $objectif->addPrerequis($pre);
+                    $this->em->persist($pre);
                 }
 
-                // -------------------------------------
                 // NIVEAUX
-                // -------------------------------------
                 foreach ($objData['levels'] ?? [] as $lvlData) {
-
                     $niveau = new Niveau();
-                    $niveau->setLevelID($lvlData['level'] ?? uniqid("LVL_"));
+                    $niveau->setLevelID($lvlData['level'] ?? uniqid('LVL_'));
                     $niveau->setName($lvlData['name'] ?? null);
                     $objectif->addNiveau($niveau);
 
-                    // Achievement Parameters
+                    // achievementParameters
                     $ach = $lvlData['setupParameters']['achievementParameters'] ?? null;
                     if ($ach) {
                         $niveau->setSuccessCompletionCriteria($ach['successCompletionCriteria'] ?? null);
                         $niveau->setEncounterCompletionCriteria($ach['encounterCompletionCriteria'] ?? null);
                     }
 
-                    // Building Parameters
+                    // buildingParameters
                     $build = $lvlData['setupParameters']['buildingParameters'] ?? null;
                     if ($build) {
                         $niveau->setTables($build['tables'] ?? null);
@@ -86,21 +84,34 @@ class TrainingSyncService
                         $niveau->setIntervalMax($build['intervalMax'] ?? null);
                     }
 
-                    // Tâches
-                    foreach ($lvlData['setupParameters']['tasksParameters'] ?? [] as $t) {
+                    // tasksParameters
+                    foreach ($lvlData['setupParameters']['tasksParameters'] ?? [] as $tData) {
                         $tache = new Tache();
                         $tache->setNiveau($niveau);
-                        $tache->setTaskType($t['taskType'] ?? null);
-                        $tache->setTimeMaxSecond($t['maxTime'] ?? null);
-                        $tache->setRepartitionPercent($t['repartitionPercent'] ?? null);
-                        $tache->setSuccessiveSuccessesToReach($t['successiveSuccessesToReach'] ?? null);
-                        $tache->setTargets($t['targets'] ?? null);
-                        $tache->setAnswerModality($t['answerModality'] ?? null);
-                        $tache->setNbIncorrectChoices($t['nbIncorrectChoices'] ?? null);
-                        $tache->setNbCorrectChoices($t['nbCorrectChoices'] ?? null);
-                        $tache->setNbFacts($t['nbFacts'] ?? null);
-                        $tache->setSourceVariation($t['sourceVariation'] ?? null);
-                        $tache->setTarget($t['target'] ?? null);
+                        $tache->setTaskType($tData['taskType'] ?? null);
+
+                        // L'API de lecture renvoie souvent "maxTime", on le mappe vers timeMaxSecond
+                        $tache->setTimeMaxSecond($tData['timeMaxSecond'] ?? $tData['maxTime'] ?? null);
+
+                        $tache->setRepartitionPercent($tData['repartitionPercent'] ?? null);
+                        $tache->setSuccessiveSuccessesToReach($tData['successiveSuccessesToReach'] ?? null);
+                        $tache->setTargets($tData['targets'] ?? null);
+                        $tache->setAnswerModality($tData['answerModality'] ?? null);
+                        $tache->setNbIncorrectChoices($tData['nbIncorrectChoices'] ?? null);
+                        $tache->setNbCorrectChoices($tData['nbCorrectChoices'] ?? null);
+                        $tache->setNbFacts($tData['nbFacts'] ?? null);
+                        $tache->setSourceVariation($tData['sourceVariation'] ?? null);
+                        $tache->setTarget($tData['target'] ?? null);
+
+                        if (isset($tData['nbOperations']) && method_exists($tache, 'setNbOperations')) {
+                            $tache->setNbOperations($tData['nbOperations']);
+                        }
+                        if (isset($tData['nbElements']) && method_exists($tache, 'setNbElements')) {
+                            $tache->setNbElements($tData['nbElements']);
+                        }
+                        if (isset($tData['nbPropositions']) && method_exists($tache, 'setNbPropositions')) {
+                            $tache->setNbPropositions($tData['nbPropositions']);
+                        }
 
                         $niveau->addTache($tache);
                     }
@@ -110,7 +121,7 @@ class TrainingSyncService
             $this->em->persist($entrainement);
         }
 
-        // Lier l'élève à l'entraînement
+        // Lien élève → entraînement mutualisé
         $eleve->setEntrainement($entrainement);
         $eleve->setCurrentLearningPathID($learningPathID);
         $this->em->persist($eleve);
