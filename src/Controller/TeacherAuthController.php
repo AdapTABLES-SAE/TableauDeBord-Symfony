@@ -28,58 +28,41 @@ class TeacherAuthController extends AbstractController
         $identifier = '';
 
         if ($request->isMethod('POST')) {
-
             $identifier = trim($request->request->get('identifier', ''));
 
             if ($identifier === '') {
-                $error = "Veuillez saisir votre identifiant enseignant.";
-            }
-            else {
-
-                // CAS ADMIN — accès direct
-                if ($identifier === 'ADMIN') {
-                    $session->clear();
-                    $session->set('is_admin', true);
-
-                    return $this->redirectToRoute('admin_teacher_list');
-                }
-
-                // CAS PROF NORMAL — appel API
+                $error = 'Veuillez saisir votre identifiant enseignant.';
+            } else {
                 $enseignantData = $this->apiClient->fetchTeacherData($identifier);
 
                 if ($enseignantData) {
-
-                    // Sync enseignant
                     $enseignant = $this->teacherSync->syncTeacher($enseignantData);
-
-                    // Sync classes + élèves
                     $this->classroomSync->syncClassesAndStudents($enseignant, $enseignantData);
 
-                    // Sync parcours
+                    // Synchronisation des parcours des élèves
                     foreach ($enseignant->getClasses() as $classe) {
                         foreach ($classe->getEleves() as $eleve) {
-
-                            $path = $this->apiClient->fetchLearningPathByLearner($eleve->getLearnerId());
-
+                            $learnerId = $eleve->getLearnerId();
+                            $path = $this->apiClient->fetchLearningPathByLearner($learnerId);
                             if ($path) {
                                 $this->trainingSync->syncTraining($eleve, $path);
                             }
                         }
                     }
 
-                    // Authentification réussie
+                    // Sauvegarde les infos en session (utilisées pour le dashboard)
                     $session->set('teacher_id', $enseignant->getId());
 
+                    // Redirection vers la page d'accueil du tableau de bord enseignant
                     return $this->redirectToRoute('class_dashboard');
                 }
 
-                // Aucun résultat API → erreur
                 $error = 'Identifiant enseignant introuvable.';
             }
         }
 
         return $this->render('security/teacher_login.html.twig', [
-            'error'      => $error,
+            'error' => $error,
             'identifier' => $identifier,
         ]);
     }

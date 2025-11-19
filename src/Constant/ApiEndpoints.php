@@ -7,7 +7,7 @@ final class ApiEndpoints
     //public const BASE_URL = 'https://dungeon-generator.univ-lemans.fr/FrameworkAPI/';
     public const BASE_URL = 'http://localhost:8080/FrameworkAPI/';
     public const LOGIN_TEACHER = "login/teachers/";
-    public const GET_TEACHER = "data/teachers/";
+    public const GET_TEACHER = "data/teacher/";
     public const EQUIP_URL = "store/learner/";
     public const STATS_URL = "statistics/learner/";
     public const ADD_CLASSROOM = "data/classroom/";
