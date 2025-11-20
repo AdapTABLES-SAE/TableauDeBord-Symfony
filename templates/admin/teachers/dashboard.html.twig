@@ -16,7 +16,7 @@
         ]
     } %}
 
-    {# Composant Toast (structure + JS global) #}
+    {# Toast global #}
     {% include 'components/toast.html.twig' %}
 
     <div class="admin-wrapper container py-4">
@@ -27,36 +27,35 @@
             </h2>
         </div>
 
+        {# --- AJOUT D'UN ENSEIGNANT --- #}
         <div class="admin-card shadow-sm p-4 mb-4 rounded-4">
             <h4 class="section-title mb-3">
                 <i class="bi bi-person-plus-fill me-2"></i> Ajouter un enseignant
             </h4>
 
-            <form action="{{ path('admin_teacher_add') }}" method="POST">
-                <div class="row g-3 align-items-end">
+            <form action="{{ path('admin_teacher_add') }}" method="POST" class="row g-4 align-items-end">
 
-                    <div class="col-md-5">
-                        <label class="form-label">Identifiant</label>
-                        <input type="text" name="idProf" class="form-control form-control-lg admin-input" required>
-                    </div>
-
-                    <div class="col-md-5">
-                        <label class="form-label">Nom complet</label>
-                        <input type="text" name="name" class="form-control form-control-lg admin-input" required>
-                    </div>
-
-                    <div class="col-md-2 d-flex">
-                        <button class="btn btn-add-teacher w-100">
-                            <i class="bi bi-plus-circle me-1"></i>
-                            Ajouter
-                        </button>
-                    </div>
-
+                <div class="col-md-5">
+                    <label class="form-label">Identifiant</label>
+                    <input type="text" name="idProf" class="form-control admin-input" required>
                 </div>
+
+                <div class="col-md-5">
+                    <label class="form-label">Nom complet</label>
+                    <input type="text" name="name" class="form-control admin-input" required>
+                </div>
+
+                <div class="col-md-2 d-flex justify-content-center">
+                    <button class="btn btn-violet admin-add-btn w-100">
+                        <i class="bi bi-plus-circle me-1"></i> Ajouter
+                    </button>
+                </div>
+
             </form>
 
         </div>
 
+        {# --- LISTE DES ENSEIGNANTS --- #}
         <div class="admin-card shadow-sm p-4 rounded-4">
             <h4 class="section-title mb-3">
                 <i class="bi bi-people-fill me-2"></i> Liste des enseignants
@@ -76,14 +75,18 @@
                         <tr>
                             <td class="fw-semibold">{{ t.idProf }}</td>
                             <td>{{ t.name }}</td>
+
                             <td class="text-center">
-                                <form action="{{ path('admin_teacher_delete', { idProf: t.idProf }) }}" method="POST"
-                                      onsubmit="return confirm('Supprimer l’enseignant {{ t.name }} ?');">
-                                    <button class="btn btn-outline-danger btn-sm">
-                                        <i class="bi bi-trash-fill"></i> Supprimer
-                                    </button>
-                                </form>
+                                <button
+                                        type="button"
+                                        class="btn btn-danger btn-sm admin-delete-btn delete-teacher-btn"
+                                        data-id="{{ t.idProf }}"
+                                        data-url="{{ path('admin_teacher_delete', { idProf: t.idProf }) }}"
+                                >
+                                    <i class="bi bi-trash3-fill"></i> Supprimer
+                                </button>
                             </td>
+
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -95,41 +98,59 @@
 
     </div>
 
+    {# --- MODAL DE CONFIRMATION --- #}
+    <div class="modal fade" id="confirmDeleteTeacherModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-delete-modal">
+
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title text-danger fw-bold">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmer la suppression
+                    </h5>
+                </div>
+
+                <div class="modal-body">
+                    <p class="mb-2">
+                        Vous êtes sur le point de supprimer définitivement un enseignant et toutes les classes,
+                        élèves et données associées.
+                    </p>
+                    <p class="fw-semibold text-danger">
+                        Confirmer la suppression de l’enseignant :
+                        <span id="delete-teacher-id" class="fw-bold"></span> ?
+                    </p>
+                </div>
+
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+
+                    <form id="delete-teacher-form" method="POST" class="m-0">
+                        <button type="submit" class="btn btn-danger px-4">
+                            Supprimer
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 {% endblock %}
+
+
+{# --- BLOC JAVASCRIPTS --- #}
+{% set successMessages = app.flashes('success') %}
+{% set errorMessages = app.flashes('error') %}
 
 {% block javascripts %}
     {{ parent() }}
 
-    {# On récupère les flashs ICI, dans le même bloc que le JS #}
-    {% set successMessages = app.flashes('success') %}
-    {% set errorMessages = app.flashes('error') %}
-
-    <script type="module">
-        import { showToast } from "{{ asset('js/toast/toast.js') }}";
-
-        const toastEl = document.getElementById('toast');
-
-        const successMessages = {{ successMessages|json_encode|raw }};
-        const errorMessages = {{ errorMessages|json_encode|raw }};
-
-        // Succès : on affiche un toast pour chaque message
-        successMessages.forEach((msg) => {
-            if (!toastEl) return;
-
-            toastEl.dataset.successTitle = "Succès";
-            toastEl.dataset.successMessage = msg || "Opération réalisée avec succès.";
-
-            showToast(true);
-        });
-
-        // Erreurs : idem
-        errorMessages.forEach((msg) => {
-            if (!toastEl) return;
-
-            toastEl.dataset.errorTitle = "Erreur";
-            toastEl.dataset.errorMessage = msg || "Une erreur est survenue.";
-
-            showToast(false);
-        });
+    <script>
+        window.adminTeacherSuccessMessages = {{ successMessages|json_encode|raw }};
+        window.adminTeacherErrorMessages   = {{ errorMessages|json_encode|raw }};
     </script>
+
+    <script type="module" src="{{ asset('js/admin_teachers.js') }}"></script>
 {% endblock %}

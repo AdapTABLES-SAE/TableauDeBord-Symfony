@@ -10,7 +10,7 @@ use Doctrine\Migrations\AbstractMigration;
 /**
  * Auto-generated Migration: Please modify to your needs!
  */
-final class Version20251120135558 extends AbstractMigration
+final class Version20251120150207 extends AbstractMigration
 {
     public function getDescription(): string
     {
@@ -29,13 +29,13 @@ final class Version20251120135558 extends AbstractMigration
         $this->addSql('CREATE TABLE prerequis (id INT AUTO_INCREMENT NOT NULL, objectif_id INT DEFAULT NULL, required_level VARCHAR(255) NOT NULL, required_objective VARCHAR(255) NOT NULL, success_percent DOUBLE PRECISION NOT NULL, encounters_percent DOUBLE PRECISION NOT NULL, INDEX IDX_CAE3EB09157D1AD4 (objectif_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE tache (id INT AUTO_INCREMENT NOT NULL, niveau_id INT DEFAULT NULL, task_type VARCHAR(10) NOT NULL, time_max_second INT DEFAULT NULL, repartition_percent INT DEFAULT NULL, successive_successes_to_reach INT DEFAULT NULL, targets JSON DEFAULT NULL, answer_modality VARCHAR(50) DEFAULT NULL, nb_incorrect_choices INT DEFAULT NULL, nb_correct_choices INT DEFAULT NULL, nb_facts INT DEFAULT NULL, source_variation VARCHAR(50) DEFAULT NULL, target VARCHAR(50) DEFAULT NULL, INDEX IDX_93872075B3E9C81 (niveau_id), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
         $this->addSql('CREATE TABLE messenger_messages (id BIGINT AUTO_INCREMENT NOT NULL, body LONGTEXT NOT NULL, headers LONGTEXT NOT NULL, queue_name VARCHAR(190) NOT NULL, created_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', available_at DATETIME NOT NULL COMMENT \'(DC2Type:datetime_immutable)\', delivered_at DATETIME DEFAULT NULL COMMENT \'(DC2Type:datetime_immutable)\', INDEX IDX_75EA56E0FB7336F0 (queue_name), INDEX IDX_75EA56E0E3BD61CE (available_at), INDEX IDX_75EA56E016BA31DB (delivered_at), PRIMARY KEY(id)) DEFAULT CHARACTER SET utf8mb4 COLLATE `utf8mb4_unicode_ci` ENGINE = InnoDB');
-        $this->addSql('ALTER TABLE classe ADD CONSTRAINT FK_8F87BF96E455FCC0 FOREIGN KEY (enseignant_id) REFERENCES enseignant (id)');
-        $this->addSql('ALTER TABLE eleve ADD CONSTRAINT FK_ECA105F78F5EA509 FOREIGN KEY (classe_id) REFERENCES classe (id)');
-        $this->addSql('ALTER TABLE eleve ADD CONSTRAINT FK_ECA105F7A15E8FD FOREIGN KEY (entrainement_id) REFERENCES entrainement (id)');
-        $this->addSql('ALTER TABLE entrainement ADD CONSTRAINT FK_A27444E5E455FCC0 FOREIGN KEY (enseignant_id) REFERENCES enseignant (id)');
+        $this->addSql('ALTER TABLE classe ADD CONSTRAINT FK_8F87BF96E455FCC0 FOREIGN KEY (enseignant_id) REFERENCES enseignant (id) ON DELETE CASCADE');
+        $this->addSql('ALTER TABLE eleve ADD CONSTRAINT FK_ECA105F78F5EA509 FOREIGN KEY (classe_id) REFERENCES classe (id) ON DELETE CASCADE');
+        $this->addSql('ALTER TABLE eleve ADD CONSTRAINT FK_ECA105F7A15E8FD FOREIGN KEY (entrainement_id) REFERENCES entrainement (id) ON DELETE SET NULL');
+        $this->addSql('ALTER TABLE entrainement ADD CONSTRAINT FK_A27444E5E455FCC0 FOREIGN KEY (enseignant_id) REFERENCES enseignant (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE niveau ADD CONSTRAINT FK_4BDFF36B157D1AD4 FOREIGN KEY (objectif_id) REFERENCES objectif (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE objectif ADD CONSTRAINT FK_E2F86851A15E8FD FOREIGN KEY (entrainement_id) REFERENCES entrainement (id) ON DELETE CASCADE');
-        $this->addSql('ALTER TABLE prerequis ADD CONSTRAINT FK_CAE3EB09157D1AD4 FOREIGN KEY (objectif_id) REFERENCES objectif (id)');
+        $this->addSql('ALTER TABLE prerequis ADD CONSTRAINT FK_CAE3EB09157D1AD4 FOREIGN KEY (objectif_id) REFERENCES objectif (id) ON DELETE CASCADE');
         $this->addSql('ALTER TABLE tache ADD CONSTRAINT FK_93872075B3E9C81 FOREIGN KEY (niveau_id) REFERENCES niveau (id) ON DELETE CASCADE');
     }
 

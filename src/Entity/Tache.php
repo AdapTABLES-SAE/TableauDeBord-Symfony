@@ -46,7 +46,7 @@ class Tache
     private ?string $target = null;
 
     #[ORM\ManyToOne(targetEntity: Niveau::class, inversedBy: "taches")]
-    #[ORM\JoinColumn(onDelete: "CASCADE")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Niveau $niveau = null;
 
     // ----------- GETTERS / SETTERS -----------
