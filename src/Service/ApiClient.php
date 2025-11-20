@@ -37,8 +37,9 @@ class ApiClient
         // ⚠ Correction IMPORTANTE : teacher (singulier)
         $url =
             ApiEndpoints::BASE_URL .
-            "data/students/teacher/" . $teacherId .
-            "/classroom/" . $classId;
+            ApiEndpoints::GET_STUDENTS_1 . $teacherId . "/" .
+            ApiEndpoints::GET_STUDENTS_2. $classId;
+        dd($url);
 
         $response = $this->client->request('GET', $url);
 
