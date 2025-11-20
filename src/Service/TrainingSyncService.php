@@ -37,11 +37,17 @@ class TrainingSyncService
             'enseignant'     => $enseignant,
         ]);
 
+
+        if($entrainement && empty($entrainement->getName())){
+            $entrainement->setName($entrainement->getLearningPathID());
+        }
+
         // Si non, on le construit entièrement
         if (!$entrainement) {
             $entrainement = new Entrainement();
             $entrainement->setLearningPathID($learningPathID);
             $entrainement->setEnseignant($enseignant);
+            $entrainement->setName($entrainement->getLearningPathID());
 
             foreach ($data['objectives'] as $objData) {
                 $objectif = new Objectif();
@@ -117,7 +123,6 @@ class TrainingSyncService
                     }
                 }
             }
-
             $this->em->persist($entrainement);
         }
 

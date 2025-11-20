@@ -3,6 +3,7 @@
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/dashboardElementListDetails.css') }}">
+    <link rel="stylesheet" href="{{ partial_css }}">
 {% endblock %}
 
 {% block body %}
@@ -55,6 +56,12 @@
             </div>
         </div>
     </div>
+    {% include 'components/toast.html.twig' with {
+        toast_success_title: "Élève mis à jour",
+        toast_success_message: "Les informations ont bien été enregistrées.",
+        toast_error_title: "Erreur de mise à jour",
+        toast_error_message: "Impossible d’enregistrer les modifications."
+    } %}
 {% endblock %}
 
 
@@ -66,3 +73,5 @@
     <script src="{{ asset('js/partial_includers/dashboardElementDetails.js') }}"></script>
     <script src="{{ partial_script }}"></script>
 {% endblock %}
+
+

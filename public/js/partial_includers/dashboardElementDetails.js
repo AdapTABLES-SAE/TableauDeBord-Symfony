@@ -46,3 +46,44 @@ function interpolate(template, vars) {
         return value !== undefined ? value : `{${key}}`; // garde {clé} si manquant
     });
 }
+
+async function reloadCurrentPartial() {
+    const detailContainer = document.getElementById('element-detail');
+    if (!detailContainer) return;
+
+    // Retrouver l’élément sélectionné
+    const currentRadio = document.querySelector('.element-list input[type="radio"]:checked');
+    if (!currentRadio) return;
+
+    const elementId = currentRadio.dataset.id;
+
+    // Loader visuel
+    detailContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">Chargement...</p>
+        </div>
+    `;
+
+    // Reconstruire l’URL du partial via le template fourni par Twig
+    const fetchURL = interpolate(fetchUrlTemplate, { id: elementId });
+
+    try {
+        const response = await fetch(fetchURL);
+        if (!response.ok) throw new Error('Erreur réseau');
+
+        // Injecter le nouveau partial
+        detailContainer.innerHTML = await response.text();
+
+        // Relancer l’événement
+        document.dispatchEvent(new CustomEvent('partial:loaded', {
+            detail: { target: detailContainer }
+        }));
+
+    } catch (error) {
+        detailContainer.innerHTML = `
+            <div class="text-danger p-3">Erreur lors du rechargement.</div>
+        `;
+        console.error("Erreur AJAX:", error);
+    }
+}
