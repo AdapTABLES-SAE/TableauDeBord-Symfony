@@ -14,38 +14,73 @@ class ApiClient
         private TrainingSerializer $trainingSerializer,
     ) {}
 
+    /**
+     * Récupère un enseignant depuis /data/teacher/{idProf}
+     */
     public function fetchTeacherData(string $teacherId): ?array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHER . $teacherId;
+
         $response = $this->client->request('GET', $url);
 
-        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : null;
     }
 
+    /**
+     * Récupère les élèves d'une classe :
+     * /data/students/teacher/{teacherId}/classroom/{classId}
+     */
     public function fetchStudentsByTeacherAndClass(string $teacherId, string $classId): array
     {
-        $url = ApiEndpoints::BASE_URL . 'data/students/teachers/' . $teacherId . '/classroom/' . $classId;
+        // ⚠ Correction IMPORTANTE : teacher (singulier)
+        $url =
+            ApiEndpoints::BASE_URL .
+            "data/students/teacher/" . $teacherId .
+            "/classroom/" . $classId;
+
         $response = $this->client->request('GET', $url);
 
-        return $response->getStatusCode() === 200 ? $response->toArray() : [];
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : [];
     }
 
+    /**
+     * Récupère un LearningPath complet d'un élève :
+     * /path/training/learner/{learnerId}
+     */
     public function fetchLearningPathByLearner(string $learnerId): ?array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_LEARNINGPATH . $learnerId;
+
         $response = $this->client->request('GET', $url);
 
-        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : null;
     }
 
+    /**
+     * Récupère la liste de tous les enseignants :
+     * /data/teachers/
+     */
     public function fetchAllTeachers(): array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHERS;
+
         $response = $this->client->request('GET', $url);
 
-        return $response->getStatusCode() === 200 ? $response->toArray() : [];
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : [];
     }
 
+    /**
+     * Crée un nouvel enseignant :
+     * POST /data/teacher/
+     */
     public function createTeacher(string $idProf, string $name): bool
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_PROF;
@@ -58,27 +93,34 @@ class ApiClient
         ]);
 
         $status = $response->getStatusCode();
-        $content = $response->getContent(false);
 
-        // succès API = status 2xx (comme Unity)
-        if ($status >= 200 && $status < 300) {
-            return true;
-        }
-
-        return false;
+        // L’API Unity considère un retour vide = succès
+        return ($status >= 200 && $status < 300);
     }
 
+    /**
+     * Statistiques d'un élève :
+     * /statistics/learner/{learner}
+     */
     public function fetchLearnerStatistics(string $learnerId): ?array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::STATS_URL . $learnerId;
+
         $response = $this->client->request('GET', $url);
 
-        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : null;
     }
 
+    /**
+     * Inventaire store d'un élève :
+     * /store/learner/{learner}
+     */
     public function fetchLearnerStore(string $learnerId): ?array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::EQUIP_URL . $learnerId;
+
         $response = $this->client->request('GET', $url);
 
         return $response->getStatusCode() === 200 ? $response->toArray() : null;
@@ -100,7 +142,8 @@ class ApiClient
     }
 
     /**
-     * Met à jour un élève existant dans /data/student (PUT)
+     * Mettre à jour un élève :
+     * PUT /data/student
      */
     public function updateLearnerData(string $classId, string $learnerId, string $prenom, string $nom): bool
     {

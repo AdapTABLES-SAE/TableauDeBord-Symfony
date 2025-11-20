@@ -22,7 +22,7 @@ class AdminTeacherController extends AbstractController
 
         $teachers = $this->apiClient->fetchAllTeachers();
 
-        return $this->render('admin/teachers/index.html.twig', [
+        return $this->render('admin/teachers/dashboard.html.twig', [
             'teachers' => $teachers,
         ]);
     }
