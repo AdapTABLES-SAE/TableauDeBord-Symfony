@@ -1,9 +1,6 @@
 body {
     background-color: #e3e0ff;
 }
-header, header img{
-    width: 30vw;
-}
 
 .dashboard-container{
     height: 80vh;

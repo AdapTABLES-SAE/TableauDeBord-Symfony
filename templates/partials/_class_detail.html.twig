@@ -5,75 +5,98 @@
 
 <div id="includedPartial" class="w-100 h-100 py-3">
     <!-- NOM DE LA CLASSE -->
-    <div style="height: 15%" class="mb-1 text-center">
+    <div class="section-title-area mb-1 text-center">
         <h2 class="fw-bold mb-3">Détails de ma classe</h2>
+
         <div class="input-group justify-content-center w-auto mx-auto">
             <label>
-                <input data-db-id="{{ class.id }}" id="classTitle" type="text" class="form-control text-center fw-semibold border-dark-subtle"
-                       value="{{ class.name }}" style="max-width: 250px;">
+                <input id="classTitle"
+                       type="text"
+                       class="save-able-field form-control text-center fw-semibold border-dark-subtle"
+                       value="{{ class.name }}">
             </label>
         </div>
     </div>
 
-    <!-- LISTE DES ÉLÈVES -->
-    <div style="height: 65%" class="mb-4 pb-2 px-5 rounded-bottom-5">
-        <div class="d-flex justify-content-between mb-3">
+    <!-- TITRE -->
+    <div class="section-students-area mb-4 pb-2 px-5 rounded-bottom-5">
+        <div class="d-flex justify-content-between align-items-end mb-3 position-relative">
             <h4 class="fw-bold mb-0">Liste des élèves</h4>
-            <div class="dropdown ">
-{#                todo: bulk edit#}
-                <button class="btn btn-warning dropdown-toggle disabled" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Modification de masse
-                </button>
-                <ul class="dropdown-menu">
-                    <li><a class="dropdown-item" href="#">Appliquer un entrainement</a></li>
-                    <li><a class="dropdown-item" href="#">Supprimer les élèves</a></li>
-                    <li><a class="dropdown-item" href="#">Something else here</a></li>
-                </ul>
+
+            <div class="d-flex flex-column gap-2 position-absolute end-0">
+                <!-- Top label -->
+                <label class="form-label select-mode-label d-none d-xl-block">
+                    <i class="bi bi-person-fill-add me-1"></i> Mode Selection Multiple
+                </label>
+
+                <!-- Switch + Actions -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check form-switch m-0">
+                        <input id="select-mode-switch" class="form-check-input" type="checkbox">
+                        <label class="form-check-label switch-state-label" for="select-mode-switch">
+                            Désactivé
+                        </label>
+                    </div>
+
+                    <div class="dropdown">
+                        <button id="select-mode-actions-dropdown"
+                                class="btn btn-close-white dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown">
+                            Actions
+                        </button>
+
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Appliquer un entrainement</a></li>
+                            <li><a class="dropdown-item" href="#">Supprimer les élèves</a></li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- LISTE DES ÉLÈVES -->
         {% if students|length > 0 %}
-            <div class="table-responsive rounded overflow-auto h-100" style="max-height: 100%">
+            <div class="table-responsive rounded overflow-auto table-container">
                 <table class="table table-hover align-middle mb-0 table-bordered">
-                    <thead class="table-light"  >
+                    <thead class="table-light">
                     <tr class="text-center">
                         <th scope="col" class="ps-4 text-start">Nom prénom</th>
                         <th scope="col">Identifiant</th>
                         <th scope="col">Entrainement</th>
-{#                        <th scope="col">Modifié</th>#}
                     </tr>
                     </thead>
-                    <tbody class="h-100">
-                    {% for student in students %}
 
-                        <tr
-                            data-row-edited="false" data-db-id="{{ student.id }}"  style="cursor: pointer"
-                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';"
-                        >
-                            <!-- Nom prénom -->
+                    <tbody>
+                    {% for student in students %}
+                        <tr data-row-edited="false"
+                            data-db-id="{{ student.id }}"
+                            style="cursor: pointer"
+                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';">
+
                             <td class="w-25 ps-4 fw-medium text-start">
                                 {{ student.prenomEleve }} {{ student.nomEleve }}
                             </td>
 
-                            <!-- Identifiant -->
                             <td class="w-25 ps-4 fw-medium text-center">
-                                {{ student.learnerId  }}
+                                {{ student.learnerId }}
                             </td>
 
-                            <!-- Entrainement -->
                             <td class="w-auto text-center">
                                 {% if student.entrainement is defined %}
-                                    <select data-db-id="{{ student.entrainement.id ?? ''}}" class="align-self-center m-auto w-75 form-select" aria-label="Training selector">
+                                    <select data-db-id="{{ student.entrainement.id ?? ''}}"
+                                            class="save-able-field align-self-center m-auto w-75 form-select ignore-row-click"
+                                            aria-label="Training selector">
                                         <option selected>{{ student.entrainement.nom ?? '' }}</option>
-{#                                        {% for training in global_trainings %}#}
-                                        <option value=""></option>
-                                        <option value="2">Two</option>
-                                        <option value="3">Three</option>
+                                        {% for training in trainingPaths %}
+                                            <option value="{{ training.id }}">{{ training.name }}</option>
+                                        {% endfor %}
                                     </select>
                                 {% else %}
                                     <span class="text-muted">ERREUR</span>
                                 {% endif %}
                             </td>
+
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -87,27 +110,112 @@
     </div>
 
     <!-- BOUTONS -->
-    <div style="height: 20%" class="d-flex justify-content-between align-items-center px-4">
-        <!-- DEL/CANCEL -->
+    <div class="section-buttons-area d-flex justify-content-between align-items-center px-4">
+        <!-- CANCEL -->
         <div class="d-flex gap-2">
-            <button class="btn text-black text" style="background-color: rgba(230,97,97,0.58)" >
-                <i class="bi bi-trash me-1"></i> Retirer un élève
-            </button>
             <button id="input_cancel_button" class="btn btn-outline-secondary disabled">
-                Annuler
+                Annuler les modifications
             </button>
         </div>
 
         <!-- SAVE/ADD -->
         <div class="d-flex gap-2">
-            <form id="save_form" action="{{ path('class_update') }}" method="POST">
+            <form id="save_form" action="{{ path('class_update', {'id': class.id }) }}" method="POST">
                 <button type="submit" id="input_save_button" class="btn btn-outline-success disabled">
                     Enregistrer
                 </button>
             </form>
-            <button class="btn btn-dark">
+
+            <button id="openAddStudentModal" class="btn btn-dark">
                 <i class="bi bi-plus-circle me-1"></i> Ajouter un élève
             </button>
         </div>
     </div>
+
+    <!-- MODAL BULK TRAINING APPLY -->
+    <div class="modal fade" id="trainingApplyModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Appliquer un entraînement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label for="trainingApplySelect" class="form-label">Choisissez l'entraînement :</label>
+                    <select id="trainingApplySelect" class="form-select">
+                        {% for training in trainingPaths %}
+                            <option value="{{ training.id }}">{{ training.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="trainingApplyConfirm" class="btn btn-primary">
+                        Appliquer
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AJOUT ÉLÈVE -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content border-0 shadow-lg">
+
+                <div class="modal-header bg-light-subtle text-black">
+                    <h5 class="modal-title fw-semibold">Ajouter un élève</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <form id="addStudentForm" class="d-flex flex-column gap-3"
+                          action="{{ path('class_add_student', {'id': class.id }) }}" method="POST">
+                        <div>
+                            <label class="form-label fw-semibold">Nom (*)</label>
+                            <input type="text"
+                                   id="studentLastName"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ex : Dupont"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-semibold">Prénom (*)</label>
+                            <input type="text"
+                                   id="studentFirstName"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ex : Marie"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-semibold">Identifiant</label>
+                            <input type="text"
+                                   id="studentId"
+                                   class="form-control form-control-lg"
+                                   placeholder="dupontm"
+                                   autocomplete="off">
+                        </div>
+                        <small class="text-muted fst-italic">
+                            * : Champs obligatoires
+                        </small>
+                    </form>
+                </div>
+
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button id="addStudentConfirm" class="btn btn-success px-4">
+                        Ajouter
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 </div>
+
+

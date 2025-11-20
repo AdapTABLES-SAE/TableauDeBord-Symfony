@@ -64,6 +64,7 @@ class Entrainement
     public function setLearningPathID(string $id): self
     {
         $this->learningPathID = $id;
+        if($this)
         return $this;
     }
 

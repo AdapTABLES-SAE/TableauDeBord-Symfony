@@ -37,8 +37,8 @@ class ApiClient
         // ⚠ Correction IMPORTANTE : teacher (singulier)
         $url =
             ApiEndpoints::BASE_URL .
-            "data/students/teacher/" . $teacherId .
-            "/classroom/" . $classId;
+            ApiEndpoints::GET_STUDENTS_1 . $teacherId . "/" .
+            ApiEndpoints::GET_STUDENTS_2. $classId;
 
         $response = $this->client->request('GET', $url);
 
@@ -163,9 +163,22 @@ class ApiClient
 
         $response = $this->client->request('GET', $url);
 
-        return $response->getStatusCode() === 200
-            ? $response->toArray()
-            : null;
+        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+    }
+
+    public function updateClassroomName(string $classId, string $name): bool {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::MODIF_CLASSROOM;
+
+        $payload = [
+            'id' => $classId,
+            'name' => $name
+        ];
+
+        $response = $this->client->request('PUT', $url, [
+            'json' => $payload
+        ]);
+
+        return $response->getStatusCode() === 200;
     }
 
     /**
@@ -177,20 +190,52 @@ class ApiClient
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::MODIF_STUDENT;
 
         $payload = [
-            'idClasse'    => $classId,
-            'idStudent'   => $learnerId,
-            'nomEleve'    => $nom,
+            'idClasse' => $classId,
+            'idStudent' => $learnerId,
+            'nomEleve' => $nom,
             'prenomEleve' => $prenom,
         ];
 
-        $response = $this->client->request('PUT', $url, ['json' => $payload]);
+        $response = $this->client->request('PUT', $url, [
+            'json' => $payload,
+        ]);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+    }
+    public function deleteStudent(string $teacherId, string $classId, string $studentId): bool
+    {
+        $url = ApiEndpoints::BASE_URL .
+            ApiEndpoints::DELETE_STUDENT_1 . $teacherId . "/" .
+            ApiEndpoints::DELETE_STUDENT_2 . $classId . "/"
+            . ApiEndpoints::DELETE_STUDENT_3 . $studentId;
+
+        $response = $this->client->request('DELETE', $url);
 
         return $response->getStatusCode() === 200;
     }
 
+    public function addStudent(string $classId, string $studentId, string $nomEleve, string $prenomEleve): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_STUDENT;
+
+        $payload = [
+            'idClasse'    => $classId,
+            'idStudent'   => $studentId,
+            'nomEleve'    => $nomEleve,
+            'prenomEleve' => $prenomEleve,
+        ];
+
+        $response = $this->client->request('POST', $url, [
+            'json' => $payload,
+        ]);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+    }
+
+
     /**
-     * Envoyer / mettre à jour un LearningPath :
-     * POST /path/training/
+     * Envoie / met à jour un parcours complet dans /path/training
+     * ⚠️ Important : la structure doit coller à ce que ton PathManager Java attend.
      */
     public function assignTrainingToLearner(Eleve $eleve, Entrainement $entrainement): bool
     {
@@ -202,8 +247,6 @@ class ApiClient
             'json' => $payload,
         ]);
 
-        $status = $response->getStatusCode();
-
-        return ($status >= 200 && $status < 300);
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
 }
