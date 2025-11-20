@@ -42,14 +42,35 @@ class AdminTeacherController extends AbstractController
             return $this->redirectToRoute('admin_teacher_list');
         }
 
-        $ok = $this->apiClient->createTeacher($idProf, $name);
+        $result = $this->apiClient->createTeacher($idProf, $name);
 
-        if ($ok) {
-            $this->addFlash('success', 'Enseignant ajouté avec succès !');
+        if ($result['success']) {
+            $this->addFlash('success', "Enseignant « $name » ajouté avec succès !");
         } else {
-            $this->addFlash('error', 'Erreur API : impossible d’ajouter cet enseignant.');
+            $msg = $result['error'] ?? "Erreur inconnue.";
+            $this->addFlash('error', $msg);
         }
 
         return $this->redirectToRoute('admin_teacher_list');
     }
+
+    #[Route('/admin/teachers/delete/{idProf}', name: 'admin_teacher_delete', methods: ['POST'])]
+    public function delete(string $idProf, SessionInterface $session): Response
+    {
+        if (!$session->get('is_admin')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
+        $ok = $this->apiClient->deleteTeacher($idProf);
+
+        if ($ok) {
+            $this->addFlash('success', "Enseignant supprimé avec succès.");
+        } else {
+            $this->addFlash('error', "Impossible de supprimer l’enseignant (API).");
+        }
+
+        return $this->redirectToRoute('admin_teacher_list');
+    }
+
+
 }

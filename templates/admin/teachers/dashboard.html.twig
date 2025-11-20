@@ -1,4 +1,4 @@
-{# templates/admin/teachers/admin_dashboard.html.twig #}
+{# templates/admin/teachers/dashboard.html.twig #}
 {% extends 'base.html.twig' %}
 
 {% block title %}Administration – Enseignants{% endblock %}
@@ -10,52 +10,52 @@
 
 {% block body %}
 
+    {% include 'components/header.html.twig' with {
+        breadcrumb_items: [
+            {'label': 'Création enseignant', 'url': '#'}
+        ]
+    } %}
+
+    {# Composant Toast (structure + JS global) #}
+    {% include 'components/toast.html.twig' %}
+
     <div class="admin-wrapper container py-4">
 
         <div class="admin-header d-flex justify-content-between align-items-center mb-4">
             <h2 class="page-title m-0">
                 <i class="bi bi-shield-lock-fill me-2"></i>Gestion des enseignants
             </h2>
-
-            <a href="{{ path('teacher_logout') }}" class="btn btn-outline-violet">
-                <i class="bi bi-box-arrow-right me-1"></i> Déconnexion
-            </a>
         </div>
-
-
-        {# Messages flash #}
-        {% for label, messages in app.flashes %}
-            {% for m in messages %}
-                <div class="alert alert-{{ label }} shadow-sm">{{ m }}</div>
-            {% endfor %}
-        {% endfor %}
 
         <div class="admin-card shadow-sm p-4 mb-4 rounded-4">
             <h4 class="section-title mb-3">
                 <i class="bi bi-person-plus-fill me-2"></i> Ajouter un enseignant
             </h4>
 
-            <form action="{{ path('admin_teacher_add') }}" method="POST" class="row g-3">
+            <form action="{{ path('admin_teacher_add') }}" method="POST">
+                <div class="row g-3 align-items-end">
 
-                <div class="col-md-5">
-                    <label class="form-label">Identifiant</label>
-                    <input type="text" name="idProf" class="form-control form-control-lg admin-input" required>
+                    <div class="col-md-5">
+                        <label class="form-label">Identifiant</label>
+                        <input type="text" name="idProf" class="form-control form-control-lg admin-input" required>
+                    </div>
+
+                    <div class="col-md-5">
+                        <label class="form-label">Nom complet</label>
+                        <input type="text" name="name" class="form-control form-control-lg admin-input" required>
+                    </div>
+
+                    <div class="col-md-2 d-flex">
+                        <button class="btn btn-add-teacher w-100">
+                            <i class="bi bi-plus-circle me-1"></i>
+                            Ajouter
+                        </button>
+                    </div>
+
                 </div>
-
-                <div class="col-md-5">
-                    <label class="form-label">Nom complet</label>
-                    <input type="text" name="name" class="form-control form-control-lg admin-input" required>
-                </div>
-
-                <div class="col-md-2 d-flex align-items-end">
-                    <button class="btn btn-violet w-100 py-2">
-                        <i class="bi bi-plus-circle me-1"></i> Ajouter
-                    </button>
-                </div>
-
             </form>
-        </div>
 
+        </div>
 
         <div class="admin-card shadow-sm p-4 rounded-4">
             <h4 class="section-title mb-3">
@@ -68,14 +68,22 @@
                     <tr>
                         <th>Identifiant</th>
                         <th>Nom</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                     </thead>
-
                     <tbody>
                     {% for t in teachers %}
                         <tr>
                             <td class="fw-semibold">{{ t.idProf }}</td>
                             <td>{{ t.name }}</td>
+                            <td class="text-center">
+                                <form action="{{ path('admin_teacher_delete', { idProf: t.idProf }) }}" method="POST"
+                                      onsubmit="return confirm('Supprimer l’enseignant {{ t.name }} ?');">
+                                    <button class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-trash-fill"></i> Supprimer
+                                    </button>
+                                </form>
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -87,4 +95,41 @@
 
     </div>
 
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+
+    {# On récupère les flashs ICI, dans le même bloc que le JS #}
+    {% set successMessages = app.flashes('success') %}
+    {% set errorMessages = app.flashes('error') %}
+
+    <script type="module">
+        import { showToast } from "{{ asset('js/toast/toast.js') }}";
+
+        const toastEl = document.getElementById('toast');
+
+        const successMessages = {{ successMessages|json_encode|raw }};
+        const errorMessages = {{ errorMessages|json_encode|raw }};
+
+        // Succès : on affiche un toast pour chaque message
+        successMessages.forEach((msg) => {
+            if (!toastEl) return;
+
+            toastEl.dataset.successTitle = "Succès";
+            toastEl.dataset.successMessage = msg || "Opération réalisée avec succès.";
+
+            showToast(true);
+        });
+
+        // Erreurs : idem
+        errorMessages.forEach((msg) => {
+            if (!toastEl) return;
+
+            toastEl.dataset.errorTitle = "Erreur";
+            toastEl.dataset.errorMessage = msg || "Une erreur est survenue.";
+
+            showToast(false);
+        });
+    </script>
 {% endblock %}

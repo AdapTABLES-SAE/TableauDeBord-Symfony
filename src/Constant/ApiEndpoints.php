@@ -27,6 +27,6 @@ final class ApiEndpoints
     public const GET_LEVEL_2 = "objective/";
     public const GET_LEVEL_3 = "level/";
     public const SAVE_LEARNINGPATH = "path/training/";
-    public const DELETE_PROF = "data/teachers/";
+    public const DELETE_PROF = "data/teacher/";
     public const GET_TEACHERS = "data/teachers/";
 }

@@ -1,5 +1,4 @@
 /* === Admin Teachers Page === */
-
 body {
     background: #f0edff;
 }
@@ -8,73 +7,111 @@ body {
     max-width: 1100px;
 }
 
-/* ----- Header Title ----- */
-.page-title {
+/* ----- Cards, titres, inputs... tous préfixés ----- */
+
+.admin-wrapper .page-title {
     color: #4a3ac7;
     font-weight: 700;
 }
 
-/* ----- Card Container ----- */
-.admin-card {
+.admin-wrapper .admin-card {
     background: #ffffff;
     border-radius: 1rem;
     border-left: 6px solid #7a5af8;
 }
 
-/* ----- Section Titles ----- */
-.section-title {
+.admin-wrapper .section-title {
     color: #6a47f8;
     font-weight: 600;
 }
 
-/* ----- Inputs ----- */
-.admin-input {
+.admin-wrapper .admin-input {
     border-radius: .6rem;
     border: 1px solid #c8bff5;
 }
-
-/* Hover effect */
-.admin-input:focus {
+.admin-wrapper .admin-input:focus {
     border-color: #7a5af8;
     box-shadow: 0 0 0 .2rem rgba(122, 90, 248, .3);
 }
 
 /* ----- Table ----- */
-.admin-table {
+.admin-wrapper .admin-table {
     border-radius: .8rem;
     overflow: hidden;
 }
 
-.table-violet {
+.admin-wrapper .table-violet {
     background-color: #7a5af8 !important;
 }
 
-/* Hover row */
-.admin-table tbody tr:hover {
+.admin-wrapper .admin-table tbody tr:hover {
     background-color: #eee8ff;
 }
 
-/* ----- Buttons ----- */
-
-.btn-violet {
+/* ----- Buttons admin seulement ----- */
+.admin-wrapper .btn-violet {
     background-color: #7a5af8;
     color: white;
     border-radius: .5rem;
     transition: .2s;
 }
 
-.btn-violet:hover {
+.admin-wrapper .btn-violet:hover {
     background-color: #6442d4;
     color: white;
 }
 
-.btn-outline-violet {
+.admin-wrapper .btn-outline-violet {
     border: 1px solid #7a5af8;
     color: #7a5af8;
     border-radius: .5rem;
 }
 
-.btn-outline-violet:hover {
+.admin-wrapper .btn-outline-violet:hover {
     background-color: #7a5af8;
     color: white;
+}
+
+/* ---- Bouton Ajouter ---- */
+
+.btn-add-teacher {
+    background: #7a5af8;
+    border: none;
+    color: white;
+    font-weight: 600;
+    font-size: 1.05rem;
+
+    padding: 0.9rem 1.5rem;
+    border-radius: 0.8rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+
+    box-shadow: 0 4px 12px rgba(122, 90, 248, .25);
+    transition: all .2s ease;
+}
+
+.btn-add-teacher:hover {
+    background: #6848e0;
+    box-shadow: 0 6px 15px rgba(122, 90, 248, .35);
+    transform: translateY(-1px);
+}
+
+.btn-add-teacher:active {
+    transform: scale(.98);
+}
+
+/* Alignement parfait avec les inputs */
+.row.align-items-end .col-md-2 button {
+    height: calc(100% - 2px);
+}
+
+/* Correction mobile */
+@media (max-width: 768px) {
+    .btn-add-teacher {
+        margin-top: .5rem;
+        width: 100%;
+    }
 }
