@@ -39,7 +39,6 @@ class ApiClient
             ApiEndpoints::BASE_URL .
             ApiEndpoints::GET_STUDENTS_1 . $teacherId . "/" .
             ApiEndpoints::GET_STUDENTS_2. $classId;
-        dd($url);
 
         $response = $this->client->request('GET', $url);
 
