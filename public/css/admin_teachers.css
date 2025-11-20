@@ -1,0 +1,80 @@
+/* === Admin Teachers Page === */
+
+body {
+    background: #f0edff;
+}
+
+.admin-wrapper {
+    max-width: 1100px;
+}
+
+/* ----- Header Title ----- */
+.page-title {
+    color: #4a3ac7;
+    font-weight: 700;
+}
+
+/* ----- Card Container ----- */
+.admin-card {
+    background: #ffffff;
+    border-radius: 1rem;
+    border-left: 6px solid #7a5af8;
+}
+
+/* ----- Section Titles ----- */
+.section-title {
+    color: #6a47f8;
+    font-weight: 600;
+}
+
+/* ----- Inputs ----- */
+.admin-input {
+    border-radius: .6rem;
+    border: 1px solid #c8bff5;
+}
+
+/* Hover effect */
+.admin-input:focus {
+    border-color: #7a5af8;
+    box-shadow: 0 0 0 .2rem rgba(122, 90, 248, .3);
+}
+
+/* ----- Table ----- */
+.admin-table {
+    border-radius: .8rem;
+    overflow: hidden;
+}
+
+.table-violet {
+    background-color: #7a5af8 !important;
+}
+
+/* Hover row */
+.admin-table tbody tr:hover {
+    background-color: #eee8ff;
+}
+
+/* ----- Buttons ----- */
+
+.btn-violet {
+    background-color: #7a5af8;
+    color: white;
+    border-radius: .5rem;
+    transition: .2s;
+}
+
+.btn-violet:hover {
+    background-color: #6442d4;
+    color: white;
+}
+
+.btn-outline-violet {
+    border: 1px solid #7a5af8;
+    color: #7a5af8;
+    border-radius: .5rem;
+}
+
+.btn-outline-violet:hover {
+    background-color: #7a5af8;
+    color: white;
+}
