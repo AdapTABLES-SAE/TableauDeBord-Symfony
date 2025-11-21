@@ -37,7 +37,7 @@ class TeacherDashboardController extends AbstractController
 
         $js = $assets->getUrl('js/partials/classePartial.js');
         $css = $assets->getUrl('css/_class_partial.css');
-        $twigFile = "partials/_class_detail.html.twig";
+        $twigFile = "partials/_classDetails.html.twig";
 
         // Route Path must have {id} that will be interpolated
         $route = $router->getRouteCollection()->get('class_details')->getPath();
@@ -49,7 +49,7 @@ class TeacherDashboardController extends AbstractController
             ]
         ];
 
-        return $this->render('components/element_dashboard.html.twig',
+        return $this->render('components/dashboard.html.twig',
         [
             "partial_script" => "$js",
             "partial_css" => "$css",
@@ -82,7 +82,7 @@ class TeacherDashboardController extends AbstractController
         $students = $class->getEleves();
 
         // todo: check permissions?
-        return $this->render('partials/_class_detail.html.twig', [
+        return $this->render('partials/_classDetails.html.twig', [
             'class' => $class,
             'students' => $students,
             'trainingPaths' => $trainingPaths
@@ -179,7 +179,7 @@ class TeacherDashboardController extends AbstractController
 //            throw $this->createNotFoundException('Élément introuvable.');
 //        }
 //
-//        return $this->render('partials/_class_detail.html.twig', [
+//        return $this->render('partials/_classDetails.html.twig', [
 //            'element' => $element,
 //        ]);
 //    }
