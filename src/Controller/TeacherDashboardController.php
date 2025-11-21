@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Constant\ApiEndpoints;
 use App\Entity\Classe;
 use App\Entity\Eleve;
+use App\Entity\Enseignant;
 use App\Entity\Entrainement;
 use App\Repository\ClasseRepository;
 use App\Repository\EnseignantRepository;
@@ -23,7 +25,7 @@ use Symfony\Component\Routing\RouterInterface;
 class TeacherDashboardController extends AbstractController
 {
     #[Route('/enseignant/classes', name: 'class_dashboard')]
-    public function index(EnseignantRepository $repo, RouterInterface $router, SessionInterface $session, Packages $assets): Response
+    public function index(EntityManagerInterface $em, RouterInterface $router, SessionInterface $session, Packages $assets): Response
     {
         if (!$session->get('teacher_id')) {
             // Redirige vers la page de login
@@ -32,7 +34,7 @@ class TeacherDashboardController extends AbstractController
 
         //Get login ID
         $teacherId = $session->get('teacher_id');
-        $teacher = $repo->find($teacherId);
+        $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
         $classes = $teacher->getClasses();
 
         $js = $assets->getUrl('js/partials/classePartial.js');
@@ -41,6 +43,15 @@ class TeacherDashboardController extends AbstractController
 
         // Route Path must have {id} that will be interpolated
         $route = $router->getRouteCollection()->get('class_details')->getPath();
+
+
+        $defaultTraining = $em
+            ->getRepository(Entrainement::class)
+            ->findOneBy([
+                'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID
+            ]);
+//        dd($defaultTraining);
+
 
         $breadcrumbItems = [
             [

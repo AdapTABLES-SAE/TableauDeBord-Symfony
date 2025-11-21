@@ -37,7 +37,8 @@ class TrainingSyncService
         $learningPathID = $data['learningPathID'];
 
         // ignore si entrainement par défaut
-        if($learningPathID === ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId())){
+        $isDefaultTraining = $learningPathID === ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId());
+        if($isDefaultTraining){
             return;
         }
 

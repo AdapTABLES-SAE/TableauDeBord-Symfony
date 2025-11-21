@@ -34,6 +34,13 @@ class TeacherAuthController extends AbstractController
                 $error = 'Veuillez saisir votre identifiant enseignant.';
             } else {
 
+                // Crée entrainement par défaut si manquant
+                $created = $this->trainingSync->isDefaultTrainingCreated();
+//                dd($created);
+                if(!$created){
+                    $this->trainingSync->buildDefaultTrainingDoctrine();
+                }
+
                 // --- API CALL ---
                 $enseignantData = $this->apiClient->fetchTeacherData($identifier);
 
@@ -52,12 +59,6 @@ class TeacherAuthController extends AbstractController
                     $this->classroomSync->syncClassesAndStudents($enseignant, $enseignantData);
 
 
-                    // Crée entrainement par défaut si manquant
-                    $created = $this->trainingSync->isDefaultTrainingCreated();
-                    //dd($created);
-                    if(!$created){
-                        $this->trainingSync->buildDefaultTrainingDoctrine();
-                    }
 
                     // Synchronisation des entrainements des élèves
                     foreach ($enseignant->getClasses() as $classe) {
