@@ -154,6 +154,44 @@ class ApiClient
     }
 
     /**
+     * Récupère la progression d'un élève pour un objectif + niveau.
+     *
+     * Correspond à :
+     *   GET /results/learner/{learnerID}/objective/{objID}/level/{levelID}
+     *
+     * Retourne null si l'appel échoue ou n'est pas en 200.
+     */
+    public function fetchObjectiveLevelResults(string $learnerId, string $objectiveId, string $levelId): ?array
+    {
+        $url = ApiEndpoints::BASE_URL
+            . ApiEndpoints::GET_LEVEL_1 . $learnerId . '/'
+            . ApiEndpoints::GET_LEVEL_2 . $objectiveId . '/'
+            . ApiEndpoints::GET_LEVEL_3 . $levelId;
+
+        try {
+            $response = $this->client->request('GET', $url);
+
+            if ($response->getStatusCode() !== 200) {
+                return null;
+            }
+
+            // Exemple JSON :
+            // {
+            //   "globalEncounters": 0,
+            //   "progresses": [
+            //     { "idTask": "...", "currentSuccess": 0, "currentEncounters": 0, "typeTask": "C1" }
+            //   ],
+            //   "globalSuccess": 0
+            // }
+            return $response->toArray(false);
+        } catch (\Throwable $e) {
+            // Erreur réseau, 500, etc. => on considère "pas de données"
+            return null;
+        }
+    }
+
+
+    /**
      * Inventaire store d'un élève :
      * /store/learner/{learner}
      */
