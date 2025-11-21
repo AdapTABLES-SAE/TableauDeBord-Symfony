@@ -2,7 +2,9 @@
 
 namespace App\Service;
 
+use App\Constant\ApiEndpoints;
 use App\Entity\Eleve;
+use App\Entity\Enseignant;
 use App\Entity\Entrainement;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -27,5 +29,19 @@ class TrainingAssignmentService
 
         // Envoi à l’API
         return $this->apiClient->assignTrainingToLearner($eleve, $entrainement);
+    }
+
+    public function assignDefaultTraining(Eleve $eleve): bool
+    {
+        $defaultTraining = $this->em
+            ->getRepository(Entrainement::class)
+            ->findOneBy([
+                'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID
+            ]);
+
+        $defaultTraining->setLearningPathID(ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId()));
+        $defaultTraining->setName("");
+
+        return $this->apiClient->assignTrainingToLearner($eleve, $defaultTraining);
     }
 }

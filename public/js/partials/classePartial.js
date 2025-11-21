@@ -146,9 +146,7 @@ document.addEventListener("partial:loaded", () => {
 
                 if (select) {
                     const trainingValue = select.value;
-                    if (trainingValue && trainingValue !== "") {
-                        data.append(`students[${dbId}][trainingPathId]`, trainingValue);
-                    }
+                    data.append(`students[${dbId}][trainingPathId]`, trainingValue);
                 }
             });
 
@@ -164,7 +162,7 @@ document.addEventListener("partial:loaded", () => {
                 }
             });
 
-            // console.log(JSON.stringify(obj, null, 2));
+            console.log(JSON.stringify(obj, null, 2));
 
             try {
                 const response = await fetch(form.action, {

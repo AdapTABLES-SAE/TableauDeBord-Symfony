@@ -9,6 +9,7 @@ use App\Repository\ClasseRepository;
 use App\Repository\EnseignantRepository;
 use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
+use App\Service\TrainingSyncService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Asset\Packages;
@@ -89,7 +90,9 @@ class TeacherDashboardController extends AbstractController
     }
 
     #[Route('/class/{id}/update-infos', name: 'class_update', methods: ['POST'])]
-    public function updateInfos(int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient, TrainingAssignmentService $trainingAssignmentService): JsonResponse
+    public function updateInfos(
+        int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient,
+        TrainingSyncService $trainingSyncService,TrainingAssignmentService $trainingAssignmentService): JsonResponse
     {
         $classData    = $request->request->all('class');
         $studentsData = $request->request->all('students');
@@ -114,18 +117,18 @@ class TeacherDashboardController extends AbstractController
                 continue;
             }
 
-            if (isset($data['studentId'])) {
-                $student->setLearnerId($data['studentId']);
-            }
-
-            if (isset($data['trainingPathId']) && $data['trainingPathId'] !== "") {
-                $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
-                if ($entrainement) {
-                    $trainingAssignmentService->assignTraining($student, $entrainement);
+            if (isset($data['trainingPathId'])) {
+                if($data['trainingPathId'] !== "") {
+                    $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
+                    if ($entrainement) {
+                        $trainingAssignmentService->assignTraining($student, $entrainement);
+                    }
+                }else{
+                    $trainingAssignmentService->assignDefaultTraining($student);
+                    $student->setEntrainement(null);
                 }
             }
         }
-
         $em->flush();
 
         return new JsonResponse(['success' => true]);

@@ -83,20 +83,26 @@
                             </td>
 
                             <td class="w-auto text-center">
-                                {% if student.entrainement is defined %}
-                                    <select data-db-id="{{ student.entrainement.id ?? ''}}"
-                                            class="save-able-field align-self-center m-auto w-75 form-select ignore-row-click"
-                                            aria-label="Training selector">
-                                        <option selected>{{ student.entrainement.nom ?? '' }}</option>
+                                    <select
+                                        data-db-id="{{ student.entrainement.id ?? '' }}"
+                                        class="save-able-field align-self-center m-auto w-75 form-select ignore-row-click"
+                                        aria-label="Training selector"
+                                    >
+                                        <option
+                                            value=""
+                                        ></option>
                                         {% for training in trainingPaths %}
-                                            <option value="{{ training.id }}">{{ training.name }}</option>
+                                            <option
+                                                value="{{ training.id }}"
+                                                {% if student.entrainement and training.id == student.entrainement.id %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                {{ training.name }}
+                                            </option>
                                         {% endfor %}
                                     </select>
-                                {% else %}
-                                    <span class="text-muted">ERREUR</span>
-                                {% endif %}
                             </td>
-
                         </tr>
                     {% endfor %}
                     </tbody>
@@ -175,20 +181,20 @@
                     <form id="addStudentForm" class="d-flex flex-column gap-3"
                           action="{{ path('class_add_student', {'id': class.id }) }}" method="POST">
                         <div>
-                            <label class="form-label fw-semibold">Nom (*)</label>
-                            <input type="text"
-                                   id="studentLastName"
-                                   class="form-control form-control-lg"
-                                   placeholder="Ex : Dupont"
-                                   required>
-                        </div>
-
-                        <div>
                             <label class="form-label fw-semibold">Prénom (*)</label>
                             <input type="text"
                                    id="studentFirstName"
                                    class="form-control form-control-lg"
                                    placeholder="Ex : Marie"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-semibold">Nom (*)</label>
+                            <input type="text"
+                                   id="studentLastName"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ex : Dupont"
                                    required>
                         </div>
 
