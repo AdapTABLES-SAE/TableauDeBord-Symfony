@@ -59,7 +59,6 @@ class TeacherAuthController extends AbstractController
                         $this->trainingSync->buildDefaultTrainingDoctrine();
                     }
 
-
                     // Synchronisation des entrainements des élèves
                     foreach ($enseignant->getClasses() as $classe) {
                         foreach ($classe->getEleves() as $eleve) {
