@@ -6,196 +6,285 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 use App\Constant\ApiEndpoints;
 use App\Entity\Eleve;
 use App\Entity\Entrainement;
-use App\Service\TrainingSerializer;
 
-/**
- * Service utilitaire pour interagir avec l'API AdapTABLES.
- * Chaque méthode correspond à un endpoint spécifique.
- */
 class ApiClient
 {
-    private HttpClientInterface $client;
-    private ?TrainingSerializer $trainingSerializer = null;
-
-    public function __construct(HttpClientInterface $client, ?TrainingSerializer $trainingSerializer = null)
-    {
-        $this->client = $client;
-        $this->trainingSerializer = $trainingSerializer;
-    }
+    public function __construct(
+        private HttpClientInterface $client,
+        private TrainingSerializer $trainingSerializer,
+    ) {}
 
     /**
-     * Récupère les informations d'un enseignant depuis l'API
-     * Endpoint : GET /data/teacher/{teacherID}
+     * Récupère un enseignant depuis /data/teacher/{idProf}
      */
     public function fetchTeacherData(string $teacherId): ?array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHER . $teacherId;
 
-        try {
-            $response = $this->client->request('GET', $url);
-            if ($response->getStatusCode() === 200) {
-                return $response->toArray();
-            }
-        } catch (\Throwable $e) {
-            dump("X Erreur fetchTeacherData($teacherId) : " . $e->getMessage());
-        }
+        $response = $this->client->request('GET', $url);
 
-        return null;
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : null;
     }
 
     /**
-     * Récupère les élèves d’une classe d’un enseignant
-     * Endpoint : GET /data/students/teacher/{teacherID}/classroom/{classID}
+     * Récupère les élèves d'une classe :
+     * /data/students/teacher/{teacherId}/classroom/{classId}
      */
     public function fetchStudentsByTeacherAndClass(string $teacherId, string $classId): array
     {
-        $url = ApiEndpoints::BASE_URL . 'data/students/teacher/' . $teacherId . '/classroom/' . $classId;
+        // ⚠ Correction IMPORTANTE : teacher (singulier)
+        $url =
+            ApiEndpoints::BASE_URL .
+            ApiEndpoints::GET_STUDENTS_1 . $teacherId . "/" .
+            ApiEndpoints::GET_STUDENTS_2. $classId;
 
-        try {
-            $response = $this->client->request('GET', $url);
-            if ($response->getStatusCode() === 200) {
-                return $response->toArray();
-            }
-        } catch (\Throwable $e) {
-            dump("X Erreur fetchStudentsByTeacherAndClass($teacherId/$classId) : " . $e->getMessage());
-        }
+        $response = $this->client->request('GET', $url);
 
-        return [];
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : [];
     }
 
     /**
-     * Récupère le parcours d'apprentissage (training) d’un élève
-     * Endpoint : GET /path/training/learner/{learnerId}
+     * Récupère un LearningPath complet d'un élève :
+     * /path/training/learner/{learnerId}
      */
     public function fetchLearningPathByLearner(string $learnerId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . 'path/training/learner/' . $learnerId;
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_LEARNINGPATH . $learnerId;
 
-        try {
-            $response = $this->client->request('GET', $url);
-            $status = $response->getStatusCode();
+        $response = $this->client->request('GET', $url);
 
-            if ($status !== 200) {
-                dump("⚠️ API /path/training/learner/$learnerId → statut HTTP $status");
-                return null;
-            }
-
-            $content = $response->getContent(false);
-            $data = json_decode($content, true);
-
-            if (json_last_error() !== JSON_ERROR_NONE || !$data) {
-                dump("⚠️ JSON invalide pour $learnerId : " . substr($content, 0, 300));
-                return null;
-            }
-
-            if (!isset($data['learningPathID'])) {
-                dump("⚠️ Données incomplètes pour $learnerId : ", $data);
-                return null;
-            }
-
-            return $data;
-        } catch (\Throwable $e) {
-            dump("X Erreur fetchLearningPathByLearner($learnerId) : " . $e->getMessage());
-            return null;
-        }
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : null;
     }
 
     /**
-     * Récupère les statistiques générales d’un élève
-     * Endpoint : GET /statistics/learner/{learnerId}
+     * Récupère la liste de tous les enseignants :
+     * /data/teachers/
+     */
+    public function fetchAllTeachers(): array
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHERS;
+
+        $response = $this->client->request('GET', $url);
+
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : [];
+    }
+
+    /**
+     * Crée un nouvel enseignant :
+     * POST /data/teacher/
+     */
+    public function createTeacher(string $idProf, string $name): array
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_PROF;
+
+        try {
+            $response = $this->client->request('POST', $url, [
+                'json' => [
+                    'idProf' => $idProf,
+                    'name'   => $name,
+                ],
+            ]);
+
+            $status = $response->getStatusCode();
+            $content = trim($response->getContent(false));
+
+            if ($status >= 200 && $status < 300) {
+                return ['success' => true];
+            }
+
+            if (str_contains(strtolower($content), 'already') || str_contains($content, 'existe')) {
+                return [
+                    'success' => false,
+                    'error' => "Un enseignant avec cet identifiant existe déjà."
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => "Erreur API : code HTTP $status"
+            ];
+
+        } catch (\Exception $e) {
+
+            return [
+                'success' => false,
+                'error' => "Connexion impossible à l'API."
+            ];
+        }
+    }
+
+
+    /**
+     * Supprimer un Enseignant
+     */
+    public function deleteTeacher(string $idProf): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::DELETE_PROF . $idProf;
+
+        $response = $this->client->request('DELETE', $url);
+
+        $status = $response->getStatusCode();
+
+        // L'API renvoie un body vide quand c'est OK
+        return $status >= 200 && $status < 300;
+    }
+
+
+    /**
+     * Statistiques d'un élève :
+     * /statistics/learner/{learner}
      */
     public function fetchLearnerStatistics(string $learnerId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . 'statistics/learner/' . $learnerId;
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::STATS_URL . $learnerId;
+
+        $response = $this->client->request('GET', $url);
+
+        return $response->getStatusCode() === 200
+            ? $response->toArray()
+            : null;
+    }
+
+    /**
+     * Récupère la progression d'un élève pour un objectif + niveau.
+     *
+     * Correspond à :
+     *   GET /results/learner/{learnerID}/objective/{objID}/level/{levelID}
+     *
+     * Retourne null si l'appel échoue ou n'est pas en 200.
+     */
+    public function fetchObjectiveLevelResults(string $learnerId, string $objectiveId, string $levelId): ?array
+    {
+        $url = ApiEndpoints::BASE_URL
+            . ApiEndpoints::GET_LEVEL_1 . $learnerId . '/'
+            . ApiEndpoints::GET_LEVEL_2 . $objectiveId . '/'
+            . ApiEndpoints::GET_LEVEL_3 . $levelId;
 
         try {
             $response = $this->client->request('GET', $url);
-            return $response->getStatusCode() === 200 ? $response->toArray() : null;
+
+            if ($response->getStatusCode() !== 200) {
+                return null;
+            }
+
+            // Exemple JSON :
+            // {
+            //   "globalEncounters": 0,
+            //   "progresses": [
+            //     { "idTask": "...", "currentSuccess": 0, "currentEncounters": 0, "typeTask": "C1" }
+            //   ],
+            //   "globalSuccess": 0
+            // }
+            return $response->toArray(false);
         } catch (\Throwable $e) {
-            dump("X Erreur fetchLearnerStatistics($learnerId) : " . $e->getMessage());
+            // Erreur réseau, 500, etc. => on considère "pas de données"
             return null;
         }
     }
 
+
     /**
-     * Récupère les items d’un élève
-     * Endpoint : GET /store/learner/{learnerId}
+     * Inventaire store d'un élève :
+     * /store/learner/{learner}
      */
     public function fetchLearnerStore(string $learnerId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . 'store/learner/' . $learnerId;
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::EQUIP_URL . $learnerId;
 
-        try {
-            $response = $this->client->request('GET', $url);
-            return $response->getStatusCode() === 200 ? $response->toArray() : null;
-        } catch (\Throwable $e) {
-            dump("X Erreur fetchLearnerStore($learnerId) : " . $e->getMessage());
-            return null;
-        }
+        $response = $this->client->request('GET', $url);
+
+        return $response->getStatusCode() === 200 ? $response->toArray() : null;
+    }
+
+    public function updateClassroomName(string $classId, string $name): bool {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::MODIF_CLASSROOM;
+
+        $payload = [
+            'id' => $classId,
+            'name' => $name
+        ];
+
+        $response = $this->client->request('PUT', $url, [
+            'json' => $payload
+        ]);
+
+        return $response->getStatusCode() === 200;
     }
 
     /**
-     * Récupère les pièces d’un élève
-     * Endpoint : GET /coins/learner/{learnerId}
-     */
-    public function fetchLearnerCoins(string $learnerId): ?array
-    {
-        $url = ApiEndpoints::BASE_URL . 'coins/learner/' . $learnerId;
-
-        try {
-            $response = $this->client->request('GET', $url);
-            return $response->getStatusCode() === 200 ? $response->toArray() : null;
-        } catch (\Throwable $e) {
-            dump("X Erreur fetchLearnerCoins($learnerId) : " . $e->getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Associe un entraînement à un élève (POST /path/training)
-     * Envoie la structure complète du parcours
-     */
-    public function assignTrainingToLearner(Eleve $eleve, Entrainement $entrainement): void
-    {
-        if (!$this->trainingSerializer) {
-            throw new \RuntimeException('TrainingSerializer non injecté dans ApiClient.');
-        }
-
-        $url = ApiEndpoints::BASE_URL . 'path/training';
-        $payload = $this->trainingSerializer->toApiPayload($entrainement, $eleve);
-
-        try {
-            $response = $this->client->request('POST', $url, ['json' => $payload]);
-            if ($response->getStatusCode() !== 200) {
-                throw new \RuntimeException(
-                    "Erreur API POST /path/training : " .
-                    $response->getStatusCode() . ' - ' . $response->getContent(false)
-                );
-            }
-        } catch (\Throwable $e) {
-            dump("X assignTrainingToLearner({$eleve->getLearnerId()}) : " . $e->getMessage());
-        }
-    }
-
-    /**
-     * Modifie le prénom ou le nom de l'élève (PUT /data/students/learner/{learnerId})
+     * Mettre à jour un élève :
+     * PUT /data/student
      */
     public function updateLearnerData(string $classId, string $learnerId, string $prenom, string $nom): bool
     {
-        $url = ApiEndpoints::BASE_URL . 'data/student';
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::MODIF_STUDENT;
+
+        $payload = [
+            'idClasse' => $classId,
+            'idStudent' => $learnerId,
+            'nomEleve' => $nom,
+            'prenomEleve' => $prenom,
+        ];
+
+        $response = $this->client->request('PUT', $url, [
+            'json' => $payload,
+        ]);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+    }
+    public function deleteStudent(string $teacherId, string $classId, string $studentId): bool
+    {
+        $url = ApiEndpoints::BASE_URL .
+            ApiEndpoints::DELETE_STUDENT_1 . $teacherId . "/" .
+            ApiEndpoints::DELETE_STUDENT_2 . $classId . "/"
+            . ApiEndpoints::DELETE_STUDENT_3 . $studentId;
+
+        $response = $this->client->request('DELETE', $url);
+
+        return $response->getStatusCode() === 200;
+    }
+
+    public function addStudent(string $classId, string $studentId, string $nomEleve, string $prenomEleve): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_STUDENT;
 
         $payload = [
             'idClasse'    => $classId,
-            'idStudent'   => $learnerId,
-            'nomEleve'    => $nom,
-            'prenomEleve' => $prenom
+            'idStudent'   => $studentId,
+            'nomEleve'    => $nomEleve,
+            'prenomEleve' => $prenomEleve,
         ];
 
-        try {
-            $response = $this->client->request('PUT', $url, ['json' => $payload]);
-            return $response->getStatusCode() === 200;
-        } catch (\Throwable $e) {
-            return false;
-        }
+        $response = $this->client->request('POST', $url, [
+            'json' => $payload,
+        ]);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+    }
+
+
+    /**
+     * Envoie / met à jour un parcours complet dans /path/training
+     * ⚠️ Important : la structure doit coller à ce que ton PathManager Java attend.
+     */
+    public function assignTrainingToLearner(Eleve $eleve, Entrainement $entrainement): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::SAVE_LEARNINGPATH;
+
+        $payload = $this->trainingSerializer->toApiPayload($entrainement, $eleve);
+
+        $response = $this->client->request('POST', $url, [
+            'json' => $payload,
+        ]);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
 }

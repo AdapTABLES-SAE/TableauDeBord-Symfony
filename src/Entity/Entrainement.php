@@ -22,14 +22,20 @@ class Entrainement
     private string $learningPathID;
 
     /** @var Collection<int, Objectif> */
-    #[ORM\OneToMany(mappedBy: "entrainement", targetEntity: Objectif::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: "entrainement",
+        targetEntity: Objectif::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
     private Collection $objectifs;
 
     /** @var Collection<int, Eleve> */
     #[ORM\OneToMany(mappedBy: "entrainement", targetEntity: Eleve::class)]
     private Collection $eleves;
 
-    #[ORM\ManyToOne(targetEntity: Enseignant::class)]
+    #[ORM\ManyToOne(targetEntity: Enseignant::class, inversedBy: "entrainements")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Enseignant $enseignant = null;
 
     public function __construct()

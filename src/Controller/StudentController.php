@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Eleve;
 use App\Entity\Entrainement;
 use App\Service\ApiClient;
+use App\Service\TrainingAssignmentService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,125 +15,183 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class StudentController extends AbstractController
 {
-    private ApiClient $apiClient;
-
-    public function __construct(ApiClient $apiClient)
-    {
-        $this->apiClient = $apiClient;
-    }
+    public function __construct(
+        private ApiClient $apiClient,
+        private TrainingAssignmentService $trainingAssignmentService,
+        private EntityManagerInterface $em,
+    ) {}
 
     #[Route('/enseignant/classes/{learnerId}', name: 'teacher_student_view')]
-    public function view(string $learnerId, EntityManagerInterface $em, Request $request): Response
+    public function view(string $learnerId, Request $request): Response
     {
-        $eleve = $em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
-
+        $eleve = $this->em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
         if (!$eleve) {
             throw $this->createNotFoundException("Élève introuvable");
         }
 
-        // Récupère l’enseignant de cet élève
         $enseignant = $eleve->getClasse()?->getEnseignant();
 
-        if (!$enseignant) {
-            throw $this->createNotFoundException("Aucun enseignant associé à cet élève.");
-        }
+        $entrainementsDisponibles = $enseignant
+            ? $this->em->getRepository(Entrainement::class)->findBy(['enseignant' => $enseignant])
+            : [];
 
-        // Récupère uniquement les entraînements de cet enseignant
-        $entrainementsDisponibles = $em->getRepository(Entrainement::class)->findBy([
-            'enseignant' => $enseignant
-        ]);
-
-
-        // ---------------------------
-        // Mise à jour nom/prénom
-        // ---------------------------
         if ($request->isMethod('POST')) {
-            $prenom = trim($request->request->get('prenomEleve'));
-            $nom = trim($request->request->get('nomEleve'));
+            $prenom = trim((string) $request->request->get('prenomEleve', ''));
+            $nom    = trim((string) $request->request->get('nomEleve', ''));
 
             $hasChanged = false;
 
-            if ($prenom !== $eleve->getPrenomEleve()) {
+            if ($prenom !== '' && $prenom !== $eleve->getPrenomEleve()) {
                 $eleve->setPrenomEleve($prenom);
                 $hasChanged = true;
             }
-            if ($nom !== $eleve->getNomEleve()) {
+            if ($nom !== '' && $nom !== $eleve->getNomEleve()) {
                 $eleve->setNomEleve($nom);
                 $hasChanged = true;
             }
 
             if ($hasChanged) {
-                $em->flush();
+                $this->em->flush();
 
-                // Mise à jour API externe
                 $classId = $eleve->getClasse()?->getIdClasse() ?? 'default';
                 $success = $this->apiClient->updateLearnerData(
                     $classId,
                     $eleve->getLearnerId(),
-                    $prenom,
-                    $nom
+                    $eleve->getPrenomEleve(),
+                    $eleve->getNomEleve()
                 );
 
-                $this->addFlash(
-                    $success ? 'success' : 'warning',
-                    $success
-                        ? 'Informations mises à jour localement et sur l’API.'
-                        : 'Sauvegarde locale OK, mais mise à jour API échouée.'
-                );
-
+                if ($success) {
+                    $this->addFlash('success', 'Informations mises à jour localement et sur l’API.');
+                } else {
+                    $this->addFlash('warning', 'Sauvegardé localement, mais échec de mise à jour sur l’API.');
+                }
             } else {
                 $this->addFlash('info', 'Aucune modification détectée.');
             }
+
+            if ($request->isXmlHttpRequest()) {
+                return new JsonResponse(['success' => $hasChanged]);
+            }
         }
 
+        $entrainementActuel = $eleve->getEntrainement();
+
+        // --------- NOUVELLE PARTIE : construction de la progression ---------
+        $trainingProgress = [];
+
+        if ($entrainementActuel) {
+            foreach ($entrainementActuel->getObjectifs() as $objectif) {
+                $levelsData = [];
+
+                foreach ($objectif->getNiveaux() as $niveau) {
+                    $result = $this->apiClient->fetchObjectiveLevelResults(
+                        $eleve->getLearnerId(),
+                        $objectif->getObjID(),
+                        $niveau->getLevelID()
+                    );
+
+                    if ($result === null) {
+                        // Niveau non dispo / erreur => on marque niveau "indisponible"
+                        $levelsData[] = [
+                            'levelId'        => $niveau->getLevelID(),
+                            'name'           => $niveau->getName() ?? $niveau->getLevelID(),
+                            'successPercent' => null,
+                            'encounters'     => null,
+                            'tasks'          => [],
+                        ];
+                        continue;
+                    }
+
+                    $success   = (float) ($result['globalSuccess'] ?? 0);
+                    $encounter = (int) ($result['globalEncounters'] ?? 0);
+
+                    $tasks = [];
+                    foreach ($result['progresses'] ?? [] as $t) {
+                        $tasks[] = [
+                            'idTask'           => $t['idTask'] ?? '',
+                            'typeTask'         => $t['typeTask'] ?? '',
+                            'currentSuccess'   => (int) ($t['currentSuccess'] ?? 0),
+                            'currentEncounters'=> (int) ($t['currentEncounters'] ?? 0),
+                        ];
+                    }
+
+                    $levelsData[] = [
+                        'levelId'        => $niveau->getLevelID(),
+                        'name'           => $niveau->getName() ?? $niveau->getLevelID(),
+                        'successPercent' => $success,
+                        'encounters'     => $encounter,
+                        'tasks'          => $tasks,
+                    ];
+                }
+
+                $trainingProgress[] = [
+                    'objectiveId' => $objectif->getObjID(),
+                    'name'        => $objectif->getName(),
+                    'levels'      => $levelsData,
+                ];
+            }
+        }
+        // --------------------------------------------------------------------
 
         return $this->render('student/view.html.twig', [
-            'eleve' => $eleve,
-            'classe' => $eleve->getClasse(),
-            'entrainements' => $entrainementsDisponibles,
-            'entrainementActuel' => $eleve->getEntrainement()
+            'eleve'              => $eleve,
+            'classe'             => $eleve->getClasse(),
+            'entrainements'      => $entrainementsDisponibles,
+            'entrainementActuel' => $entrainementActuel,
+            'trainingProgress'   => $trainingProgress,
         ]);
     }
 
-
-
-
     #[Route('/enseignant/classes/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
-    public function updateTrainingAjax(string $learnerId, Request $request, EntityManagerInterface $em): JsonResponse
+    public function updateTrainingAjax(string $learnerId, Request $request): JsonResponse
     {
-        $data = json_decode($request->getContent(), true);
+        $data = json_decode($request->getContent(), true) ?? [];
         $entrainementId = $data['entrainementId'] ?? null;
 
         if (!$entrainementId) {
             return new JsonResponse(['success' => false, 'message' => 'Aucun ID entraînement fourni'], 400);
         }
 
-        // Élève et entraînement
-        $eleve = $em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
-        $entrainement = $em->getRepository(Entrainement::class)->find($entrainementId);
+        $eleve = $this->em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
 
-        if (!$eleve || !$entrainement) {
-            return new JsonResponse(['success' => false, 'message' => 'Élève ou entraînement introuvable'], 404);
+        if (!$eleve) {
+            return new JsonResponse(['success' => false, 'message' => 'Élève introuvable'], 404);
         }
 
-        // Vérification : l’entraînement appartient-il bien à l’enseignant ?
-        if ($entrainement->getEnseignant()->getId() !== $eleve->getClasse()->getEnseignant()->getId()) {
-            return new JsonResponse(['success' => false, 'message' => "Cet entraînement n'appartient pas au professeur."], 403);
+        // CAS SPECIAL : "Aucun entraînement"
+        if ($entrainementId === 'none') {
+            $eleve->setEntrainement(null);
+            $eleve->setCurrentLearningPathID(null);
+            $this->em->flush();
+
+            return new JsonResponse([
+                'success'          => true,
+                'message'          => 'Aucun entraînement n’est désormais attribué à cet élève.',
+                'entrainementName' => 'Aucun entraînement',
+            ]);
         }
 
-        // Attribution
-        $eleve->setEntrainement($entrainement);
-        $em->flush();
+        // Cas normal : attribution d’un entraînement existant
+        $entrainement = $this->em->getRepository(Entrainement::class)->find($entrainementId);
 
-        // Nom de l'objectif principal
-        $objectifName =
-            $entrainement->getObjectifs()->first()?->getName()
-            ?? 'Sans nom';
+        if (!$entrainement) {
+            return new JsonResponse(['success' => false, 'message' => 'Entraînement introuvable'], 404);
+        }
+
+        $ok = $this->trainingAssignmentService->assignTraining($eleve, $entrainement);
+
+        if (!$ok) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erreur lors de la mise à jour sur l’API.',
+            ], 500);
+        }
 
         return new JsonResponse([
-            'success' => true,
-            'message' => 'Nouvel entraînement attribué avec succès.',
-            'entrainementName' => $objectifName,
+            'success'          => true,
+            'message'          => 'Nouvel entraînement attribué avec succès.',
+            'entrainementName' => $entrainement->getObjectifs()->first()?->getName() ?? 'Sans nom',
         ]);
     }
 }

@@ -33,13 +33,33 @@ class TeacherAuthController extends AbstractController
             if ($identifier === '') {
                 $error = 'Veuillez saisir votre identifiant enseignant.';
             } else {
+
+                // --- API CALL ---
                 $enseignantData = $this->apiClient->fetchTeacherData($identifier);
 
                 if ($enseignantData) {
+
+                    // --- CAS ADMIN ---
+                    if (($enseignantData['idProf'] ?? '') === 'ADMIN') {
+                        // On enregistre la session admin
+                        $session->set('is_admin', true);
+
+                        return $this->redirectToRoute('admin_teacher_list');
+                    }
+
+                    // --- SYNC NORMAL ---
                     $enseignant = $this->teacherSync->syncTeacher($enseignantData);
                     $this->classroomSync->syncClassesAndStudents($enseignant, $enseignantData);
 
-                    // Synchronisation des parcours des élèves
+
+                    // Crée entrainement par défaut si manquant
+                    $created = $this->trainingSync->isDefaultTrainingCreated();
+                    //dd($created);
+                    if(!$created){
+                        $this->trainingSync->buildDefaultTrainingDoctrine();
+                    }
+
+                    // Synchronisation des entrainements des élèves
                     foreach ($enseignant->getClasses() as $classe) {
                         foreach ($classe->getEleves() as $eleve) {
                             $learnerId = $eleve->getLearnerId();
@@ -50,10 +70,9 @@ class TeacherAuthController extends AbstractController
                         }
                     }
 
-                    // Sauvegarde les infos en session (utilisées pour le dashboard)
+                    // Sauvegarde session
                     $session->set('teacher_id', $enseignant->getId());
 
-                    // Redirection vers la page d'accueil du tableau de bord enseignant
                     return $this->redirectToRoute('class_dashboard');
                 }
 

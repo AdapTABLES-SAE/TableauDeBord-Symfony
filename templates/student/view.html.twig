@@ -89,7 +89,9 @@
 
             <ul class="nav nav-tabs mb-3">
                 <li class="nav-item">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#training">Progression Entraînements</button>
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#training">
+                        Progression Entraînements
+                    </button>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link" data-bs-toggle="tab" data-bs-target="#game">Progression jeu</button>
@@ -101,8 +103,146 @@
 
             <div class="tab-content bg-white rounded-3 p-4 shadow-sm">
                 <div class="tab-pane fade show active" id="training">
-                    <p class="text-muted fst-italic">Contenu à venir...</p>
+
+                    {% if entrainementActuel is null %}
+                        <p class="text-muted fst-italic">
+                            Aucun entraînement n’est attribué à cet élève pour le moment.
+                        </p>
+
+                    {% elseif trainingProgress is empty %}
+                        <p class="text-muted fst-italic">
+                            Aucune donnée de progression disponible pour cet entraînement.
+                        </p>
+
+                    {% else %}
+
+                        <div class="training-progress-wrapper">
+                            <div class="accordion" id="trainingProgressAccordion">
+
+                                {% for obj in trainingProgress %}
+                                    <div class="accordion-item progress-accordion-item mb-3">
+                                        <h2 class="accordion-header" id="heading-obj-{{ loop.index }}">
+                                            <button class="accordion-button collapsed d-flex align-items-center"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#collapse-obj-{{ loop.index }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="collapse-obj-{{ loop.index }}">
+
+                                                <div class="d-flex align-items-center flex-grow-1">
+                                                    <i class="bi bi-bullseye me-2 text-violet"></i>
+                                                    <span class="fw-bold">{{ obj.name }}</span>
+                                                </div>
+
+                                                <div class="ms-auto text-end">
+                                                    <span class="badge bg-violet objective-level-count">
+                                                        {{ obj.levels|length }} niveau(x)
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        </h2>
+
+                                        <div id="collapse-obj-{{ loop.index }}"
+                                             class="accordion-collapse collapse"
+                                             aria-labelledby="heading-obj-{{ loop.index }}"
+                                             data-bs-parent="#trainingProgressAccordion">
+                                            <div class="accordion-body">
+
+                                                {% for level in obj.levels %}
+                                                    <div class="progress-level-block mb-3 p-3 rounded-3">
+
+                                                        <!-- En-tête du niveau -->
+                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                            <div>
+                                                                <div class="fw-semibold">{{ level.name }}</div>
+                                                                <div class="text-muted small">{{ level.levelId }}</div>
+                                                            </div>
+
+                                                            <div class="text-end">
+                                                                {% if level.encounters is null %}
+                                                                    <span class="badge bg-secondary">
+                                                                        Niveau non disponible
+                                                                    </span>
+                                                                {% elseif level.encounters == 0 %}
+                                                                    <span class="badge badge-outline-violet text-violet">
+                                                                        Jamais joué
+                                                                    </span>
+                                                                {% else %}
+                                                                    <span class="badge bg-violet">
+                                                                        {{ (level.successPercent ?? 0)|round(0, 'floor') }}% de réussite
+                                                                    </span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+
+                                                        {% if level.encounters is not null %}
+                                                            {# Barre de progression globale du niveau (succès) #}
+                                                            <div class="progress small mb-2">
+                                                                <div class="progress-bar bg-violet"
+                                                                     role="progressbar"
+                                                                     style="width: {{ level.successPercent ?? 0 }}%;"
+                                                                     aria-valuenow="{{ level.successPercent ?? 0 }}"
+                                                                     aria-valuemin="0"
+                                                                     aria-valuemax="100">
+                                                                </div>
+                                                            </div>
+
+                                                            {# Stats globales du niveau (comme dans l’ancienne vue) #}
+                                                            <div class="row small text-muted mb-3 level-global-stats">
+                                                                <div class="col-6">
+                                                                    <div class="text-uppercase stat-label">Faits rencontrés</div>
+                                                                    <div class="fw-semibold">
+                                                                        {{ (level.encounters ?? 0)|number_format(0) }}%
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-6 text-end">
+                                                                    <div class="text-uppercase stat-label">Succès</div>
+                                                                    <div class="fw-semibold">
+                                                                        {{ (level.successPercent ?? 0)|number_format(0) }}%
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            {# Liste des tâches du niveau #}
+                                                            {% if level.tasks is not empty %}
+                                                                <div class="tasks-header small text-muted mb-1">
+                                                                    <i class="bi bi-clipboard-check me-1"></i>
+                                                                    Tâches du niveau
+                                                                </div>
+
+                                                                <ul class="list-unstyled small mb-0">
+                                                                    {% for task in level.tasks %}
+                                                                        <li class="d-flex justify-content-between task-row py-1">
+                                                                            <span>
+                                                                                <span class="badge bg-light text-dark me-1">
+                                                                                    {{ task.typeTask }}
+                                                                                </span>
+                                                                                {{ task.idTask }}
+                                                                            </span>
+                                                                            <span class="text-muted">
+                                                                                Faits : {{ (task.currentEncounters ?? 0)|number_format(0) }}%
+                                                                                — Succès : {{ (task.currentSuccess ?? 0)|number_format(0) }}%
+                                                                            </span>
+                                                                        </li>
+                                                                    {% endfor %}
+                                                                </ul>
+                                                            {% endif %}
+                                                        {% endif %}
+
+                                                    </div>
+                                                {% endfor %}
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+                        </div>
+
+                    {% endif %}
                 </div>
+
                 <div class="tab-pane fade" id="game"><p class="text-muted">Contenu à venir...</p></div>
                 <div class="tab-pane fade" id="store"><p class="text-muted">Contenu à venir...</p></div>
             </div>
@@ -121,8 +261,36 @@
                 </div>
 
                 <div class="modal-body bg-light">
-                    {% if entrainements is not empty %}
-                        <div class="row g-3">
+                    <div class="row g-3">
+
+                        {# Carte spéciale : Aucun entraînement #}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="training-card card h-100 border-0 shadow-sm text-center hover-card" data-id="none">
+                                <div class="card-body py-4">
+                                    <div class="mb-2">
+                                        <i class="bi bi-slash-circle text-danger fs-2"></i>
+                                    </div>
+
+                                    <h6 class="card-title fw-bold text-danger">Aucun entraînement</h6>
+
+                                    <div class="training-summary mt-3">
+                                        <div class="summary-item text-muted small">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            <span>Retire tout entraînement actuellement attribué à cet élève.</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="card-footer bg-transparent border-0">
+                                    <button type="button" class="btn btn-outline-danger w-100 fw-semibold select-entrainement">
+                                        <i class="bi bi-x-circle me-1"></i>Retirer l'entraînement
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {# Entraînements existants #}
+                        {% if entrainements is not empty %}
                             {% for e in entrainements %}
                                 <div class="col-md-6 col-lg-4">
                                     <div class="training-card card h-100 border-0 shadow-sm text-center hover-card" data-id="{{ e.id }}">
@@ -166,9 +334,14 @@
                                     </div>
                                 </div>
                             {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="text-center text-muted my-4">Aucun entraînement disponible pour le moment.</p>
+                        {% endif %}
+                    </div>
+
+                    {% if entrainements is empty %}
+                        <p class="text-center text-muted my-4">
+                            Aucun entraînement disponible pour le moment, mais vous pouvez tout de même retirer
+                            l’entraînement actuel de l’élève.
+                        </p>
                     {% endif %}
                 </div>
             </div>
@@ -182,7 +355,6 @@
         toast_error_title: "Erreur de mise à jour",
         toast_error_message: "Impossible d’enregistrer les modifications."
     } %}
-
 
     <script type="module" src="{{ asset('js/student_tabs.js') }}"></script>
 {% endblock %}

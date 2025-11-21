@@ -78,3 +78,110 @@ Pop-up des entrainements
 .training-card .btn-violet {
     border-radius: 0 0 1rem 1rem;
 }
+
+/*
+
+=== Progression entraînements ===
+
+ */
+
+/* Conteneur général */
+.training-progress-wrapper {
+    padding: 0.5rem 0;
+}
+
+/* --- Styles des items d'accordéon --- */
+.progress-accordion-item {
+    border: none !important;
+    background: transparent !important;
+}
+
+/* Bouton d’accordéon */
+.accordion-button {
+    background: #f6f3ff !important;
+    border-radius: 0.75rem !important;
+    padding: 1.2rem 1.5rem;
+    box-shadow: none !important;
+    color: #1a1a1a;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+/* Retrait du chevron Bootstrap */
+.accordion-button::after {
+    display: none !important;
+}
+
+/* Badge des niveaux aligné parfaitement à droite */
+.accordion-button .badge {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.7rem;
+    border-radius: 0.5rem;
+    margin-right: 0.75rem;
+}
+
+/* Custom Chevron */
+.custom-chevron {
+    font-size: 1.1rem;
+    color: #666;
+    transition: transform 0.2s ease;
+}
+
+/* Chevron rotation */
+.accordion-button:not(.collapsed) .custom-chevron {
+    transform: rotate(180deg);
+}
+
+/* Effet au survol */
+.accordion-button:hover {
+    background: #eee9ff !important;
+}
+
+/* Corps de l’accordéon */
+.accordion-body {
+    background: #ffffff;
+    border-radius: 0 0 0.75rem 0.75rem;
+    padding: 1.25rem 1.5rem;
+    border-top: 1px solid #e5dbff;
+}
+
+/* --- Bloc d’un niveau --- */
+.progress-level-block {
+    background: #f7f4ff;
+    border-left: 4px solid #7a5af8;
+    border-radius: 0.75rem;
+}
+
+/* Progress bar */
+.progress {
+    height: 6px;
+    border-radius: 10px;
+}
+.progress-bar {
+    background-color: #7a5af8 !important;
+}
+
+/* Badge "jamais joué" */
+.badge-outline-violet {
+    border: 1px solid #7a5af8;
+    background: transparent;
+    color: #7a5af8;
+}
+
+/* Liste des tâches */
+.progress-level-block ul li {
+    padding: 0.15rem 0;
+    border-bottom: 1px dashed #ded8ff;
+}
+.progress-level-block ul li:last-child {
+    border-bottom: none;
+}
+
+.progress-level-block .badge {
+    padding: 0.25rem 0.45rem;
+    background: #e7e3ff;
+    color: #4b3bbd;
+    border-radius: 0.4rem;
+    font-size: 0.75rem;
+}

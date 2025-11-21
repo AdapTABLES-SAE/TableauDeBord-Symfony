@@ -7,6 +7,9 @@ use App\Entity\Eleve;
 use App\Entity\Entrainement;
 use App\Repository\ClasseRepository;
 use App\Repository\EnseignantRepository;
+use App\Service\ApiClient;
+use App\Service\TrainingAssignmentService;
+use App\Service\TrainingSyncService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Asset\Packages;
@@ -29,12 +32,12 @@ class TeacherDashboardController extends AbstractController
 
         //Get login ID
         $teacherId = $session->get('teacher_id');
-        dump($teacherId);
         $teacher = $repo->find($teacherId);
         $classes = $teacher->getClasses();
 
-        $publicUrl = $assets->getUrl('js/partials/classePartial.js');
-        $twigFile = "partials/_class_detail.html.twig";
+        $js = $assets->getUrl('js/partials/classePartial.js');
+        $css = $assets->getUrl('css/dashboard/_class_partial.css');
+        $twigFile = "/partials/_class/_classDetails.html.twig";
 
         // Route Path must have {id} that will be interpolated
         $route = $router->getRouteCollection()->get('class_details')->getPath();
@@ -46,9 +49,11 @@ class TeacherDashboardController extends AbstractController
             ]
         ];
 
-        return $this->render('components/element_dashboard.html.twig',
+        return $this->render('/dashboard/dashboard.html.twig',
         [
-            "partial_script" => "$publicUrl",
+            "partial_script" => "$js",
+            "partial_css" => "$css",
+
             "partial_twig" => "$twigFile",
             "elements" => $classes,
 
@@ -65,73 +70,100 @@ class TeacherDashboardController extends AbstractController
 
     //partial loader
     #[Route('/class/{id}/details', name: 'class_details')]
-    public function details(int $id, ClasseRepository $repo): Response
+    public function details(int $id, EntityManagerInterface $em): Response
     {
-        $class = $repo->find($id);
+        $class = $em->getRepository(Classe::class)->find($id);
 
         if (!$class) {
             throw $this->createNotFoundException('Classe introuvable.');
         }
-
+        $teacherId = $class->getEnseignant()->getId();
+        $trainingPaths = $em->getRepository(Entrainement::class)->findBy(['enseignant' => $teacherId]);
         $students = $class->getEleves();
 
         // todo: check permissions?
-        return $this->render('partials/_class_detail.html.twig', [
+        return $this->render('/partials/_class/_classDetails.html.twig', [
             'class' => $class,
-            'students' => $students
+            'students' => $students,
+            'trainingPaths' => $trainingPaths
         ]);
     }
 
-
-    #[Route('/class/update-students', name: 'class_update', methods: ['POST'])]
-    public function updateStudents(Request $request, EntityManagerInterface $em): JsonResponse
+    #[Route('/class/{id}/update-infos', name: 'class_update', methods: ['POST'])]
+    public function updateInfos(
+        int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient,
+        TrainingSyncService $trainingSyncService,TrainingAssignmentService $trainingAssignmentService): JsonResponse
     {
-        // Get arrays from the request
-        $classData = $request->request->all('class');
+        $classData    = $request->request->all('class');
         $studentsData = $request->request->all('students');
 
-        // --- Handle class title updates ---
-        foreach ($classData as $classId => $data) {
-            $class = $em->getRepository(Classe::class)->find($classId);
-            if (!$class) continue;
-
-            if (isset($data['title'])) {
-                $class->setName($data['title']);
-            }
+        $class = $em->getRepository(Classe::class)->find($id);
+        if (isset($classData['title']) && $classData['title'] !== '') {
+            $class->setName($classData['title']);
+            $apiClient->updateClassroomName((string)$id, $classData['title']);
         }
 
-        // --- Handle student updates ---
         foreach ($studentsData as $studentDatabaseId => $data) {
             $student = $em->getRepository(Eleve::class)->find($studentDatabaseId);
             if (!$student) continue;
 
-            if (isset($data['studentId'])) {
-                $student->setLearnerId($data['studentId']);
+            if (isset($data['delete']) && $data['delete'] === "1") {
+                $apiClient->deleteStudent(
+                    (string)$student->getClasse()->getEnseignant()->getId(),
+                    (string)$student->getClasse()->getId(),
+                    (string)$student->getLearnerId()
+                );
+                $em->remove($student);
+                continue;
             }
 
             if (isset($data['trainingPathId'])) {
-                $training = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
-                if ($training) {
-                    // Replace or add training relationship
-                    $student->addEntrainement($training);
+                if($data['trainingPathId'] !== "") {
+                    $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
+                    if ($entrainement) {
+                        $trainingAssignmentService->assignTraining($student, $entrainement);
+                    }
+                }else{
+                    $trainingAssignmentService->assignDefaultTraining($student);
+                    $student->setEntrainement(null);
                 }
             }
         }
-
-        // Persist all changes
         $em->flush();
 
-        return new JsonResponse([
-            'success' => true,
-            'message' => 'Classe et élèves mis à jour avec succès !',
-            'updated' => [
-                'classes' => array_keys($classData),
-                'students' => array_keys($studentsData)
-            ]
-        ]);
+        return new JsonResponse(['success' => true]);
     }
 
 
+    #[Route('/class/{id}/add-student', name: 'class_add_student', methods: ['POST'])]
+    public function addStudent(
+        string $id,
+        Request $request,
+        ApiClient $apiClient,
+        EntityManagerInterface $em
+    ): JsonResponse
+    {
+        $nom     = $request->request->get('lname');
+        $prenom  = $request->request->get('fname');
+        $studentId = $request->request->get('studentId');
+
+        $classe = $em->getRepository(Classe::class)->find($id);
+        if (!$classe) return new JsonResponse(['success' => false]);
+
+        $ok = $apiClient->addStudent($classe->getIdClasse(), $studentId, $nom, $prenom);
+
+        if ($ok) {
+            $eleve = new Eleve();
+            $eleve->setNomEleve($nom);
+            $eleve->setPrenomEleve($prenom);
+            $eleve->setLearnerId($studentId);
+            $eleve->setClasse($classe);
+
+            $em->persist($eleve);
+            $em->flush();
+        }
+        return new JsonResponse(['success' => $ok]);
+    }
 
 
 
@@ -147,7 +179,7 @@ class TeacherDashboardController extends AbstractController
 //            throw $this->createNotFoundException('Élément introuvable.');
 //        }
 //
-//        return $this->render('partials/_class_detail.html.twig', [
+//        return $this->render('partials/_classDetails.html.twig', [
 //            'element' => $element,
 //        ]);
 //    }

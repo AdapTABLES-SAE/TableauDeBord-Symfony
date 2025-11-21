@@ -21,10 +21,16 @@ class Classe
     private string $name;
 
     /** @var Collection<int, Eleve> */
-    #[ORM\OneToMany(mappedBy: "classe", targetEntity: Eleve::class)]
+    #[ORM\OneToMany(
+        mappedBy: "classe",
+        targetEntity: Eleve::class,
+        cascade: ['remove'],
+        orphanRemoval: true
+    )]
     private Collection $eleves;
 
     #[ORM\ManyToOne(targetEntity: Enseignant::class, inversedBy: "classes")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Enseignant $enseignant = null;
 
     public function __construct()
@@ -63,20 +69,28 @@ class Classe
         return $this;
     }
 
-    public function getEleves(): iterable
+    /** @return Collection<int, Eleve> */
+    public function getEleves(): Collection
     {
         return $this->eleves;
     }
 
     public function addEleve(Eleve $eleve): self
     {
-        $this->eleves[] = $eleve;
+        if (!$this->eleves->contains($eleve)) {
+            $this->eleves->add($eleve);
+            $eleve->setClasse($this);
+        }
         return $this;
     }
 
     public function removeEleve(Eleve $eleve): self
     {
-        $this->eleves = array_filter($this->eleves, fn($e) => $e !== $eleve);
+        if ($this->eleves->removeElement($eleve)) {
+            if ($eleve->getClasse() === $this) {
+                $eleve->setClasse(null);
+            }
+        }
         return $this;
     }
 

@@ -20,12 +20,28 @@ class Enseignant
     #[ORM\Column(length: 255)]
     private string $name;
 
-    #[ORM\OneToMany(mappedBy: "enseignant", targetEntity: Classe::class)]
-    private iterable $classes;
+    /** @var Collection<int, Classe> */
+    #[ORM\OneToMany(
+        mappedBy: "enseignant",
+        targetEntity: Classe::class,
+        cascade: ['remove'],
+        orphanRemoval: true
+    )]
+    private Collection $classes;
+
+    /** @var Collection<int, Entrainement> */
+    #[ORM\OneToMany(
+        mappedBy: "enseignant",
+        targetEntity: Entrainement::class,
+        cascade: ['remove'],
+        orphanRemoval: true
+    )]
+    private Collection $entrainements;
 
     public function __construct()
     {
         $this->classes = new ArrayCollection();
+        $this->entrainements = new ArrayCollection();
     }
 
     // ----------------------------------------------------
@@ -59,20 +75,53 @@ class Enseignant
         return $this;
     }
 
-    public function getClasses(): iterable
+    /** @return Collection<int, Classe> */
+    public function getClasses(): Collection
     {
         return $this->classes;
     }
 
     public function addClasse(Classe $classe): self
     {
-        $this->classes[] = $classe;
+        if (!$this->classes->contains($classe)) {
+            $this->classes->add($classe);
+            $classe->setEnseignant($this);
+        }
         return $this;
     }
 
     public function removeClasse(Classe $classe): self
     {
-        $this->classes = array_filter($this->classes, fn($c) => $c !== $classe);
+        if ($this->classes->removeElement($classe)) {
+            if ($classe->getEnseignant() === $this) {
+                $classe->setEnseignant(null);
+            }
+        }
+        return $this;
+    }
+
+    /** @return Collection<int, Entrainement> */
+    public function getEntrainements(): Collection
+    {
+        return $this->entrainements;
+    }
+
+    public function addEntrainement(Entrainement $entrainement): self
+    {
+        if (!$this->entrainements->contains($entrainement)) {
+            $this->entrainements->add($entrainement);
+            $entrainement->setEnseignant($this);
+        }
+        return $this;
+    }
+
+    public function removeEntrainement(Entrainement $entrainement): self
+    {
+        if ($this->entrainements->removeElement($entrainement)) {
+            if ($entrainement->getEnseignant() === $this) {
+                $entrainement->setEnseignant(null);
+            }
+        }
         return $this;
     }
 }

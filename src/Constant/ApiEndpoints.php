@@ -6,19 +6,19 @@ final class ApiEndpoints
 {
     //public const BASE_URL = 'https://dungeon-generator.univ-lemans.fr/FrameworkAPI/';
     public const BASE_URL = 'http://localhost:8080/FrameworkAPI/';
-    public const LOGIN_TEACHER = "login/teacher/";
+    public const LOGIN_TEACHER = "login/teachers/";
     public const GET_TEACHER = "data/teacher/";
     public const EQUIP_URL = "store/learner/";
     public const STATS_URL = "statistics/learner/";
     public const ADD_CLASSROOM = "data/classroom/";
     public const MODIF_CLASSROOM = "data/classroom/";
-    public const DELETE_CLASSROOM_1 = "data/teacher/";
+    public const DELETE_CLASSROOM_1 = "data/teachers/";
     public const DELETE_CLASSROOM_2 = "classroom/";
     public const GET_STUDENTS_1 = "data/students/teacher/";
     public const GET_STUDENTS_2 = "classroom/";
     public const ADD_STUDENT = "data/student";
     public const MODIF_STUDENT = "data/student";
-    public const DELETE_STUDENT_1 = "data/teacher/";
+    public const DELETE_STUDENT_1 = "data/teachers/";
     public const DELETE_STUDENT_2 = "classroom/";
     public const DELETE_STUDENT_3 = "learner/";
     public const ADD_PROF = "data/teacher/";
@@ -29,4 +29,13 @@ final class ApiEndpoints
     public const SAVE_LEARNINGPATH = "path/training/";
     public const DELETE_PROF = "data/teacher/";
     public const GET_TEACHERS = "data/teachers/";
+
+
+    public const DEFAULT_LEARNING_PATH_ID = "DEFAULT_TRAINING";
+
+    public static function GET_DEFAULT_API_LEARNING_PATH_ID(string $learnerId): string
+    {
+        return "PATH_MATH" . $learnerId;
+    }
+
 }
