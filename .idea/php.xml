@@ -12,7 +12,7 @@
   </component>
   <component name="PhpCodeSniffer">
     <phpcs_settings>
-      <phpcs_by_interpreter asDefaultInterpreter="true" interpreter_id="afa24c58-720e-416b-b3cb-7965f1e6a45c" timeout="30000" />
+      <phpcs_by_interpreter interpreter_id="afa24c58-720e-416b-b3cb-7965f1e6a45c" timeout="30000" />
     </phpcs_settings>
   </component>
   <component name="PhpIncludePathManager">
@@ -151,7 +151,7 @@
   </component>
   <component name="PhpStan">
     <PhpStan_settings>
-      <phpstan_by_interpreter asDefaultInterpreter="true" interpreter_id="afa24c58-720e-416b-b3cb-7965f1e6a45c" timeout="60000" />
+      <phpstan_by_interpreter interpreter_id="afa24c58-720e-416b-b3cb-7965f1e6a45c" timeout="60000" />
     </PhpStan_settings>
   </component>
   <component name="PhpStanOptionsConfiguration">
@@ -164,7 +164,7 @@
   </component>
   <component name="Psalm">
     <Psalm_settings>
-      <psalm_fixer_by_interpreter asDefaultInterpreter="true" interpreter_id="afa24c58-720e-416b-b3cb-7965f1e6a45c" timeout="60000" />
+      <psalm_fixer_by_interpreter interpreter_id="afa24c58-720e-416b-b3cb-7965f1e6a45c" timeout="60000" />
     </Psalm_settings>
   </component>
   <component name="PsalmOptionsConfiguration">
