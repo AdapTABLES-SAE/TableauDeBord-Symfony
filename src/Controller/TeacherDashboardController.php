@@ -9,6 +9,7 @@ use App\Repository\ClasseRepository;
 use App\Repository\EnseignantRepository;
 use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
+use App\Service\TrainingSyncService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Asset\Packages;
@@ -36,7 +37,7 @@ class TeacherDashboardController extends AbstractController
 
         $js = $assets->getUrl('js/partials/classePartial.js');
         $css = $assets->getUrl('css/_class_partial.css');
-        $twigFile = "partials/_class_detail.html.twig";
+        $twigFile = "partials/_classDetails.html.twig";
 
         // Route Path must have {id} that will be interpolated
         $route = $router->getRouteCollection()->get('class_details')->getPath();
@@ -48,7 +49,7 @@ class TeacherDashboardController extends AbstractController
             ]
         ];
 
-        return $this->render('components/element_dashboard.html.twig',
+        return $this->render('components/dashboard.html.twig',
         [
             "partial_script" => "$js",
             "partial_css" => "$css",
@@ -81,7 +82,7 @@ class TeacherDashboardController extends AbstractController
         $students = $class->getEleves();
 
         // todo: check permissions?
-        return $this->render('partials/_class_detail.html.twig', [
+        return $this->render('partials/_classDetails.html.twig', [
             'class' => $class,
             'students' => $students,
             'trainingPaths' => $trainingPaths
@@ -89,7 +90,9 @@ class TeacherDashboardController extends AbstractController
     }
 
     #[Route('/class/{id}/update-infos', name: 'class_update', methods: ['POST'])]
-    public function updateInfos(int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient, TrainingAssignmentService $trainingAssignmentService): JsonResponse
+    public function updateInfos(
+        int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient,
+        TrainingSyncService $trainingSyncService,TrainingAssignmentService $trainingAssignmentService): JsonResponse
     {
         $classData    = $request->request->all('class');
         $studentsData = $request->request->all('students');
@@ -114,18 +117,18 @@ class TeacherDashboardController extends AbstractController
                 continue;
             }
 
-            if (isset($data['studentId'])) {
-                $student->setLearnerId($data['studentId']);
-            }
-
-            if (isset($data['trainingPathId']) && $data['trainingPathId'] !== "") {
-                $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
-                if ($entrainement) {
-                    $trainingAssignmentService->assignTraining($student, $entrainement);
+            if (isset($data['trainingPathId'])) {
+                if($data['trainingPathId'] !== "") {
+                    $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
+                    if ($entrainement) {
+                        $trainingAssignmentService->assignTraining($student, $entrainement);
+                    }
+                }else{
+                    $trainingAssignmentService->assignDefaultTraining($student);
+                    $student->setEntrainement(null);
                 }
             }
         }
-
         $em->flush();
 
         return new JsonResponse(['success' => true]);
@@ -176,7 +179,7 @@ class TeacherDashboardController extends AbstractController
 //            throw $this->createNotFoundException('Élément introuvable.');
 //        }
 //
-//        return $this->render('partials/_class_detail.html.twig', [
+//        return $this->render('partials/_classDetails.html.twig', [
 //            'element' => $element,
 //        ]);
 //    }

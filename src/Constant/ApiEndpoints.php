@@ -29,4 +29,13 @@ final class ApiEndpoints
     public const SAVE_LEARNINGPATH = "path/training/";
     public const DELETE_PROF = "data/teacher/";
     public const GET_TEACHERS = "data/teachers/";
+
+
+    public const DEFAULT_LEARNING_PATH_ID = "DEFAULT_TRAINING";
+
+    public static function GET_DEFAULT_API_LEARNING_PATH_ID(string $learnerId): string
+    {
+        return "PATH_MATH" . $learnerId;
+    }
+
 }

@@ -51,6 +51,15 @@ class TeacherAuthController extends AbstractController
                     $enseignant = $this->teacherSync->syncTeacher($enseignantData);
                     $this->classroomSync->syncClassesAndStudents($enseignant, $enseignantData);
 
+
+                    // Crée entrainement par défaut si manquant
+                    $created = $this->trainingSync->isDefaultTrainingCreated();
+                    //dd($created);
+                    if(!$created){
+                        $this->trainingSync->buildDefaultTrainingDoctrine();
+                    }
+
+
                     // Synchronisation des entrainements des élèves
                     foreach ($enseignant->getClasses() as $classe) {
                         foreach ($classe->getEleves() as $eleve) {
