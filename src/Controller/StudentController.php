@@ -70,17 +70,76 @@ class StudentController extends AbstractController
                 $this->addFlash('info', 'Aucune modification détectée.');
             }
 
-            // En cas d’ajax, on peut renvoyer un JSON simple
             if ($request->isXmlHttpRequest()) {
                 return new JsonResponse(['success' => $hasChanged]);
             }
         }
 
+        $entrainementActuel = $eleve->getEntrainement();
+
+        // --------- NOUVELLE PARTIE : construction de la progression ---------
+        $trainingProgress = [];
+
+        if ($entrainementActuel) {
+            foreach ($entrainementActuel->getObjectifs() as $objectif) {
+                $levelsData = [];
+
+                foreach ($objectif->getNiveaux() as $niveau) {
+                    $result = $this->apiClient->fetchObjectiveLevelResults(
+                        $eleve->getLearnerId(),
+                        $objectif->getObjID(),
+                        $niveau->getLevelID()
+                    );
+
+                    if ($result === null) {
+                        // Niveau non dispo / erreur => on marque niveau "indisponible"
+                        $levelsData[] = [
+                            'levelId'        => $niveau->getLevelID(),
+                            'name'           => $niveau->getName() ?? $niveau->getLevelID(),
+                            'successPercent' => null,
+                            'encounters'     => null,
+                            'tasks'          => [],
+                        ];
+                        continue;
+                    }
+
+                    $success   = (float) ($result['globalSuccess'] ?? 0);
+                    $encounter = (int) ($result['globalEncounters'] ?? 0);
+
+                    $tasks = [];
+                    foreach ($result['progresses'] ?? [] as $t) {
+                        $tasks[] = [
+                            'idTask'           => $t['idTask'] ?? '',
+                            'typeTask'         => $t['typeTask'] ?? '',
+                            'currentSuccess'   => (int) ($t['currentSuccess'] ?? 0),
+                            'currentEncounters'=> (int) ($t['currentEncounters'] ?? 0),
+                        ];
+                    }
+
+                    $levelsData[] = [
+                        'levelId'        => $niveau->getLevelID(),
+                        'name'           => $niveau->getName() ?? $niveau->getLevelID(),
+                        'successPercent' => $success,
+                        'encounters'     => $encounter,
+                        'tasks'          => $tasks,
+                    ];
+                }
+
+                $trainingProgress[] = [
+                    'objectiveId' => $objectif->getObjID(),
+                    'name'        => $objectif->getName(),
+                    'levels'      => $levelsData,
+                ];
+            }
+        }
+        // --------------------------------------------------------------------
+
         return $this->render('student/view.html.twig', [
             'eleve'              => $eleve,
             'classe'             => $eleve->getClasse(),
             'entrainements'      => $entrainementsDisponibles,
-            'entrainementActuel' => $eleve->getEntrainement(),
+            'entrainementActuel' => $entrainementActuel,
+            'trainingProgress'   => $trainingProgress,
         ]);
     }
 
@@ -95,10 +154,29 @@ class StudentController extends AbstractController
         }
 
         $eleve = $this->em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
+
+        if (!$eleve) {
+            return new JsonResponse(['success' => false, 'message' => 'Élève introuvable'], 404);
+        }
+
+        // CAS SPECIAL : "Aucun entraînement"
+        if ($entrainementId === 'none') {
+            $eleve->setEntrainement(null);
+            $eleve->setCurrentLearningPathID(null);
+            $this->em->flush();
+
+            return new JsonResponse([
+                'success'          => true,
+                'message'          => 'Aucun entraînement n’est désormais attribué à cet élève.',
+                'entrainementName' => 'Aucun entraînement',
+            ]);
+        }
+
+        // Cas normal : attribution d’un entraînement existant
         $entrainement = $this->em->getRepository(Entrainement::class)->find($entrainementId);
 
-        if (!$eleve || !$entrainement) {
-            return new JsonResponse(['success' => false, 'message' => 'Élève ou entraînement introuvable'], 404);
+        if (!$entrainement) {
+            return new JsonResponse(['success' => false, 'message' => 'Entraînement introuvable'], 404);
         }
 
         $ok = $this->trainingAssignmentService->assignTraining($eleve, $entrainement);
