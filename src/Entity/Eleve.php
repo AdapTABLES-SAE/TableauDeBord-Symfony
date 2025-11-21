@@ -22,12 +22,14 @@ class Eleve
     private string $prenomEleve;
 
     #[ORM\ManyToOne(targetEntity: Classe::class, inversedBy: "eleves")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Classe $classe = null;
 
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $currentLearningPathID = null;
 
     #[ORM\ManyToOne(targetEntity: Entrainement::class, inversedBy: "eleves")]
+    #[ORM\JoinColumn(onDelete: "SET NULL", nullable: true)]
     private ?Entrainement $entrainement = null;
 
     // ----------------------------------------------------
@@ -87,6 +89,7 @@ class Eleve
     {
         return $this->currentLearningPathID;
     }
+
     public function setCurrentLearningPathID(?string $id): self
     {
         $this->currentLearningPathID = $id;
@@ -97,6 +100,7 @@ class Eleve
     {
         return $this->entrainement;
     }
+
     public function setEntrainement(?Entrainement $entrainement): self
     {
         $this->entrainement = $entrainement;

@@ -21,11 +21,16 @@ class Niveau
     private ?string $name = null;
 
     #[ORM\ManyToOne(targetEntity: Objectif::class, inversedBy: "niveaux")]
-    #[ORM\JoinColumn(onDelete: "CASCADE")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Objectif $objectif = null;
 
     /** @var Collection<int, Tache> */
-    #[ORM\OneToMany(mappedBy: "niveau", targetEntity: Tache::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: "niveau",
+        targetEntity: Tache::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
     private Collection $taches;
 
     // 🔹 anciens PCompletion + PConstruction

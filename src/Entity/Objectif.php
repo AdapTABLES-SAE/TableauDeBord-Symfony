@@ -21,15 +21,25 @@ class Objectif
     private string $name;
 
     #[ORM\ManyToOne(targetEntity: Entrainement::class, inversedBy: "objectifs")]
-    #[ORM\JoinColumn(onDelete: "CASCADE")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Entrainement $entrainement = null;
 
     /** @var Collection<int, Niveau> */
-    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Niveau::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: "objectif",
+        targetEntity: Niveau::class,
+        cascade: ['persist', 'remove'],
+        orphanRemoval: true
+    )]
     private Collection $niveaux;
 
     /** @var Collection<int, Prerequis> */
-    #[ORM\OneToMany(mappedBy: "objectif", targetEntity: Prerequis::class, cascade: ["persist", "remove"], orphanRemoval: true)]
+    #[ORM\OneToMany(
+        mappedBy: "objectif",
+        targetEntity: Prerequis::class,
+        cascade: ["persist", "remove"],
+        orphanRemoval: true
+    )]
     private Collection $prerequis;
 
     public function __construct()

@@ -25,6 +25,7 @@ class Prerequis
     private float $encountersPercent;
 
     #[ORM\ManyToOne(targetEntity: Objectif::class, inversedBy: "prerequis")]
+    #[ORM\JoinColumn(onDelete: "CASCADE", nullable: true)]
     private ?Objectif $objectif = null;
 
     // ----------------------------------------------------

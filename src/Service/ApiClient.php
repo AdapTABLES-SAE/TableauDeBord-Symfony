@@ -81,22 +81,62 @@ class ApiClient
      * Crée un nouvel enseignant :
      * POST /data/teacher/
      */
-    public function createTeacher(string $idProf, string $name): bool
+    public function createTeacher(string $idProf, string $name): array
     {
         $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_PROF;
 
-        $response = $this->client->request('POST', $url, [
-            'json' => [
-                'idProf' => $idProf,
-                'name'   => $name,
-            ],
-        ]);
+        try {
+            $response = $this->client->request('POST', $url, [
+                'json' => [
+                    'idProf' => $idProf,
+                    'name'   => $name,
+                ],
+            ]);
+
+            $status = $response->getStatusCode();
+            $content = trim($response->getContent(false));
+
+            if ($status >= 200 && $status < 300) {
+                return ['success' => true];
+            }
+
+            if (str_contains(strtolower($content), 'already') || str_contains($content, 'existe')) {
+                return [
+                    'success' => false,
+                    'error' => "Un enseignant avec cet identifiant existe déjà."
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => "Erreur API : code HTTP $status"
+            ];
+
+        } catch (\Exception $e) {
+
+            return [
+                'success' => false,
+                'error' => "Connexion impossible à l'API."
+            ];
+        }
+    }
+
+
+    /**
+     * Supprimer un Enseignant
+     */
+    public function deleteTeacher(string $idProf): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::DELETE_PROF . $idProf;
+
+        $response = $this->client->request('DELETE', $url);
 
         $status = $response->getStatusCode();
 
-        // L’API Unity considère un retour vide = succès
-        return ($status >= 200 && $status < 300);
+        // L'API renvoie un body vide quand c'est OK
+        return $status >= 200 && $status < 300;
     }
+
 
     /**
      * Statistiques d'un élève :
