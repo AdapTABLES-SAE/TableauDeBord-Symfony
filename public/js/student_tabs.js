@@ -1,81 +1,114 @@
 // public/js/student_tabs.js
 import { showToast } from './toast/toast.js';
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* ============================
+       Formulaire élève
+       ============================ */
+
     const form = document.getElementById('studentForm');
     const saveButton = document.getElementById('saveButton');
     const prenom = document.getElementById('prenomEleve');
     const nom = document.getElementById('nomEleve');
 
-    if (!form || !saveButton || !prenom || !nom) {
-        return;
-    }
+    if (form && saveButton && prenom && nom) {
+        const initialPrenom = prenom.value.trim();
+        const initialNom = nom.value.trim();
 
-    const initialPrenom = prenom.value.trim();
-    const initialNom = nom.value.trim();
-
-    function checkChanges() {
-        const changed =
-            prenom.value.trim() !== initialPrenom ||
-            nom.value.trim() !== initialNom;
-
-        saveButton.disabled = !changed;
-        saveButton.classList.toggle('btn-activated', changed);
-    }
-
-    prenom.addEventListener('input', checkChanges);
-    nom.addEventListener('input', checkChanges);
-
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        saveButton.disabled = true;
-
-        try {
-            const response = await fetch(window.location.href, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: new URLSearchParams({
-                    prenomEleve: prenom.value.trim(),
-                    nomEleve: nom.value.trim()
-                })
-            });
-
-            showToast(response.ok);
-        } catch (error) {
-            showToast(false);
-        } finally {
-            // On recalcule l’état du bouton après réponse
+        function checkChanges() {
             const changed =
                 prenom.value.trim() !== initialPrenom ||
                 nom.value.trim() !== initialNom;
+
             saveButton.disabled = !changed;
+            saveButton.classList.toggle('btn-activated', changed);
         }
-    });
-});
 
-// === Gestion attribution d'entraînement ===
-document.addEventListener('DOMContentLoaded', () => {
-    const assignButtons = document.querySelectorAll('.select-entrainement');
-    const entrainementInput = document.getElementById('entrainementActuel');
-    const modal = document.getElementById('entrainementModal');
+        prenom.addEventListener('input', checkChanges);
+        nom.addEventListener('input', checkChanges);
 
-    if (!assignButtons.length || !entrainementInput || !modal) {
-        return;
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            saveButton.disabled = true;
+
+            try {
+                const response = await fetch(window.location.href, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: new URLSearchParams({
+                        prenomEleve: prenom.value.trim(),
+                        nomEleve: nom.value.trim()
+                    })
+                });
+
+                showToast(response.ok);
+
+                // 🔄 Rafraîchissement après modification
+                setTimeout(() => location.reload(), 800);
+
+            } catch (error) {
+                showToast(false);
+            }
+        });
     }
 
-    assignButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const card = e.target.closest('.training-card');
-            if (!card) return;
+    /* ============================
+       Attribution d’un entraînement
+       ============================ */
 
-            const entrainementId = card.dataset.id;
-            const entrainementName = card.querySelector('.card-title')?.textContent.trim() || '';
+    const assignButtons = document.querySelectorAll('.select-entrainement');
+    const entrainementInput = document.getElementById('entrainementActuel');
+    const mainModal = document.getElementById('entrainementModal');
 
-            button.disabled = true;
-            button.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Attribution...';
+    const confirmModalEl = document.getElementById('confirmAssignTrainingModal');
+    const confirmTrainingName = document.getElementById('confirm-training-name');
+    const confirmBtn = document.getElementById('confirm-assign-btn');
+
+    let selectedTrainingId = null;
+    let selectedTrainingName = '';
+
+    if (
+        assignButtons.length &&
+        entrainementInput &&
+        mainModal &&
+        confirmModalEl &&
+        confirmTrainingName &&
+        confirmBtn
+    ) {
+
+        assignButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                const card = e.target.closest('.training-card');
+
+                selectedTrainingId = button.dataset.id || (card ? card.dataset.id : null);
+                selectedTrainingName =
+                    button.dataset.name || (card?.querySelector('.card-title')?.textContent.trim() || '');
+
+                confirmTrainingName.textContent = selectedTrainingName;
+
+                // Ferme modal principale
+                let chooseModalInstance = bootstrap.Modal.getInstance(mainModal);
+                if (!chooseModalInstance) chooseModalInstance = new bootstrap.Modal(mainModal);
+                chooseModalInstance.hide();
+
+                // Ouvre modal confirmation
+                setTimeout(() => {
+                    const confirmInstance = new bootstrap.Modal(confirmModalEl);
+                    confirmInstance.show();
+                }, 300);
+            });
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            if (!selectedTrainingId) return;
+
+            confirmBtn.disabled = true;
+            const originalLabel = confirmBtn.innerHTML;
+            confirmBtn.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Attribution...';
 
             try {
                 const response = await fetch(`${window.location.pathname}/entrainement`, {
@@ -84,39 +117,30 @@ document.addEventListener('DOMContentLoaded', () => {
                         'Content-Type': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     },
-                    body: JSON.stringify({ entrainementId })
+                    body: JSON.stringify({ entrainementId: selectedTrainingId })
                 });
 
                 if (response.ok) {
-                    entrainementInput.value = entrainementName;
                     showToast(true);
 
-                    // Fermeture de la modale
-                    let bootstrapModal = bootstrap.Modal.getInstance(modal);
-                    if (!bootstrapModal) {
-                        bootstrapModal = new bootstrap.Modal(modal);
-                    }
-                    bootstrapModal.hide();
+                    // Fermer modal
+                    let confirmInstance = bootstrap.Modal.getInstance(confirmModalEl);
+                    if (!confirmInstance) confirmInstance = new bootstrap.Modal(confirmModalEl);
+                    confirmInstance.hide();
 
-                    // Nettoyage du backdrop si nécessaire
-                    setTimeout(() => {
-                        const backdrop = document.querySelector('.modal-backdrop');
-                        if (backdrop) backdrop.remove();
-
-                        document.body.classList.remove('modal-open');
-                        document.body.style.removeProperty('overflow');
-                        document.body.style.removeProperty('padding-right');
-                    }, 400);
+                    // 🔄 Recharge la page pour rafraîchir toute la progression
+                    setTimeout(() => location.reload(), 800);
 
                 } else {
                     showToast(false);
                 }
+
             } catch (error) {
                 showToast(false);
             } finally {
-                button.disabled = false;
-                button.innerHTML = '<i class="bi bi-check-circle me-1"></i>Attribuer';
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = originalLabel;
             }
         });
-    });
+    }
 });

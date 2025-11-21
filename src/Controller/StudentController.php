@@ -159,20 +159,34 @@ class StudentController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Élève introuvable'], 404);
         }
 
-        // CAS SPECIAL : "Aucun entraînement"
+        /*
+         * CAS PARTICULIER : retrait d'entraînement
+         * L'utilisateur a sélectionné "Aucun entraînement"
+         */
         if ($entrainementId === 'none') {
+
+            // On appelle la méthode spéciale qui envoie l’entraînement "fictif" à l’API
+            $ok = $this->trainingAssignmentService->assignDefaultTraining($eleve);
+
+            if (!$ok) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Erreur API : impossible de retirer l’entraînement.'
+                ], 500);
+            }
+
+            // On enlève l'entraînement côté base locale
             $eleve->setEntrainement(null);
-            $eleve->setCurrentLearningPathID(null);
             $this->em->flush();
 
             return new JsonResponse([
-                'success'          => true,
-                'message'          => 'Aucun entraînement n’est désormais attribué à cet élève.',
-                'entrainementName' => 'Aucun entraînement',
+                'success' => true,
+                'message' => 'L’entraînement a été retiré.',
+                'entrainementName' => 'Aucun entraînement'
             ]);
         }
 
-        // Cas normal : attribution d’un entraînement existant
+        // --- CAS NORMAUX : assignment d’un entraînement classique
         $entrainement = $this->em->getRepository(Entrainement::class)->find($entrainementId);
 
         if (!$entrainement) {
@@ -184,14 +198,19 @@ class StudentController extends AbstractController
         if (!$ok) {
             return new JsonResponse([
                 'success' => false,
-                'message' => 'Erreur lors de la mise à jour sur l’API.',
+                'message' => 'Erreur lors de la mise à jour sur l’API.'
             ], 500);
         }
+
+        // Mise à jour locale
+        $eleve->setEntrainement($entrainement);
+        $this->em->flush();
 
         return new JsonResponse([
             'success'          => true,
             'message'          => 'Nouvel entraînement attribué avec succès.',
-            'entrainementName' => $entrainement->getObjectifs()->first()?->getName() ?? 'Sans nom',
+            'entrainementName' => $entrainement->getLearningPathID()
         ]);
     }
+
 }

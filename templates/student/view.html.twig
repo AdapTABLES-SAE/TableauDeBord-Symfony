@@ -282,7 +282,10 @@
                                 </div>
 
                                 <div class="card-footer bg-transparent border-0">
-                                    <button type="button" class="btn btn-outline-danger w-100 fw-semibold select-entrainement">
+                                    <button type="button"
+                                            class="btn btn-outline-danger w-100 fw-semibold select-entrainement"
+                                            data-name="Aucun entraînement"
+                                            data-id="none">
                                         <i class="bi bi-x-circle me-1"></i>Retirer l'entraînement
                                     </button>
                                 </div>
@@ -327,7 +330,10 @@
                                         </div>
 
                                         <div class="card-footer bg-transparent border-0">
-                                            <button type="button" class="btn btn-violet w-100 fw-semibold select-entrainement">
+                                            <button type="button"
+                                                    class="btn btn-violet w-100 fw-semibold select-entrainement"
+                                                    data-name="{{ e.learningPathID }}"
+                                                    data-id="{{ e.id }}">
                                                 <i class="bi bi-check-circle me-1"></i>Attribuer
                                             </button>
                                         </div>
@@ -347,6 +353,48 @@
             </div>
         </div>
     </div>
+
+    {# --- Modal confirmation attribution entraînement --- #}
+    <div class="modal fade" id="confirmAssignTrainingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow-lg border-0">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title fw-bold">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirmer l’attribution
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p>
+                        Vous êtes sur le point d’attribuer un nouvel entraînement à cet élève.
+                    </p>
+
+                    <p class="fw-bold text-danger">
+                        ⚠ Cette action réinitialisera <u>toutes les progressions de jeu</u> associées à l’entraînement actuel.
+                    </p>
+
+                    <p>
+                        Entraînement sélectionné : <span id="confirm-training-name" class="fw-semibold"></span>
+                    </p>
+                </div>
+
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+
+                    <button type="button" class="btn btn-danger" id="confirm-assign-btn">
+                        Confirmer l’attribution
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
 
     {# Toast notification avec variables personnalisables #}
     {% include 'components/toast.html.twig' with {
