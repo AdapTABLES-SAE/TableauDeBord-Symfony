@@ -8,6 +8,7 @@ use App\Entity\Entrainement;
 use App\Repository\ClasseRepository;
 use App\Repository\EnseignantRepository;
 use App\Repository\EntrainementRepository;
+use App\Repository\NiveauRepository;
 use App\Repository\ObjectifRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,8 +23,8 @@ use Symfony\Component\Routing\RouterInterface;
 class ObjectiveController extends AbstractController
 {
 
-    #[Route('/training/{id}', name: 'training')]
-    public function training(int $id, EntrainementRepository $train): Response
+    #[Route('/training/{id}', name: 'training_details')]
+    public function showTrainingDetails(int $id, EntrainementRepository $train): Response
     {
         $training = $train->find($id);
 
@@ -36,6 +37,26 @@ class ObjectiveController extends AbstractController
         return $this->render('components/_entrainement_detail.html.twig', [
             'training' => $training,
             'objectifs' => $objectifs
+        ]);
+    }
+
+    #[Route('/training/{id}/add', name: 'addObjective')]
+    public function addObjective(int $id, EntrainementRepository $train, NiveauRepository $levelRepo): Response
+    {
+        $training = $train->find($id);
+        $levels = $levelRepo->findAll();
+
+        if (!$training) {
+            throw $this->createNotFoundException('Entrainement introuvable.');
+        }
+
+        $objectifs = $training->getObjectifs();
+//        dd($levels);
+
+        return $this->render('components/add_objective.html.twig', [
+            'training' => $training,
+            'objectifs' => $objectifs,
+            'levels' => $levels
         ]);
     }
 

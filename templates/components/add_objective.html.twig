@@ -1,0 +1,102 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Création d'un objectif{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/objectiveList.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('js/objectiveList.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+
+    {% block header %}
+        {% include 'components/header.html.twig' with {
+            breadcrumb_items: [
+                {'label': 'Entrainements ', 'url': path('class_dashboard')}
+            ]
+        } %}
+    {% endblock %}
+
+    <div class="container my-4">
+        <div class="p-4 rounded-3" style="background-color:#d9d2ff;">
+            <h1 class="text-center mb-4">Création d’un objectif</h1>
+
+            <!-- Nom de l'objectif -->
+            <div class="mb-3">
+                <label class="fw-semibold">Nom de l’objectif :</label>
+                <div class="d-flex align-items-center gap-2">
+                    <input type="text"
+                           name="objective_name"
+                           class="form-control"
+                           value="{{ objective.name ?? '' }}">
+                    <button class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </div>
+            </div>
+
+            <form method="post">
+
+                <!-- pour envoyer les niveaux sélectionnés -->
+                <input type="hidden" id="selected-levels-input" name="selected_levels">
+
+                <!-- Double liste -->
+                <div class="bg-white p-4 shadow-sm rounded-3 mt-4">
+                    <h4 class="mb-3">Ajouter niveaux</h4>
+
+                    <div class="d-flex align-items-center justify-content-between">
+
+                        <!-- Liste de gauche -->
+                        <div class="flex-grow-1 me-4">
+                            <input type="text" id="level-search" class="form-control mb-2" placeholder="Rechercher un niveau">
+                            <div class="d-flex align-items-center justify-content-between">Niveaux disponibles</div>
+                            <div class="border rounded-3 p-2 level-list" id="available-levels">
+                                {% for level in levels %}
+                                    <div class="selectable-level" data-id="{{ level.id }}">
+                                        {{ level.levelID }}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Flèches -->
+                        <div class="d-flex flex-column align-items-center gap-3 mx-4">
+                            <button type="button" class="btn btn-light border arrow-btn" id="add-level">
+                                <i class="bi bi-arrow-right"></i>
+                            </button>
+                            <button type="button" class="btn btn-light border arrow-btn" id="remove-level">
+                                <i class="bi bi-arrow-left"></i>
+                            </button>
+                        </div>
+
+                        <!-- Liste de droite -->
+                        <div class="flex-grow-1 ms-4">
+                            <div class="d-flex align-items-center justify-content-between">Niveaux attribués</div>
+                            <div class="border rounded-3 p-2 level-list" id="selected-levels" data-placeholder="Aucun niveau attribué">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Boutons bas -->
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <button type="button" class="btn btn-danger">
+                            Abandonner la création <i class="bi bi-trash"></i>
+                        </button>
+
+                        <button type="submit" class="btn btn-success">
+                            Créer l’objectif <i class="bi bi-check-circle"></i>
+                        </button>
+                    </div>
+
+                </div>
+            </form>
+
+        </div>
+    </div>
+
+{% endblock %}
