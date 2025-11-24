@@ -3,7 +3,9 @@
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/dashboard/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ partial_css }}">
+    {% for cssFile in dashboard_css %}
+        <link rel="stylesheet" href="{{ cssFile }}">
+    {% endfor %}
 {% endblock %}
 
 {% block body %}
@@ -15,47 +17,51 @@
 
     <div class="container-fluid py-3">
         <div class="row h-100 g-3">
-            <!-- Liste des classes -->
+
+            {# CLASSES #}
             <div class="col-12 col-md-4 col-lg-3">
-                <div class="element-list-container shadow-sm dashboard-container">
-                    <h4 class="fw-bold mb-3">{{ label_element_list_title }}</h4>
-                    <div class="element-list overflow-auto">
-                        <div class="d-flex flex-column gap-2">
-                            {% for element in elements %}
-                                <input
-                                    type="radio"
-                                    class="btn-check"
-                                    name="elementSelection"
-                                    id="element-{{ loop.index }}"
-                                    data-id="{{ element.id }}"
-                                    autocomplete="off"
-                                >
-                                <label
-                                    class="btn btn-light text-start"
-                                    for="element-{{ loop.index }}"
-                                >
-                                    {{ element.name }}
-                                </label>
-                            {% endfor %}
-                        </div>
-                        <hr>
-                        <button class="btn btn-dark w-100 mt-2">
-                            {{ label_element_list_add }}
-                            <i class="ms-1 bi bi-plus-circle"></i>
-                        </button>
-                    </div>
+                <div class="element-list-container shadow-sm dashboard-container"
+                     data-dashboard-pair="classes"
+                     data-partial-list
+                     data-list-url="{{ path('class_list_partial') }}">
                 </div>
             </div>
 
-            <!-- Détails de la classe -->
             <div class="col-12 col-md-8 col-lg-9">
-                <div id="element-detail" class="element-detail shadow-sm h-100 dashboard-container">
-                    <h2 class="fw-bold mb-3">{{ label_element_details_not_found_title }}</h2>
-                    <p class="text-primary fs-5">Sélectionner un élément pour voir le détail de celui-ci s’afficher</p>
+                <div class="element-detail shadow-sm h-100 dashboard-container"
+                     data-dashboard-pair="classes"
+                     data-partial-detail
+                     data-detail-url-template="{{ path('class_details', {id: '__ID__'}) }}">
+                    <h2 class="fw-bold mb-3">Ma classe</h2>
+                    <p class="text-primary fs-5">
+                        Sélectionner un élément pour voir le détail de celui-ci s’afficher
+                    </p>
                 </div>
             </div>
+
+            {# TRAININGS #}
+            {#
+            <div class="col-12 col-md-4 col-lg-3">
+                <div class="element-list-container shadow-sm dashboard-container"
+                     data-dashboard-pair="trainings"
+                     data-partial-list
+                     data-list-url="{{ path('training_list_partial') }}">
+                </div>
+            </div>
+
+            <div class="col-12 col-md-8 col-lg-9">
+                <div class="element-detail shadow-sm h-100 dashboard-container"
+                     data-dashboard-pair="trainings"
+                     data-partial-detail
+                     data-detail-url-template="{{ path('training_details', {id: '__ID__'}) }}">
+                    <!-- placeholder, same idea -->
+                </div>
+            </div>
+            #}
+
         </div>
     </div>
+
     {% include '/components/toast.html.twig' with {
         toast_success_title: "Élève mis à jour",
         toast_success_message: "Les informations ont bien été enregistrées.",
@@ -64,14 +70,10 @@
     } %}
 {% endblock %}
 
-
 {% block javascripts %}
     {{ parent() }}
-    <script>
-        const fetchUrlTemplate = "{{ fetchUrlTemplate }}";
-    </script>
     <script src="{{ asset('js/partial_includers/dashboard.js') }}"></script>
-    <script src="{{ partial_script }}"></script>
+    {% for jsFile in dashboard_js %}
+        <script src="{{ jsFile }}"></script>
+    {% endfor %}
 {% endblock %}
-
-

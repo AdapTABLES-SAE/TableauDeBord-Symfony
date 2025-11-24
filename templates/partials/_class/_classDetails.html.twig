@@ -3,7 +3,7 @@
 {#    <link rel="stylesheet" href="{{ asset('css/xxx.css') }}">#}
 {#{% endblock %}#}
 
-<div id="includedPartial" class="w-100 h-100 py-3">
+<div id="includedDetailsPartial" class="w-100 h-100 py-3">
     <!-- NOM DE LA CLASSE -->
     <div class="section-title-area mb-1 text-center">
         <h2 class="fw-bold mb-3">Détails de ma classe</h2>
@@ -72,7 +72,8 @@
                         <tr data-row-edited="false"
                             data-db-id="{{ student.id }}"
                             style="cursor: pointer"
-                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';">
+                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';"
+                        >
 
                             <td class="w-25 ps-4 fw-medium text-start">
                                 {{ student.prenomEleve }} {{ student.nomEleve }}
