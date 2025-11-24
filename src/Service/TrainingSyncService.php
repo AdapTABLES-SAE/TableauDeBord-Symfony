@@ -12,6 +12,7 @@ use App\Entity\Niveau;
 use App\Entity\Tache;
 use App\Entity\Prerequis;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 class TrainingSyncService
 {

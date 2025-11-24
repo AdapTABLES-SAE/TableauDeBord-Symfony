@@ -3,7 +3,9 @@
 {% block stylesheets %}
     {{ parent() }}
     <link rel="stylesheet" href="{{ asset('css/dashboard/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ partial_css }}">
+    {% for cssFile in dashboard_css %}
+        <link rel="stylesheet" href="{{ cssFile }}">
+    {% endfor %}
 {% endblock %}
 
 {% block body %}
@@ -14,48 +16,63 @@
     {% endblock %}
 
     <div class="container-fluid py-3">
-        <div class="row h-100 g-3">
-            <!-- Liste des classes -->
-            <div class="col-12 col-md-4 col-lg-3">
-                <div class="element-list-container shadow-sm dashboard-container">
-                    <h4 class="fw-bold mb-3">{{ label_element_list_title }}</h4>
-                    <div class="element-list overflow-auto">
-                        <div class="d-flex flex-column gap-2">
-                            {% for element in elements %}
-                                <input
-                                    type="radio"
-                                    class="btn-check"
-                                    name="elementSelection"
-                                    id="element-{{ loop.index }}"
-                                    data-id="{{ element.id }}"
-                                    autocomplete="off"
-                                >
-                                <label
-                                    class="btn btn-light text-start"
-                                    for="element-{{ loop.index }}"
-                                >
-                                    {{ element.name }}
-                                </label>
-                            {% endfor %}
+
+        <ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="classes-tab" data-bs-toggle="tab" data-bs-target="#classes-pane" type="button" role="tab">Classes</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="trainings-tab" data-bs-toggle="tab" data-bs-target="#trainings-pane" type="button" role="tab">Entraînements</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="dashboardTabsContent">
+
+            <div class="tab-pane fade show active" id="classes-pane" role="tabpanel">
+                <div class="row h-100 g-3">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <div class="element-list-container shadow-sm dashboard-container"
+                             data-dashboard-pair="classes"
+                             data-partial-list
+                             data-list-url="{{ path('class_list_partial') }}">
                         </div>
-                        <hr>
-                        <button class="btn btn-dark w-100 mt-2">
-                            {{ label_element_list_add }}
-                            <i class="ms-1 bi bi-plus-circle"></i>
-                        </button>
+                    </div>
+
+                    <div class="col-12 col-md-8 col-lg-9">
+                        <div class="element-detail shadow-sm h-100 dashboard-container"
+                             data-dashboard-pair="classes"
+                             data-partial-detail
+                             data-detail-url-template="{{ path('class_details', {id: '__ID__'}) }}">
+                            <h2 class="fw-bold mb-3">Ma classe</h2>
+                            <p class="text-primary fs-5">Sélectionner un élément pour voir le détail de celui-ci s’afficher</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Détails de la classe -->
-            <div class="col-12 col-md-8 col-lg-9">
-                <div id="element-detail" class="element-detail shadow-sm h-100 dashboard-container">
-                    <h2 class="fw-bold mb-3">{{ label_element_details_not_found_title }}</h2>
-                    <p class="text-primary fs-5">Sélectionner un élément pour voir le détail de celui-ci s’afficher</p>
+            <div class="tab-pane fade" id="trainings-pane" role="tabpanel">
+                <div class="row h-100 g-3">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <div class="element-list-container shadow-sm dashboard-container"
+                             data-dashboard-pair="trainings"
+                             data-partial-list
+                             data-list-url="{{ path('training_list_partial') }}">
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-8 col-lg-9">
+                        <div class="element-detail shadow-sm h-100 dashboard-container"
+                             data-dashboard-pair="trainings"
+                             data-partial-detail
+                             data-detail-url-template="{{ path('training_details', {id: '__ID__'}) }}">
+                        </div>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
+
     {% include '/components/toast.html.twig' with {
         toast_success_title: "Élève mis à jour",
         toast_success_message: "Les informations ont bien été enregistrées.",
@@ -64,14 +81,10 @@
     } %}
 {% endblock %}
 
-
 {% block javascripts %}
     {{ parent() }}
-    <script>
-        const fetchUrlTemplate = "{{ fetchUrlTemplate }}";
-    </script>
     <script src="{{ asset('js/partial_includers/dashboard.js') }}"></script>
-    <script src="{{ partial_script }}"></script>
+    {% for jsFile in dashboard_js %}
+        <script src="{{ jsFile }}"></script>
+    {% endfor %}
 {% endblock %}
-
-

@@ -1,73 +1,125 @@
 // ============================================================================
-//  INITIALIZATION
+//  CLASSE PARTIAL — Works with new DashboardPair system
 // ============================================================================
-document.addEventListener("partial:loaded", () => {
-    const container = document.getElementById("includedPartial");
+
+window.reloadDashboardPair = async function (pairName) {
+    // Get list + detail containers for this pair
+    const list = document.querySelector(
+        `[data-partial-list][data-dashboard-pair="${pairName}"]`
+    );
+    const detail = document.querySelector(
+        `[data-partial-detail][data-dashboard-pair="${pairName}"]`
+    );
+
+    if (!list || !detail) return;
+
+    // Find currently selected element
+    const selected = list.querySelector('input[type="radio"]:checked');
+    if (!selected) return;
+
+    const id = selected.dataset.id;
+    if (!id) return;
+
+    // Build URL for the detail partial
+    const template = detail.dataset.detailUrlTemplate;
+    const url = template.replace("__ID__", encodeURIComponent(id));
+
+    // Loader
+    detail.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary"></div>
+            <p class="mt-3">Chargement…</p>
+        </div>
+    `;
+
+    // Fetch + inject
+    try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        detail.innerHTML = await res.text();
+
+        // Rebind the partial’s JS
+        document.dispatchEvent(
+            new CustomEvent("partial:loaded", {
+                detail: { pair: pairName, container: detail }
+            })
+        );
+
+    } catch (err) {
+        console.error("Detail reload error:", err);
+        detail.innerHTML = `<div class="text-danger p-3">Erreur lors du chargement</div>`;
+    }
+};
+
+
+document.addEventListener("partial:loaded", (e) => {
+    const { pair, container } = e.detail || {};
+
+    // Only run for the "classes" dashboard pair
+    if (pair !== "classes") return;
     if (!container) return;
 
+    // ------------------------------------------------------------------------
+    // LOOKUP HELPERS (always search inside the partial container)
+    // ------------------------------------------------------------------------
+    const q = (sel) => container.querySelector(sel);
+    const qAll = (sel) => container.querySelectorAll(sel);
+
     // ---- UI ELEMENTS ----
-    const selectModeSwitch = document.getElementById("select-mode-switch");
-    const selectModeLabel  = document.querySelector('label[for="select-mode-switch"]');
-    const selectModeActionsBtn = document.getElementById("select-mode-actions-dropdown");
+    const selectModeSwitch = q("#select-mode-switch");
+    const selectModeLabel  = q('label[for="select-mode-switch"]');
+    const selectModeActionsBtn = q("#select-mode-actions-dropdown");
 
-    const saveBtn   = document.getElementById("input_save_button");
-    const cancelBtn = document.getElementById("input_cancel_button");
-    const form      = document.getElementById("save_form");
-
+    const saveBtn   = q("#input_save_button");
+    const cancelBtn = q("#input_cancel_button");
+    const form      = q("#save_form");
 
     // Modal UI
-    const applyBtn = document.getElementById("trainingApplyConfirm");
-    const select = document.getElementById("trainingApplySelect");
+    const applyBtn = q("#trainingApplyConfirm");
+    const trainingApplySelect = q("#trainingApplySelect");
 
-    // ---- STATE ----
+    // ========================================================================
+    //  STATE
+    // ========================================================================
     let selectionMode = false;
     const selectedRows = new Set();
+
 
     // ========================================================================
     // 1. SWITCH BEHAVIOR — SELECTION MODE ON/OFF
     // ========================================================================
-    selectModeSwitch.addEventListener("change", () => {
-        selectionMode = selectModeSwitch.checked;
+    if (selectModeSwitch) {
+        selectModeSwitch.addEventListener("change", () => {
+            selectionMode = selectModeSwitch.checked;
+            selectModeLabel.textContent = selectionMode ? "Activé" : "Désactivé";
 
-        // Update label text
-        selectModeLabel.textContent = selectionMode ? "Activé" : "Désactivé";
+            const rows = qAll("tbody tr");
 
-        const rows = container.querySelectorAll("tbody tr");
+            selectedRows.clear();
 
-        // Clear selection when mode changes
-        selectedRows.clear();
+            rows.forEach(row => {
+                row.classList.remove("selected-row", "selectable");
 
-        rows.forEach(row => {
-            row.classList.remove("selected-row", "selectable");
-
-            if (selectionMode) {
-                // Enable selection mode
-                row.classList.add("selectable");
-
-                // Save & remove redirect onclick
-                row.dataset.originalOnclick = row.getAttribute("onclick");
-                row.removeAttribute("onclick");
-
-            } else {
-                // Restore redirect onclick
-                if (row.dataset.originalOnclick) {
-                    row.setAttribute("onclick", row.dataset.originalOnclick);
+                if (selectionMode) {
+                    row.classList.add("selectable");
+                    row.removeAttribute("onclick");
+                    delete row.dataset.originalOnclick;
                 }
-            }
+            });
         });
-    });
+    }
+
 
     // ========================================================================
-    // 2. ROW CLICK BEHAVIOR (EVENT DELEGATION) — WORKS 100% ALWAYS
+    // 2. ROW CLICK BEHAVIOR
     // ========================================================================
     container.addEventListener("click", (e) => {
         const row = e.target.closest("tbody tr");
         if (!row) return;
 
-        // Normal mode? Let redirect happen.
         if (!selectionMode) return;
 
-        // Selection mode: toggle blue highlight
         const id = row.dataset.dbId;
 
         if (selectedRows.has(id)) {
@@ -77,25 +129,23 @@ document.addEventListener("partial:loaded", () => {
             selectedRows.add(id);
             row.classList.add("selected-row");
         }
-
-        // console.log("Rows selected:", [...selectedRows]);
     });
 
+
     // ========================================================================
-    // 3. PREVENT SELECT ELEMENTS FROM FIRING ROW CLICKS
+    // 3. PREVENT SELECT ELEMENTS FROM FIRING ROW EVENTS
     // ========================================================================
-    document.querySelectorAll(".ignore-row-click").forEach(el => {
+    qAll(".ignore-row-click").forEach(el =>
         ["mousedown", "click", "change"].forEach(evt =>
             el.addEventListener(evt, e => e.stopPropagation())
-        );
-    });
+        )
+    );
+
 
     // ========================================================================
-    // 4. FIELD CHANGE DETECTION — HIGHLIGHT + ENABLE SAVE/CANCEL
+    // 4. FIELD CHANGE DETECTION
     // ========================================================================
-    container.querySelectorAll(".save-able-field").forEach(element => {
-        // Avoid toggles and action buttons
-
+    qAll(".save-able-field").forEach(element => {
         const eventType = element.tagName.toLowerCase() === "select" ? "change" : "input";
 
         element.addEventListener(eventType, () => {
@@ -106,32 +156,35 @@ document.addEventListener("partial:loaded", () => {
                 if (tr) tr.dataset.rowEdited = "true";
 
                 element.style.backgroundColor = "#dcdca7";
-
                 enableButtons(saveBtn, cancelBtn);
             }
         });
     });
 
-    // ========================================================================
-    // 5. CANCEL BUTTON — HARD RELOAD
-    // ========================================================================
-    cancelBtn.addEventListener("click", () => {
-        reloadCurrentPartial();
-    });
 
     // ========================================================================
-    // 6. SAVE BUTTON — COLLECT FORM DATA AND SEND AJAX REQUEST
+    // 5. CANCEL BUTTON — reload pair
+    // ========================================================================
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+            window.reloadDashboardPair("classes");
+        });
+    }
+
+
+    // ========================================================================
+    // 6. SAVE FORM
     // ========================================================================
     if (form && saveBtn) {
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            const editedRows = [...container.querySelectorAll('[data-row-edited="true"]')];
-            const classTitle = document.getElementById("classTitle");
+            const editedRows = [...qAll('[data-row-edited="true"]')];
+            const classTitle = q("#classTitle");
 
             const data = new FormData();
 
-            if (classTitle.value !== classTitle.defaultValue) {
+            if (classTitle && classTitle.value !== classTitle.defaultValue) {
                 data.append(`class[title]`, classTitle.value);
             }
 
@@ -145,37 +198,19 @@ document.addEventListener("partial:loaded", () => {
                 }
 
                 if (select) {
-                    const trainingValue = select.value;
-                    data.append(`students[${dbId}][trainingPathId]`, trainingValue);
+                    data.append(`students[${dbId}][trainingPathId]`, select.value);
                 }
             });
-
-            const obj = {};
-            data.forEach((value, key) => {
-                if (obj[key]) {
-                    if (!Array.isArray(obj[key])) {
-                        obj[key] = [obj[key]];
-                    }
-                    obj[key].push(value);
-                } else {
-                    obj[key] = value;
-                }
-            });
-
-            console.log(JSON.stringify(obj, null, 2));
 
             try {
-                const response = await fetch(form.action, {
-                    method: "POST",
-                    body: data
-                });
-
+                const response = await fetch(form.action, { method: "POST", body: data });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
                 const result = await response.json();
 
                 if (result.success) {
                     alert("Modifications enregistrées !");
-                    setTimeout(() => reloadCurrentPartial(), 300);
+                    setTimeout(() => window.reloadDashboardPair("classes"), 200);
                 } else {
                     alert("Une erreur est survenue lors de la sauvegarde.");
                 }
@@ -189,11 +224,12 @@ document.addEventListener("partial:loaded", () => {
         });
     }
 
+
     // ========================================================================
-    // 7. DROPDOWN ACTIONS — DELETE + APPLY TRAINING
+    // 7. DROPDOWN ACTIONS
     // ========================================================================
-    document.querySelectorAll(".dropdown-item").forEach(item => {
-        item.addEventListener("click", e => {
+    qAll(".dropdown-item").forEach(item => {
+        item.addEventListener("click", (e) => {
             e.preventDefault();
             if (!selectionMode) return;
 
@@ -205,12 +241,12 @@ document.addEventListener("partial:loaded", () => {
             // DELETE
             if (actionName === "Supprimer les élèves") {
                 ids.forEach(id => {
-                    const row = container.querySelector(`tr[data-db-id="${id}"]`);
+                    const row = q(`tr[data-db-id="${id}"]`);
                     if (!row) return;
 
                     row.classList.add("mark-delete");
                     row.dataset.rowDeleted = "true";
-                    row.dataset.rowEdited = "true"; // so save button activates
+                    row.dataset.rowEdited = "true";
                 });
 
                 alert(`${ids.length} élèves marqués pour suppression.`);
@@ -222,22 +258,19 @@ document.addEventListener("partial:loaded", () => {
 
             // APPLY TRAINING
             if (actionName === "Appliquer un entrainement") {
-                // Open modal
-                const modal = new bootstrap.Modal(document.getElementById("trainingApplyModal"));
+                const modal = new bootstrap.Modal(q("#trainingApplyModal"));
                 modal.show();
 
-                // Ensure each open attaches only once
                 applyBtn.onclick = () => {
-                    const trainingId = select.value;
-                    const trainingName = select.options[select.selectedIndex].text;
+                    const trainingId = trainingApplySelect.value;
 
                     ids.forEach(id => {
-                        const row = container.querySelector(`tr[data-db-id="${id}"]`);
+                        const row = q(`tr[data-db-id="${id}"]`);
                         if (!row) return;
 
                         const selectEl = row.querySelector("select");
                         if (selectEl) {
-                            selectEl.value = trainingId
+                            selectEl.value = trainingId;
                             selectEl.dispatchEvent(new Event("change"));
                         }
                     });
@@ -248,69 +281,51 @@ document.addEventListener("partial:loaded", () => {
                     alert("Entraînement appliqué !");
                 };
             }
-
         });
     });
-// ========================================================================
-// 8. MODALE D’AJOUT D’ÉLÈVE (améliorée + min 5 chars ID)
-// ========================================================================
-    const addStudentModalElement = document.getElementById("addStudentModal");
-    const addStudentForm        = document.getElementById("addStudentForm");
-    const addStudentBtnOpen     = document.getElementById("openAddStudentModal");
-    const addStudentBtnConfirm  = document.getElementById("addStudentConfirm");
 
-    const lastNameInput  = document.getElementById("studentLastName");
-    const firstNameInput = document.getElementById("studentFirstName");
-    const studentIdInput = document.getElementById("studentId");
 
-    if (
-        addStudentModalElement &&
-        addStudentForm &&
-        addStudentBtnOpen &&
-        addStudentBtnConfirm &&
-        lastNameInput &&
-        firstNameInput &&
-        studentIdInput
-    ) {
+    // ========================================================================
+    // 8. ADD STUDENT MODAL
+    // ========================================================================
+    const addStudentModalElement = q("#addStudentModal");
+    const addStudentForm        = q("#addStudentForm");
+    const addStudentBtnOpen     = q("#openAddStudentModal");
+    const addStudentBtnConfirm  = q("#addStudentConfirm");
+
+    const lastNameInput  = q("#studentLastName");
+    const firstNameInput = q("#studentFirstName");
+    const studentIdInput = q("#studentId");
+
+    if (addStudentModalElement && addStudentForm && lastNameInput && firstNameInput && studentIdInput) {
         const addStudentModal = new bootstrap.Modal(addStudentModalElement);
 
-        function generateStudentId(nom, prenom) {
-            const n = nom.trim().toLowerCase();
-            const p = prenom.trim().toLowerCase();
-            if (!n || !p) return "";
-            return n.substring(0, 7) + p.charAt(0);
+        function genId(n, p) {
+            n = n.trim().toLowerCase();
+            p = p.trim().toLowerCase();
+            return (n ? n.substring(0, 7) : "") + (p ? p.charAt(0) : "");
         }
 
         function updatePlaceholderId() {
-            studentIdInput.placeholder = generateStudentId(
-                lastNameInput.value,
-                firstNameInput.value
-            );
-
-            if (!studentIdInput.value.trim()) {
-                studentIdInput.value = "";
-            }
+            studentIdInput.placeholder = genId(lastNameInput.value, firstNameInput.value);
+            if (!studentIdInput.value.trim()) studentIdInput.value = "";
         }
 
-        [lastNameInput, firstNameInput].forEach(input => {
-            input.addEventListener("input", updatePlaceholderId);
-        });
+        [lastNameInput, firstNameInput].forEach(input =>
+            input.addEventListener("input", updatePlaceholderId)
+        );
 
-        addStudentBtnOpen.addEventListener("click", () => {
+        addStudentBtnOpen?.addEventListener("click", () => {
             addStudentForm.reset();
             studentIdInput.placeholder = "dupontm";
             studentIdInput.value = "";
             addStudentModal.show();
         });
 
-        addStudentBtnConfirm.addEventListener("click", async () => {
+        addStudentBtnConfirm?.addEventListener("click", async () => {
             const nom    = lastNameInput.value.trim();
             const prenom = firstNameInput.value.trim();
-            let identifiant = studentIdInput.value.trim();
-
-            if (!identifiant) {
-                identifiant = studentIdInput.placeholder;
-            }
+            let identifiant = studentIdInput.value.trim() || studentIdInput.placeholder;
 
             if (!nom || !prenom) {
                 alert("Veuillez remplir nom et prénom.");
@@ -318,7 +333,6 @@ document.addEventListener("partial:loaded", () => {
             }
 
             const formData = new FormData();
-
             formData.append("lname", nom);
             formData.append("fname", prenom);
             formData.append("studentId", identifiant);
@@ -334,22 +348,21 @@ document.addEventListener("partial:loaded", () => {
 
                 if (result.success) {
                     addStudentModal.hide();
-                    await reloadCurrentPartial();
+                    await window.reloadDashboardPair("classes");
                 } else {
                     alert("Erreur lors de l'ajout de l'élève.");
                 }
-
             } catch (err) {
                 console.error("Erreur ajout élève:", err);
                 alert("Erreur réseau lors de l'ajout de l'élève.");
             }
         });
     }
-
 });
 
+
 // ============================================================================
-//  BUTTON STATE HELPERS
+// BUTTON HELPERS
 // ============================================================================
 function resetButtons(saveBtn, cancelBtn) {
     saveBtn.classList.add("btn-outline-success", "disabled");
