@@ -61,7 +61,7 @@ class TeacherDashboardController extends AbstractController
         $classes = $teacher->getClasses();
 
         // `_classList.html.twig` expects `elements`
-        return $this->render('/partials/_class/_classList.html.twig', [
+        return $this->render('/dashboard/partials/_class/_classList.html.twig', [
             'classes' => $classes,
         ]);
     }
@@ -87,7 +87,7 @@ class TeacherDashboardController extends AbstractController
 
         $students = $class->getEleves();
 
-        return $this->render('/partials/_class/_classDetails.html.twig', [
+        return $this->render('/dashboard/partials/_class/_classDetails.html.twig', [
             'class'         => $class,
             'students'      => $students,
             'trainingPaths' => $trainingPaths,
@@ -183,7 +183,7 @@ class TeacherDashboardController extends AbstractController
 
         $trainings = $teacher->getEntrainements();
 
-        return $this->render('/partials/_training/_trainingList.html.twig', [
+        return $this->render('/dashboard/partials/_training/_trainingList.html.twig', [
             'trainings' => $trainings,
         ]);
     }
@@ -209,12 +209,18 @@ class TeacherDashboardController extends AbstractController
         $objectives = $training->getObjectifs();
         $students   = $training->getEleves();
 
-        return $this->render('/partials/_training/_trainingDetails.html.twig', [
-            'training'   => $training,
-            'objectives' => $objectives,
-            'students'   => $students,
+        // Add this:
+        $trainingPaths = $em->getRepository(Entrainement::class)
+            ->findBy(['enseignant' => $teacherId]);
+
+        return $this->render('/dashboard/partials/_training/_trainingDetails.html.twig', [
+            'training'      => $training,
+            'objectives'    => $objectives,
+            'students'      => $students,
+            'trainingPaths' => $trainingPaths,   // <-- REQUIRED
         ]);
     }
+
 
     #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
     public function trainingUpdate(

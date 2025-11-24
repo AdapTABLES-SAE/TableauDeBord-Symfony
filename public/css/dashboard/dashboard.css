@@ -3,8 +3,8 @@ body {
 }
 
 .dashboard-container{
-    height: 80vh;
-    max-height: 80vh;
+    height: 78vh;
+    max-height: 78vh;
 }
 
 .element-list-container {
@@ -32,3 +32,45 @@ body {
     align-items: center;
     text-align: center;
 }
+
+
+/* Wide background */
+.tabs-container {
+    background: #e7e4ff;            /* soft wide lavender background */
+    padding: 14px 0;
+    margin-bottom: 12px;            /* spacing before content */
+    border-radius: 16px;            /* soft rounded container */
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+/* Remove default underline */
+.custom-wide-centered-tabs {
+    border-bottom: none;
+    gap: 10px;
+}
+
+/* Inactive tabs */
+.custom-wide-centered-tabs .nav-link {
+    border: none;
+    border-radius: 10px;
+    padding: 8px 28px;
+    background: #bbb8ff;            /* soft but darker lavender */
+    color: #2d2d5a;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+/* Hover */
+.custom-wide-centered-tabs .nav-link:hover {
+    background: #a7a3ff;
+    color: #1b1b38;
+}
+
+/* Active tab */
+.custom-wide-centered-tabs .nav-link.active {
+    background: #655bff;            /* strong purple accent */
+    color: #ffffff;
+    font-weight: 700;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+}
+

@@ -15,19 +15,26 @@
         } %}
     {% endblock %}
 
-    <div class="container-fluid py-3">
+    <div class="container-fluid py-0">
+        <div class="tabs-container">
+            <ul class="nav nav-tabs custom-wide-centered-tabs justify-content-center">
 
-        <ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="classes-tab" data-bs-toggle="tab" data-bs-target="#classes-pane" type="button" role="tab">Classes</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="trainings-tab" data-bs-toggle="tab" data-bs-target="#trainings-pane" type="button" role="tab">Entraînements</button>
-            </li>
-        </ul>
+                <li class="nav-item">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#classes-pane">
+                        Classes
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trainings-pane">
+                        Entraînements
+                    </button>
+                </li>
+
+            </ul>
+        </div>
 
         <div class="tab-content" id="dashboardTabsContent">
-
             <div class="tab-pane fade show active" id="classes-pane" role="tabpanel">
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
