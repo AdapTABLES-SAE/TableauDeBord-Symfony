@@ -1,0 +1,105 @@
+.carousel {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 280px;
+    gap: 10px;
+    width: 80%;
+    margin: 0 auto;
+}
+
+.carousel-viewport {
+    width: 730px;
+    overflow: hidden;
+}
+
+.carousel-track {
+    justify-content: center;
+    display: flex;
+    padding: 20px 0;
+    gap: 20px;
+    transition: transform 0.3s ease;
+}
+
+.carousel-track.few-cards {
+    justify-content: center;
+}
+
+.objective-card {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    transition: all 0.2s ease;
+    /*min-height: 260px;*/
+    /*max-height: 260px;*/
+    min-width: 220px;
+    max-width: 260px;
+    margin: 0 5px;
+}
+
+
+.objective-card .card-body {
+    padding: 1rem 1rem;
+}
+
+.objective-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    background-color: #f6f3ff;
+}
+
+.objective-card.active {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    background-color: #ffffff;
+
+    transition: transform 0.3s ease;
+    transform: scale(1.1);
+}
+
+.objective-card:not(.active) {
+    filter: brightness(0.95);
+    transition: filter 0.3s ease;
+}
+
+.objective-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2rem;
+}
+
+.objective-info {
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+}
+
+.btn-violet {
+    background-color: #7a5af8;
+    color: #fff;
+    border: none;
+    transition: 0.2s;
+}
+
+.btn-violet:hover,
+.btn-violet.btn-activated {
+    background-color: #6748d4;
+    color: #fff;
+}
+
+.carousel-arrow {
+    font-size: 32px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: #4f3bc8;
+}
+
+.carousel-arrow:disabled {
+    opacity: 0.2;
+}
+.carousel-indicator {
+    margin-top: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    color: #333;
+}
