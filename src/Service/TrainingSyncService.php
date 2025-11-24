@@ -12,6 +12,7 @@ use App\Entity\Niveau;
 use App\Entity\Tache;
 use App\Entity\Prerequis;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 
 class TrainingSyncService
 {
@@ -37,7 +38,8 @@ class TrainingSyncService
         $learningPathID = $data['learningPathID'];
 
         // ignore si entrainement par défaut
-        if($learningPathID === ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId())){
+        $isDefaultTraining = $learningPathID === ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId());
+        if($isDefaultTraining){
             return;
         }
 

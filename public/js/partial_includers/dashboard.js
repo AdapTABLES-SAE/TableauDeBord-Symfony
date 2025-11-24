@@ -1,89 +1,136 @@
+// dashboard.js
 
 document.addEventListener('DOMContentLoaded', () => {
-    const radios = document.querySelectorAll('.element-list input[type="radio"]');
-    const detailContainer = document.getElementById('element-detail');
+    // Find all pairs by their list container
+    const listContainers = document.querySelectorAll('[data-partial-list]');
 
-    if (!radios.length || !detailContainer) return;
+    listContainers.forEach(listContainer => {
+        const pairName = listContainer.dataset.dashboardPair;
+        if (!pairName) return;
 
-    radios.forEach(radio => {
-        radio.addEventListener('change', async () => {
-            const elementId = radio.dataset.id;
+        const detailContainer = document.querySelector(
+            `[data-partial-detail][data-dashboard-pair="${pairName}"]`
+        );
+        if (!detailContainer) return;
 
-            // Show a loading spinner
-            detailContainer.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="spinner-border text-primary" role="status"></div>
-                    <p class="mt-3">Chargement...</p>
-                </div>
-            `;
-
-            try {
-                // Given in twig (ex):
-                // // const fetchUrlTemplate = '/api/student/{id}/edit';
-
-                const fetchURL = interpolate(fetchUrlTemplate, {"id": elementId});
-                const response = await fetch(fetchURL);
-                if (!response.ok) throw new Error('Erreur réseau');
-                detailContainer.innerHTML = await response.text();
-
-                // Custom event
-                document.dispatchEvent(new CustomEvent('partial:loaded', {
-                    detail: { target: detailContainer }
-                }));
-            } catch (error) {
-                detailContainer.innerHTML = `
-                    <div class="text-danger p-3">Erreur lors du chargement de l’élément.</div>
-                `;
-                console.error('Erreur AJAX:', error);
-            }
-        });
+        new DashboardPair(pairName, listContainer, detailContainer);
     });
 });
 
-function interpolate(template, vars) {
-    return template.replace(/\{([^}]+)}/g, (_, key) => {
-        const value = vars[key.trim()];
-        return value !== undefined ? value : `{${key}}`; // garde {clé} si manquant
-    });
-}
+class DashboardPair {
+    constructor(name, listContainer, detailContainer) {
+        this.name = name;
+        this.listContainer = listContainer;
+        this.detailContainer = detailContainer;
 
-async function reloadCurrentPartial() {
-    const detailContainer = document.getElementById('element-detail');
-    if (!detailContainer) return;
+        this.listUrl = listContainer.dataset.listUrl;
+        this.detailUrlTemplate = detailContainer.dataset.detailUrlTemplate;
 
-    // Retrouver l’élément sélectionné
-    const currentRadio = document.querySelector('.element-list input[type="radio"]:checked');
-    if (!currentRadio) return;
+        this.currentId = null;
 
-    const elementId = currentRadio.dataset.id;
+        this.init();
+    }
 
-    // Loader visuel
-    detailContainer.innerHTML = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status"></div>
-            <p class="mt-3">Chargement...</p>
-        </div>
-    `;
+    init() {
+        if (this.listUrl) {
+            this.loadList();
+        }
+    }
 
-    // Reconstruire l’URL du partial via le template fourni par Twig
-    const fetchURL = interpolate(fetchUrlTemplate, { id: elementId });
+    // -------------------------------
+    // Load LIST partial
+    // -------------------------------
+    async loadList() {
+        this.listContainer.innerHTML = this._renderLoader("Chargement de la liste...");
 
-    try {
-        const response = await fetch(fetchURL);
-        if (!response.ok) throw new Error('Erreur réseau');
+        try {
+            const response = await fetch(this.listUrl);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-        // Injecter le nouveau partial
-        detailContainer.innerHTML = await response.text();
+            this.listContainer.innerHTML = await response.text();
 
-        // Relancer l’événement
-        document.dispatchEvent(new CustomEvent('partial:loaded', {
-            detail: { target: detailContainer }
-        }));
+            // Dispatch event in case some JS wants to hook on list load
+            document.dispatchEvent(new CustomEvent('partial:list:loaded', {
+                detail: {
+                    pair: this.name,
+                    container: this.listContainer
+                }
+            }));
 
-    } catch (error) {
-        detailContainer.innerHTML = `
-            <div class="text-danger p-3">Erreur lors du rechargement.</div>
+            this._bindListEvents();
+
+        } catch (err) {
+            console.error(`Erreur chargement liste [${this.name}]`, err);
+            this.listContainer.innerHTML = `
+                <div class="text-danger p-3">
+                    Erreur lors du chargement de la liste.
+                </div>
+            `;
+        }
+    }
+
+    _bindListEvents() {
+        const radios = this.listContainer.querySelectorAll('input[type="radio"][data-id]');
+        if (!radios.length) return;
+
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                const id = radio.dataset.id;
+                this.currentId = id;
+                this.loadDetail(id);
+            });
+        });
+    }
+
+    // -------------------------------
+    // Load DETAIL partial
+    // -------------------------------
+    async loadDetail(id) {
+        if (!id) return;
+        if (!this.detailUrlTemplate) return;
+
+        const url = this.detailUrlTemplate.replace('__ID__', encodeURIComponent(id));
+
+        this.detailContainer.innerHTML = this._renderLoader("Chargement du détail...");
+
+        try {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            this.detailContainer.innerHTML = await response.text();
+
+            // Notify specific partial JS (classeDetails.js, trainingPartial.js, etc.)
+            document.dispatchEvent(new CustomEvent('partial:loaded', {
+                detail: {
+                    pair: this.name,
+                    container: this.detailContainer,
+                    id: id
+                }
+            }));
+
+        } catch (err) {
+            console.error(`Erreur chargement détail [${this.name}]`, err);
+            this.detailContainer.innerHTML = `
+                <div class="text-danger p-3">
+                    Erreur lors du chargement du détail.
+                </div>
+            `;
+        }
+    }
+
+    // Reuse from elsewhere if needed
+    reloadCurrentDetail() {
+        if (this.currentId) {
+            this.loadDetail(this.currentId);
+        }
+    }
+
+    _renderLoader(text) {
+        return `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary" role="status"></div>
+                <p class="mt-3">${text}</p>
+            </div>
         `;
-        console.error("Erreur AJAX:", error);
     }
 }

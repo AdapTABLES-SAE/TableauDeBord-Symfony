@@ -1,0 +1,31 @@
+<div class="w-100 h-100 py-3">
+    <h4 class="fw-bold mb-3">Liste des entraînements</h4>
+
+    <div class="training-list overflow-auto">
+        <div class="d-flex flex-column gap-2">
+            {% for training in trainings %}
+                <input
+                    type="radio"
+                    class="btn-check"
+                    name="elementSelection_trainings"
+                    id="trainings-training-{{ loop.index }}"
+                    data-id="{{ training.id }}"
+                    autocomplete="off"
+                >
+                <label
+                    class="btn btn-light text-start"
+                    for="trainings-training-{{ loop.index }}"
+                >
+                    {{ training.name }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <hr>
+
+        <button class="btn btn-dark w-100 mt-2">
+            Ajouter un entraînement
+            <i class="ms-1 bi bi-plus-circle"></i>
+        </button>
+    </div>
+</div>
