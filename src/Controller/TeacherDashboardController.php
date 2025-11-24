@@ -154,14 +154,15 @@ class TeacherDashboardController extends AbstractController
             }
 
             if (isset($data['trainingPathId'])) {
-                if($data['trainingPathId'] !== "") {
+                if($data['trainingPathId'] === ""){
+                    $trainingAssignmentService->assignDefaultTraining($student);
+                    $student->setEntrainement(null);
+                }
+                else {
                     $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
                     if ($entrainement) {
                         $trainingAssignmentService->assignTraining($student, $entrainement);
                     }
-                }else{
-                    $trainingAssignmentService->assignDefaultTraining($student);
-                    $student->setEntrainement(null);
                 }
             }
         }
