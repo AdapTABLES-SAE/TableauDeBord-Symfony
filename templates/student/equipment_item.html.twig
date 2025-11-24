@@ -12,7 +12,7 @@
 
 <div class="{{ classes|join(' ') }}">
     <div class="equipment-card-image-wrapper">
-        <img src="{{ asset('images/equipment/' ~ item.id ~ '.png') }}"
+        <img src="{{ asset('images/equipment/' ~ (item.id|lower) ~ '.png') }}"
              alt="{{ itemNames[item.id] ?? item.id }}"
              class="equipment-card-image">
     </div>
