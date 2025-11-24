@@ -1,0 +1,195 @@
+/* ================================
+   SECTION ÉQUIPEMENTS – STYLE
+   ================================ */
+
+.equipment-section {
+    margin-top: 2.5rem;
+}
+
+.equipment-section-title {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #4b3bbd;
+    margin-bottom: 1rem;
+}
+
+.equipment-section-title i {
+    color: #7a5af8;
+}
+
+/* ================================
+   Grille de cartes
+   ================================ */
+
+.equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+    gap: 1.25rem;
+}
+
+/* ================================
+   Carte d’un objet
+   ================================ */
+
+.equipment-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: .9rem .75rem .8rem;
+    border: 2px solid #e4e1ff; /* par défaut */
+    box-shadow: 0 4px 10px rgba(35, 21, 90, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease,
+    background-color .15s ease;
+    min-height: 190px;
+}
+
+.equipment-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 7px 18px rgba(35, 21, 90, 0.10);
+}
+
+/* ================================
+   Image
+   ================================ */
+
+.equipment-card-image-wrapper {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: .4rem;
+}
+
+.equipment-card-image {
+    max-height: 100%;
+    width: auto;
+    object-fit: contain;
+}
+
+/* ================================
+   Nom
+   ================================ */
+
+.equipment-card-name {
+    font-size: .9rem;
+    font-weight: 600;
+    color: #4b3bbd;
+    margin-bottom: .35rem;
+}
+
+/* ================================
+   État d’achat / activation
+   ================================ */
+
+.equipment-card-status {
+    margin-top: auto;
+}
+
+.equipment-status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: .25rem .7rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+/* --- NON ACHETÉ (gris) --- */
+.equipment-card.equipment-not-owned {
+    border-color: #d1d5db !important;
+    opacity: .85;
+}
+
+.equipment-card.equipment-not-owned .equipment-status-pill {
+    background-color: #f3f4f6;
+    color: #6b7280;
+    border: 1px solid #d1d5db;
+}
+
+/* --- ACHETÉ mais PAS actif (ROUGE) --- */
+.equipment-card.equipment-owned:not(.equipment-active) {
+    border-color: #dc2626 !important;
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.18);
+}
+
+.equipment-card.equipment-owned:not(.equipment-active) .equipment-status-pill {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    border: 1px solid #dc2626;
+}
+
+/* --- ACTIF (VERT) --- */
+.equipment-card.equipment-active {
+    border-color: #16a34a !important;
+    background: linear-gradient(145deg, #ffffff, #ecfdf5);
+    box-shadow:
+        0 0 0 2px rgba(22, 163, 74, 0.25),
+        0 8px 20px rgba(22, 163, 74, 0.25);
+}
+
+.equipment-card.equipment-active .equipment-status-pill {
+    background-color: #16a34a;
+    color: #ffffff;
+    border: 1px solid #15803d;
+}
+
+/* Label sur le pill */
+.equipment-status-label {
+    white-space: nowrap;
+}
+
+/* ================================
+   Catégories
+   ================================ */
+
+.equipment-category-block {
+    margin-bottom: 2.2rem;
+}
+
+.equipment-category-header {
+    display: flex;
+    align-items: baseline;
+    gap: .4rem;
+    margin-bottom: .9rem;
+}
+
+.equipment-category-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #4b3bbd;
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.2rem;
+}
+
+.equipment-category-title i {
+    font-size: 1.4rem;
+}
+
+.equipment-category-subtitle {
+    font-size: .82rem;
+    color: #9ca3af;
+}
+
+/* ================================
+   Responsive
+   ================================ */
+
+@media (max-width: 768px) {
+    .equipment-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+    }
+
+    .equipment-card {
+        min-height: 180px;
+        padding-inline: .6rem;
+    }
+}

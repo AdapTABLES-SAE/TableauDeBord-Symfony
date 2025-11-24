@@ -185,3 +185,58 @@ Pop-up des entrainements
     border-radius: 0.4rem;
     font-size: 0.75rem;
 }
+
+/*
+=========== PROGRESSION JEU ==============
+ */
+
+.game-stats-container {
+    margin-top: 10px;
+}
+
+.stat-card {
+    background: #f8f6ff;
+    border: 1px solid #e5dfff;
+    transition: 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    color: #777;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.text-blue {
+    color: #4b3bbd !important;
+}
+
+.text-red {
+    color: #e63946 !important;
+}
+
+.text-orange {
+    color: #ff8a00 !important;
+}
+
+.text-gold {
+    color: #d4af37 !important;
+}
+
+.text-green {
+    color: #2ecc71 !important;
+}
+
+
+

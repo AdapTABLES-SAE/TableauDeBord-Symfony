@@ -1,4 +1,3 @@
-// public/js/student_tabs.js
 import { showToast } from './toast/toast.js';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 showToast(response.ok);
 
-                // 🔄 Rafraîchissement après modification
+                // Rafraîchissement après modification
                 setTimeout(() => location.reload(), 800);
 
             } catch (error) {
@@ -128,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (!confirmInstance) confirmInstance = new bootstrap.Modal(confirmModalEl);
                     confirmInstance.hide();
 
-                    // 🔄 Recharge la page pour rafraîchir toute la progression
+                    // Recharge la page pour rafraîchir toute la progression
                     setTimeout(() => location.reload(), 800);
 
                 } else {

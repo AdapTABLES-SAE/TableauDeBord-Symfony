@@ -1,0 +1,39 @@
+{% set classes = ['equipment-card'] %}
+
+{% if item.isBought %}
+    {% set classes = classes|merge(['equipment-owned']) %}
+{% else %}
+    {% set classes = classes|merge(['equipment-not-owned']) %}
+{% endif %}
+
+{% if item.isActivated %}
+    {% set classes = classes|merge(['equipment-active']) %}
+{% endif %}
+
+<div class="{{ classes|join(' ') }}">
+    <div class="equipment-card-image-wrapper">
+        <img src="{{ asset('images/equipment/' ~ item.id ~ '.png') }}"
+             alt="{{ itemNames[item.id] ?? item.id }}"
+             class="equipment-card-image">
+    </div>
+
+    <div class="equipment-name">
+        {{ item.label }}
+    </div>
+
+    <div class="equipment-card-status">
+        {% if item.isActivated %}
+            <span class="equipment-status-pill">
+                Acheté
+            </span>
+        {% elseif item.isBought %}
+            <span class="equipment-status-pill">
+                Désactivé
+            </span>
+        {% else %}
+            <span class="equipment-status-pill">
+                Pas acheté
+            </span>
+        {% endif %}
+    </div>
+</div>

@@ -273,7 +273,7 @@ class ApiClient
 
     /**
      * Envoie / met à jour un parcours complet dans /path/training
-     * ⚠️ Important : la structure doit coller à ce que ton PathManager Java attend.
+     * Important : la structure doit coller à ce que ton PathManager Java attend.
      */
     public function assignTrainingToLearner(Eleve $eleve, Entrainement $entrainement): bool
     {
@@ -287,4 +287,42 @@ class ApiClient
 
         return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
+
+    /*
+     * Statistique d'un élève
+     */
+    public function getLearnerStats(string $learnerId): ?array
+    {
+        try {
+            $url = ApiEndpoints::BASE_URL . ApiEndpoints::STATS_URL . $learnerId;
+
+            $response = $this->client->request('GET', $url);
+
+            if ($response->getStatusCode() !== 200) {
+                return null;
+            }
+
+            return $response->toArray();
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
+    public function fetchLearnerInventory(string $learnerId): array
+    {
+        $url = ApiEndpoints::BASE_URL . "store/learner/" . $learnerId;
+
+        try {
+            $response = $this->client->request('GET', $url);
+
+            if ($response->getStatusCode() !== 200) {
+                return ['items' => []];
+            }
+
+            return $response->toArray();
+        } catch (\Exception $e) {
+            return ['items' => []];
+        }
+    }
+
 }

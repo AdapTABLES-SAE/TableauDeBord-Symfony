@@ -132,7 +132,13 @@ class StudentController extends AbstractController
                 ];
             }
         }
-        // --------------------------------------------------------------------
+
+        $learnerStats = $this->apiClient->getLearnerStats($eleve->getLearnerId());
+        $learnerInventory = $this->apiClient->fetchLearnerInventory($eleve->getLearnerId());
+
+        if (!$learnerInventory || !isset($learnerInventory['items'])) {
+            $learnerInventory = ['items' => []];
+        }
 
         return $this->render('student/view.html.twig', [
             'eleve'              => $eleve,
@@ -140,6 +146,8 @@ class StudentController extends AbstractController
             'entrainements'      => $entrainementsDisponibles,
             'entrainementActuel' => $entrainementActuel,
             'trainingProgress'   => $trainingProgress,
+            'learnerStats'       => $learnerStats ?? null,
+            'learnerInventory' => $learnerInventory
         ]);
     }
 

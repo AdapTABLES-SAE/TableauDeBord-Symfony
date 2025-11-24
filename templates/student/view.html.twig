@@ -4,7 +4,8 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('css/student_view.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/vue_eleve/student_view.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/vue_eleve/equipement.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -212,19 +213,41 @@
 
                                                                 <ul class="list-unstyled small mb-0">
                                                                     {% for task in level.tasks %}
+
+                                                                        {# === Conversion du type de tâche === #}
+                                                                        {% set taskTypeReadable = {
+                                                                            'C1': '1 élément manquant',
+                                                                            'C2': '2 éléments manquants',
+                                                                            'MEMB': 'Connaître les résultats des tables',
+                                                                            'ID': 'Identification du fait',
+                                                                            'REC': 'Reconstituer le fait'
+                                                                        }[task.typeTask] ?? task.typeTask %}
+
+                                                                        {# Extraction du numéro de tâche (ex: T1, T2…) #}
+                                                                        {% set raw = task.idTask %}
+                                                                        {% set parts = raw|split('-') %}
+                                                                        {% set last = parts|last %}
+                                                                        {% set num = last starts with 'T' ? last|replace({'T':''}) : '' %}
+
+                                                                        {# Construction du nom final #}
+                                                                        {% if num != '' %}
+                                                                            {% set taskName = taskTypeReadable ~ ' – Tâche ' ~ num %}
+                                                                        {% else %}
+                                                                            {% set taskName = taskTypeReadable %}
+                                                                        {% endif %}
+
                                                                         <li class="d-flex justify-content-between task-row py-1">
-                                                                            <span>
-                                                                                <span class="badge bg-light text-dark me-1">
-                                                                                    {{ task.typeTask }}
-                                                                                </span>
-                                                                                {{ task.idTask }}
-                                                                            </span>
+                                                                            <span>{{ taskName }}</span>
+
                                                                             <span class="text-muted">
                                                                                 Faits : {{ (task.currentEncounters ?? 0)|number_format(0) }}%
                                                                                 — Succès : {{ (task.currentSuccess ?? 0)|number_format(0) }}%
                                                                             </span>
                                                                         </li>
+
+
                                                                     {% endfor %}
+
                                                                 </ul>
                                                             {% endif %}
                                                         {% endif %}
@@ -243,8 +266,190 @@
                     {% endif %}
                 </div>
 
-                <div class="tab-pane fade" id="game"><p class="text-muted">Contenu à venir...</p></div>
-                <div class="tab-pane fade" id="store"><p class="text-muted">Contenu à venir...</p></div>
+                <div class="tab-pane fade" id="game">
+                    {% if learnerStats is not defined or learnerStats is empty %}
+                        <p class="text-muted fst-italic">Aucune information de progression jeu disponible.</p>
+                    {% else %}
+
+                        <div class="game-stats-container mt-3">
+
+                            <div class="row g-3">
+
+                                {# Carte 1 : Niveau Max #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Niveau maximal atteint</div>
+                                        <div class="stat-value text-blue">{{ learnerStats.maxLevelReached ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte 2 : Niveaux générés #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Nombre de niveaux générés</div>
+                                        <div class="stat-value text-blue">{{ learnerStats.nbLevelsGenerated ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte 3 : Niveaux terminés #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Nombre de niveaux terminés</div>
+                                        <div class="stat-value text-blue">{{ learnerStats.nbLevelsPlayedUntilEnd ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte : Temps de jeu #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Temps total passé dans des donjons</div>
+                                        <div class="stat-value text-blue">
+                                            {{ learnerStats.totalTimeMin ?? 0 }} min
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {# Carte : Morts #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Nombre de morts</div>
+                                        <div class="stat-value text-red">{{ learnerStats.nbDeaths ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte : Retours au hub #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Retours au hub (sans finir le donjon)</div>
+                                        <div class="stat-value text-orange">{{ learnerStats.nbExits ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte : Pièces #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Total de pièces collectées</div>
+                                        <div class="stat-value text-gold">{{ learnerStats.totalCoins ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte : Questions rencontrées #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Nombre de questions rencontrées</div>
+                                        <div class="stat-value text-green">{{ learnerStats.nbQuestionsMeet ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                                {# Carte : Questions réussies #}
+                                <div class="col-md-4">
+                                    <div class="stat-card shadow-sm p-3 rounded-4 h-100">
+                                        <div class="stat-label">Nombre de réponses correctes</div>
+                                        <div class="stat-value text-green">{{ learnerStats.nbCorrectAnswers ?? 0 }}</div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    {% endif %}
+                </div>
+
+
+                <div class="tab-pane fade" id="store">
+                    <div class="equipment-wrapper">
+
+                        {% set allItems = {
+                            'BAG': 'Sac',
+                            'LANTERN': 'Lanterne',
+                            'COMPAS': 'Boussole',
+                            'BOOTS': 'Chaussures',
+                            'HP': 'Fiole HP',
+
+                            'BRACELET': 'Bracelet de force',
+                            'BELT': 'Ceinture de force',
+                            'GLOVE': 'Gant de force',
+                            'KEYS': 'Passe-partout',
+                            'COAT': 'Manteau de légèreté',
+                            'CARROT': 'Carotte magique',
+
+                            'ARMOR': 'Armure',
+                            'HELMET': 'Casque',
+                            'PANTS': 'Pantalon',
+                            'SHIELD': 'Bouclier',
+                            'SHOULDERS': 'Épaulières'
+                        } %}
+
+                        {% set inventoryMap = {} %}
+                        {% if learnerInventory and learnerInventory.items is defined %}
+                            {% for it in learnerInventory.items %}
+                                {% set inventoryMap = inventoryMap|merge({ (it.id) : it }) %}
+                            {% endfor %}
+                        {% endif %}
+
+                        <!-- OBJETS UTILES -->
+                        <h5 class="equipment-category">
+                            <i class="bi bi-tools me-2"></i> Objets utiles
+                        </h5>
+
+                        <div class="equipment-grid">
+                            {% for id, label in allItems %}
+                                {% if id in ['BAG','LANTERN','COMPAS','BOOTS','HP'] %}
+                                    {% include 'student/equipment_item.html.twig' with {
+                                        item: {
+                                            id: id,
+                                            label: label,
+                                            isBought: inventoryMap[id].isBought|default(false),
+                                            isActivated: inventoryMap[id].isActivated|default(false)
+                                        }
+                                    } %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- CAPACITÉS -->
+                        <h5 class="equipment-category mt-4">
+                            <i class="bi bi-lightning-fill me-2"></i> Capacités
+                        </h5>
+
+                        <div class="equipment-grid">
+                            {% for id, label in allItems %}
+                                {% if id in ['BRACELET','BELT','GLOVE','KEYS','COAT','CARROT'] %}
+                                    {% include 'student/equipment_item.html.twig' with {
+                                        item: {
+                                            id: id,
+                                            label: label,
+                                            isBought: inventoryMap[id].isBought|default(false),
+                                            isActivated: inventoryMap[id].isActivated|default(false)
+                                        }
+                                    } %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                        <!-- PROTECTION -->
+                        <h5 class="equipment-category mt-4">
+                            <i class="bi bi-shield-shaded me-2"></i> Protection
+                        </h5>
+
+                        <div class="equipment-grid">
+                            {% for id, label in allItems %}
+                                {% if id in ['ARMOR','HELMET','PANTS','SHIELD','SHOULDERS'] %}
+                                    {% include 'student/equipment_item.html.twig' with {
+                                        item: {
+                                            id: id,
+                                            label: label,
+                                            isBought: inventoryMap[id].isBought|default(false),
+                                            isActivated: inventoryMap[id].isActivated|default(false)
+                                        }
+                                    } %}
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
