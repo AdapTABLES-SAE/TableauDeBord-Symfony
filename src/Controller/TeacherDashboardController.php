@@ -10,6 +10,7 @@ use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
 use App\Service\TrainingSyncService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -164,6 +165,72 @@ class TeacherDashboardController extends AbstractController
                 }
             }
         }
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+
+    // Training
+    #[Route('/dashboard/training/list', name: 'training_list_partial')]
+    public function trainingList(
+        SessionInterface $session,
+        EntityManagerInterface $em
+    ): Response {
+        $teacherId = $session->get('teacher_id');
+        $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
+
+        $trainings = $teacher->getEntrainements();
+
+        return $this->render('/partials/_training/_trainingList.html.twig', [
+            'trainings' => $trainings,
+        ]);
+    }
+
+    #[Route('/dashboard/training/{id}/details', name: 'training_details')]
+    public function trainingDetails(
+        int $id,
+        EntityManagerInterface $em,
+        SessionInterface $session
+    ): Response {
+        $training = $em->getRepository(Entrainement::class)->find($id);
+
+        if (!$training) {
+            throw $this->createNotFoundException();
+        }
+
+        $teacherId = $session->get('teacher_id');
+
+        if (!$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
+            throw $this->createAccessDeniedException('Accès non autorisé à cet entraînement.');
+        }
+
+        $objectives = $training->getObjectifs();
+        $students   = $training->getEleves();
+
+        return $this->render('/partials/_training/_trainingDetails.html.twig', [
+            'training'   => $training,
+            'objectives' => $objectives,
+            'students'   => $students,
+        ]);
+    }
+
+    #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
+    public function trainingUpdate(
+        int $id,
+        Request $request,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $training = $em->getRepository(Entrainement::class)->find($id);
+
+        if (!$training) {
+            return new JsonResponse(['success' => false, 'error' => 'Training not found']);
+        }
+
+        if ($name = $request->request->get('name')) {
+            $training->setName($name);
+        }
+
         $em->flush();
 
         return new JsonResponse(['success' => true]);

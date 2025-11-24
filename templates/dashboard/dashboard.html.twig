@@ -16,48 +16,59 @@
     {% endblock %}
 
     <div class="container-fluid py-3">
-        <div class="row h-100 g-3">
 
-            {# CLASSES #}
-            <div class="col-12 col-md-4 col-lg-3">
-                <div class="element-list-container shadow-sm dashboard-container"
-                     data-dashboard-pair="classes"
-                     data-partial-list
-                     data-list-url="{{ path('class_list_partial') }}">
+        <ul class="nav nav-tabs mb-3" id="dashboardTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="classes-tab" data-bs-toggle="tab" data-bs-target="#classes-pane" type="button" role="tab">Classes</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="trainings-tab" data-bs-toggle="tab" data-bs-target="#trainings-pane" type="button" role="tab">Entraînements</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="dashboardTabsContent">
+
+            <div class="tab-pane fade show active" id="classes-pane" role="tabpanel">
+                <div class="row h-100 g-3">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <div class="element-list-container shadow-sm dashboard-container"
+                             data-dashboard-pair="classes"
+                             data-partial-list
+                             data-list-url="{{ path('class_list_partial') }}">
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-md-8 col-lg-9">
+                        <div class="element-detail shadow-sm h-100 dashboard-container"
+                             data-dashboard-pair="classes"
+                             data-partial-detail
+                             data-detail-url-template="{{ path('class_details', {id: '__ID__'}) }}">
+                            <h2 class="fw-bold mb-3">Ma classe</h2>
+                            <p class="text-primary fs-5">Sélectionner un élément pour voir le détail de celui-ci s’afficher</p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="col-12 col-md-8 col-lg-9">
-                <div class="element-detail shadow-sm h-100 dashboard-container"
-                     data-dashboard-pair="classes"
-                     data-partial-detail
-                     data-detail-url-template="{{ path('class_details', {id: '__ID__'}) }}">
-                    <h2 class="fw-bold mb-3">Ma classe</h2>
-                    <p class="text-primary fs-5">
-                        Sélectionner un élément pour voir le détail de celui-ci s’afficher
-                    </p>
-                </div>
-            </div>
+            <div class="tab-pane fade" id="trainings-pane" role="tabpanel">
+                <div class="row h-100 g-3">
+                    <div class="col-12 col-md-4 col-lg-3">
+                        <div class="element-list-container shadow-sm dashboard-container"
+                             data-dashboard-pair="trainings"
+                             data-partial-list
+                             data-list-url="{{ path('training_list_partial') }}">
+                        </div>
+                    </div>
 
-            {# TRAININGS #}
-            {#
-            <div class="col-12 col-md-4 col-lg-3">
-                <div class="element-list-container shadow-sm dashboard-container"
-                     data-dashboard-pair="trainings"
-                     data-partial-list
-                     data-list-url="{{ path('training_list_partial') }}">
+                    <div class="col-12 col-md-8 col-lg-9">
+                        <div class="element-detail shadow-sm h-100 dashboard-container"
+                             data-dashboard-pair="trainings"
+                             data-partial-detail
+                             data-detail-url-template="{{ path('training_details', {id: '__ID__'}) }}">
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <div class="col-12 col-md-8 col-lg-9">
-                <div class="element-detail shadow-sm h-100 dashboard-container"
-                     data-dashboard-pair="trainings"
-                     data-partial-detail
-                     data-detail-url-template="{{ path('training_details', {id: '__ID__'}) }}">
-                    <!-- placeholder, same idea -->
-                </div>
-            </div>
-            #}
 
         </div>
     </div>

@@ -1,0 +1,228 @@
+
+{#{% block stylesheets %}#}
+{#    <link rel="stylesheet" href="{{ asset('css/xxx.css') }}">#}
+{#{% endblock %}#}
+
+<div id="includedDetailsPartial" class="w-100 h-100 py-3">
+    <!-- NOM DE LA CLASSE -->
+    <div class="section-title-area mb-1 text-center">
+        <h2 class="fw-bold mb-3">Détails de ma classe</h2>
+
+        <div class="input-group justify-content-center w-auto mx-auto">
+            <label>
+                <input id="classTitle"
+                       type="text"
+                       class="save-able-field form-control text-center fw-semibold border-dark-subtle"
+                       value="{{ class.name }}">
+            </label>
+        </div>
+    </div>
+
+    <!-- TITRE -->
+    <div class="section-students-area mb-4 pb-2 px-5 rounded-bottom-5">
+        <div class="d-flex justify-content-between align-items-end mb-3 position-relative">
+            <h4 class="fw-bold mb-0">Liste des élèves</h4>
+
+            <div class="d-flex flex-column gap-2 position-absolute end-0">
+                <!-- Top label -->
+                <label class="form-label select-mode-label d-none d-xl-block">
+                    <i class="bi bi-person-fill-add me-1"></i> Mode Selection Multiple
+                </label>
+
+                <!-- Switch + Actions -->
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check form-switch m-0">
+                        <input id="select-mode-switch" class="form-check-input" type="checkbox">
+                        <label class="form-check-label switch-state-label" for="select-mode-switch">
+                            Désactivé
+                        </label>
+                    </div>
+
+                    <div class="dropdown">
+                        <button id="select-mode-actions-dropdown"
+                                class="btn btn-close-white dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown">
+                            Actions
+                        </button>
+
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Appliquer un entrainement</a></li>
+                            <li><a class="dropdown-item" href="#">Supprimer les élèves</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTE DES ÉLÈVES -->
+        {% if students|length > 0 %}
+            <div class="table-responsive rounded overflow-auto table-container">
+                <table class="table table-hover align-middle mb-0 table-bordered">
+                    <thead class="table-light">
+                    <tr class="text-center">
+                        <th scope="col" class="ps-4 text-start">Nom prénom</th>
+                        <th scope="col">Identifiant</th>
+                        <th scope="col">Entrainement</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    {% for student in students %}
+                        <tr data-row-edited="false"
+                            data-db-id="{{ student.id }}"
+                            style="cursor: pointer"
+                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';"
+                        >
+
+                            <td class="w-25 ps-4 fw-medium text-start">
+                                {{ student.prenomEleve }} {{ student.nomEleve }}
+                            </td>
+
+                            <td class="w-25 ps-4 fw-medium text-center">
+                                {{ student.learnerId }}
+                            </td>
+
+                            <td class="w-auto text-center">
+                                    <select
+                                        data-db-id="{{ student.entrainement.id ?? '' }}"
+                                        class="save-able-field align-self-center m-auto w-75 form-select ignore-row-click"
+                                        aria-label="Training selector"
+                                    >
+                                        <option
+                                            value=""
+                                        ></option>
+                                        {% for training in trainingPaths %}
+                                            <option
+                                                value="{{ training.id }}"
+                                                {% if student.entrainement and training.id == student.entrainement.id %}
+                                                    selected
+                                                {% endif %}
+                                            >
+                                                {{ training.name }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-secondary text-center my-4">
+                Aucun élève dans cette classe.
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- BOUTONS -->
+    <div class="section-buttons-area d-flex justify-content-between align-items-center px-4">
+        <!-- CANCEL -->
+        <div class="d-flex gap-2">
+            <button id="input_cancel_button" class="btn btn-outline-secondary disabled">
+                Annuler les modifications
+            </button>
+        </div>
+
+        <!-- SAVE/ADD -->
+        <div class="d-flex gap-2">
+            <form id="save_form" action="{{ path('class_update', {'id': class.id }) }}" method="POST">
+                <button type="submit" id="input_save_button" class="btn btn-outline-success disabled">
+                    Enregistrer
+                </button>
+            </form>
+
+            <button id="openAddStudentModal" class="btn btn-dark">
+                <i class="bi bi-plus-circle me-1"></i> Ajouter un élève
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL BULK TRAINING APPLY -->
+    <div class="modal fade" id="trainingApplyModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title">Appliquer un entraînement</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <label for="trainingApplySelect" class="form-label">Choisissez l'entraînement :</label>
+                    <select id="trainingApplySelect" class="form-select">
+                        {% for training in trainingPaths %}
+                            <option value="{{ training.id }}">{{ training.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="modal-footer">
+                    <button id="trainingApplyConfirm" class="btn btn-primary">
+                        Appliquer
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL AJOUT ÉLÈVE -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content border-0 shadow-lg">
+
+                <div class="modal-header bg-light-subtle text-black">
+                    <h5 class="modal-title fw-semibold">Ajouter un élève</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+                    <form id="addStudentForm" class="d-flex flex-column gap-3"
+                          action="{{ path('class_add_student', {'id': class.id }) }}" method="POST">
+                        <div>
+                            <label class="form-label fw-semibold">Prénom (*)</label>
+                            <input type="text"
+                                   id="studentFirstName"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ex : Marie"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-semibold">Nom (*)</label>
+                            <input type="text"
+                                   id="studentLastName"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ex : Dupont"
+                                   required>
+                        </div>
+
+                        <div>
+                            <label class="form-label fw-semibold">Identifiant</label>
+                            <input type="text"
+                                   id="studentId"
+                                   class="form-control form-control-lg"
+                                   placeholder="dupontm"
+                                   autocomplete="off">
+                        </div>
+                        <small class="text-muted fst-italic">
+                            * : Champs obligatoires
+                        </small>
+                    </form>
+                </div>
+
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button id="addStudentConfirm" class="btn btn-success px-4">
+                        Ajouter
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
