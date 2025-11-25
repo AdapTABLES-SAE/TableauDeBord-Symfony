@@ -20,9 +20,53 @@
             {% endfor %}
         </div>
         <hr>
-        <button class="btn btn-dark w-100 mt-2">
+        <button class="btn btn-dark w-100 mt-2" data-bs-toggle="modal" data-bs-target="#addClassModal">
             Ajouter une classe
             <i class="ms-1 bi bi-plus-circle"></i>
         </button>
+    </div>
+
+    <!-- MODAL AJOUT CLASSE -->
+    <div class="modal fade" id="addClassModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content border-0 shadow-lg">
+
+                <div class="modal-header bg-light-subtle text-black">
+                    <h5 class="modal-title fw-semibold">Créer une classe</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body p-4">
+
+                    <form id="addClassForm" action="{{ path("add_classroom") }}" method="post"
+                          class="d-flex flex-column gap-3">
+
+                        <div>
+                            <label for="className" class="form-label fw-semibold">Nom de la classe (*)</label>
+                            <input type="text"
+                                   id="className"
+                                   name="className"
+                                   class="form-control form-control-lg"
+                                   placeholder="Ex : CE1 B"
+                                   required>
+                        </div>
+
+                        <small class="text-muted fst-italic">
+                            * : Champ obligatoire
+                        </small>
+                    </form>
+                </div>
+
+                <div class="modal-footer bg-light d-flex justify-content-between">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+
+                    <button onclick="" id="addClassConfirm" class="btn btn-success px-4">
+                        Créer
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

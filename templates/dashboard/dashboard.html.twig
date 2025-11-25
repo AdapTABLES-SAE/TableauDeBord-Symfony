@@ -20,13 +20,17 @@
             <ul class="nav nav-tabs custom-wide-centered-tabs justify-content-center">
 
                 <li class="nav-item">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#classes-pane">
+                    <button class="nav-link {{ target == 'classes' ? 'active' : '' }}"
+                            data-bs-toggle="tab"
+                            data-bs-target="#classes-pane">
                         Classes
                     </button>
                 </li>
 
                 <li class="nav-item">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trainings-pane">
+                    <button class="nav-link {{ target == 'trainings' ? 'active' : '' }}"
+                            data-bs-toggle="tab"
+                            data-bs-target="#trainings-pane">
                         Entraînements
                     </button>
                 </li>
@@ -35,7 +39,11 @@
         </div>
 
         <div class="tab-content" id="dashboardTabsContent">
-            <div class="tab-pane fade show active" id="classes-pane" role="tabpanel">
+
+            <div class="tab-pane fade {{ target == 'classes' ? 'show active' : '' }}"
+                 id="classes-pane"
+                 role="tabpanel">
+
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
                         <div class="element-list-container shadow-sm dashboard-container"
@@ -55,9 +63,13 @@
                         </div>
                     </div>
                 </div>
+
             </div>
 
-            <div class="tab-pane fade" id="trainings-pane" role="tabpanel">
+            <div class="tab-pane fade {{ target == 'trainings' ? 'show active' : '' }}"
+                 id="trainings-pane"
+                 role="tabpanel">
+
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
                         <div class="element-list-container shadow-sm dashboard-container"
@@ -75,6 +87,7 @@
                         </div>
                     </div>
                 </div>
+
             </div>
 
         </div>
@@ -90,8 +103,22 @@
 
 {% block javascripts %}
     {{ parent() }}
+    <script src="{{ asset('js/partials/partialManager.js') }}"></script>
     <script src="{{ asset('js/partial_includers/dashboard.js') }}"></script>
+
     {% for jsFile in dashboard_js %}
         <script src="{{ jsFile }}"></script>
     {% endfor %}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const target = "{{ target }}";
+
+            if (target === "trainings") {
+                window.reloadDashboardPair("trainings");
+            } else {
+                window.reloadDashboardPair("classes");
+            }
+        });
+    </script>
 {% endblock %}

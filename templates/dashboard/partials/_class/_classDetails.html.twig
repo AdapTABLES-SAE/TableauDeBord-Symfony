@@ -58,7 +58,7 @@
         <!-- LISTE DES ÉLÈVES -->
         {% if students|length > 0 %}
             <div class="table-responsive rounded overflow-auto table-container">
-                <table class="table table-hover align-middle mb-0 table-bordered">
+                <table id="studentList" class="table table-hover align-middle mb-0 table-bordered">
                     <thead class="table-light">
                     <tr class="text-center">
                         <th scope="col" class="ps-4 text-start">Nom prénom</th>
@@ -72,7 +72,7 @@
                         <tr data-row-edited="false"
                             data-db-id="{{ student.id }}"
                             style="cursor: pointer"
-                            onclick="location.href='{{ path('teacher_student_view', { learnerId: student.learnerId }) }}';"
+                            data-original-onclick = '{{ path('teacher_student_view', { learnerId: student.learnerId }) }}'
                         >
 
                             <td class="w-25 ps-4 fw-medium text-start">

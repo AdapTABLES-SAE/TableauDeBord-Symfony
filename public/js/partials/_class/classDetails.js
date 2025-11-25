@@ -1,79 +1,31 @@
 // ============================================================================
-//  CLASSE PARTIAL — Works with new DashboardPair system
+//  CLASS DETAIL PARTIAL — Activated when partial:loaded fires
 // ============================================================================
-
-window.reloadDashboardPair = async function (pairName) {
-    // Get list + detail containers for this pair
-    const list = document.querySelector(
-        `[data-partial-list][data-dashboard-pair="${pairName}"]`
-    );
-    const detail = document.querySelector(
-        `[data-partial-detail][data-dashboard-pair="${pairName}"]`
-    );
-
-    if (!list || !detail) return;
-
-    // Find currently selected element
-    const selected = list.querySelector('input[type="radio"]:checked');
-    if (!selected) return;
-
-    const id = selected.dataset.id;
-    if (!id) return;
-
-    // Build URL for the detail partial
-    const template = detail.dataset.detailUrlTemplate;
-    const url = template.replace("__ID__", encodeURIComponent(id));
-
-    // Loader
-    detail.innerHTML = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-3">Chargement…</p>
-        </div>
-    `;
-
-    // Fetch + inject
-    try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("HTTP " + res.status);
-
-        detail.innerHTML = await res.text();
-
-        // Rebind the partial’s JS
-        document.dispatchEvent(
-            new CustomEvent("partial:loaded", {
-                detail: { pair: pairName, container: detail }
-            })
-        );
-
-    } catch (err) {
-        console.error("Detail reload error:", err);
-        detail.innerHTML = `<div class="text-danger p-3">Erreur lors du chargement</div>`;
-    }
-};
-
 
 document.addEventListener("partial:loaded", (e) => {
     const { pair, container } = e.detail || {};
 
-    // Only run for the "classes" dashboard pair
     if (pair !== "classes") return;
+
     if (!container) return;
 
     // ------------------------------------------------------------------------
-    // LOOKUP HELPERS (always search inside the partial container)
+    // LOOKUP HELPERS
     // ------------------------------------------------------------------------
     const q = (sel) => container.querySelector(sel);
     const qAll = (sel) => container.querySelectorAll(sel);
 
-    // ---- UI ELEMENTS ----
+    // ------------------------------------------------------------------------
+    // UI ELEMENTS
+    // ------------------------------------------------------------------------
     const selectModeSwitch = q("#select-mode-switch");
     const selectModeLabel  = q('label[for="select-mode-switch"]');
-    const selectModeActionsBtn = q("#select-mode-actions-dropdown");
 
     const saveBtn   = q("#input_save_button");
     const cancelBtn = q("#input_cancel_button");
     const form      = q("#save_form");
+
+    const studentList = q("#studentList");
 
     // Modal UI
     const applyBtn = q("#trainingApplyConfirm");
@@ -85,16 +37,31 @@ document.addEventListener("partial:loaded", (e) => {
     let selectionMode = false;
     const selectedRows = new Set();
 
+    const selected = document.querySelector(
+        `[data-partial-list][data-dashboard-pair="classes"] input[type="radio"]:checked`
+    );
+
+    const currentId = selected ? selected.dataset.id : null;
+
 
     // ========================================================================
-    // 1. SWITCH BEHAVIOR — SELECTION MODE ON/OFF
+    // 1. DEFAULT ROW CLICK TO OPEN STUDENT PAGE
     // ========================================================================
-    if (selectModeSwitch) {
+    studentList?.querySelectorAll("tbody tr").forEach(row => {
+        row.onclick = () => {
+            location.href = row.dataset.originalOnclick;
+        };
+    });
+
+    // ========================================================================
+    // 2. SWITCH — ENABLE/DISABLE MULTI-SELECTION MODE
+    // ========================================================================
+    if (selectModeSwitch && studentList) {
         selectModeSwitch.addEventListener("change", () => {
             selectionMode = selectModeSwitch.checked;
             selectModeLabel.textContent = selectionMode ? "Activé" : "Désactivé";
 
-            const rows = qAll("tbody tr");
+            const rows = studentList.querySelectorAll("tbody tr");
 
             selectedRows.clear();
 
@@ -103,16 +70,18 @@ document.addEventListener("partial:loaded", (e) => {
 
                 if (selectionMode) {
                     row.classList.add("selectable");
-                    row.removeAttribute("onclick");
-                    delete row.dataset.originalOnclick;
+                    row.onclick = () => {};
+                } else {
+                    row.onclick = () => {
+                        location.href = row.dataset.originalOnclick;
+                    };
                 }
             });
         });
     }
 
-
     // ========================================================================
-    // 2. ROW CLICK BEHAVIOR
+    // 3. SELECT ROWS WHEN IN SELECTION MODE
     // ========================================================================
     container.addEventListener("click", (e) => {
         const row = e.target.closest("tbody tr");
@@ -131,9 +100,8 @@ document.addEventListener("partial:loaded", (e) => {
         }
     });
 
-
     // ========================================================================
-    // 3. PREVENT SELECT ELEMENTS FROM FIRING ROW EVENTS
+    // 4. DO NOT LET <select> TRIGGER ROW CLICK
     // ========================================================================
     qAll(".ignore-row-click").forEach(el =>
         ["mousedown", "click", "change"].forEach(evt =>
@@ -141,9 +109,8 @@ document.addEventListener("partial:loaded", (e) => {
         )
     );
 
-
     // ========================================================================
-    // 4. FIELD CHANGE DETECTION
+    // 5. FIELD CHANGE DETECTION (enables Save + Cancel)
     // ========================================================================
     qAll(".save-able-field").forEach(element => {
         const eventType = element.tagName.toLowerCase() === "select" ? "change" : "input";
@@ -161,9 +128,8 @@ document.addEventListener("partial:loaded", (e) => {
         });
     });
 
-
     // ========================================================================
-    // 5. CANCEL BUTTON — reload pair
+    // 6. CANCEL BUTTON — RELOAD PARTIAL
     // ========================================================================
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
@@ -171,9 +137,8 @@ document.addEventListener("partial:loaded", (e) => {
         });
     }
 
-
     // ========================================================================
-    // 6. SAVE FORM
+    // 7. SAVE FORM (POST updates)
     // ========================================================================
     if (form && saveBtn) {
         form.addEventListener("submit", async (e) => {
@@ -224,9 +189,8 @@ document.addEventListener("partial:loaded", (e) => {
         });
     }
 
-
     // ========================================================================
-    // 7. DROPDOWN ACTIONS
+    // 8. DROPDOWN ACTIONS (DELETE / APPLY TRAINING)
     // ========================================================================
     qAll(".dropdown-item").forEach(item => {
         item.addEventListener("click", (e) => {
@@ -284,9 +248,8 @@ document.addEventListener("partial:loaded", (e) => {
         });
     });
 
-
     // ========================================================================
-    // 8. ADD STUDENT MODAL
+    // 9. ADD STUDENT
     // ========================================================================
     const addStudentModalElement = q("#addStudentModal");
     const addStudentForm        = q("#addStudentForm");
@@ -300,6 +263,9 @@ document.addEventListener("partial:loaded", (e) => {
     if (addStudentModalElement && addStudentForm && lastNameInput && firstNameInput && studentIdInput) {
         const addStudentModal = new bootstrap.Modal(addStudentModalElement);
 
+        // --------------------------------------------------------------------
+        // Auto-ID generation
+        // --------------------------------------------------------------------
         function genId(n, p) {
             n = n.trim().toLowerCase();
             p = p.trim().toLowerCase();
@@ -315,6 +281,9 @@ document.addEventListener("partial:loaded", (e) => {
             input.addEventListener("input", updatePlaceholderId)
         );
 
+        // --------------------------------------------------------------------
+        // Open modal
+        // --------------------------------------------------------------------
         addStudentBtnOpen?.addEventListener("click", () => {
             addStudentForm.reset();
             studentIdInput.placeholder = "dupontm";
@@ -322,6 +291,9 @@ document.addEventListener("partial:loaded", (e) => {
             addStudentModal.show();
         });
 
+        // --------------------------------------------------------------------
+        // Submit
+        // --------------------------------------------------------------------
         addStudentBtnConfirm?.addEventListener("click", async () => {
             const nom    = lastNameInput.value.trim();
             const prenom = firstNameInput.value.trim();
@@ -346,12 +318,15 @@ document.addEventListener("partial:loaded", (e) => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
 
-                if (result.success) {
-                    addStudentModal.hide();
-                    await window.reloadDashboardPair("classes");
-                } else {
+                if (result.fatal){
                     alert("Erreur lors de l'ajout de l'élève.");
+                } else if (!result.success && !result.fatal) {
+                    alert("Cet identifiant existe déjà.");
+                } else if (result.success && !result.fatal) {
+                    addStudentModal.hide();
+                    await window.reloadDetailOnly("classes", currentId);
                 }
+
             } catch (err) {
                 console.error("Erreur ajout élève:", err);
                 alert("Erreur réseau lors de l'ajout de l'élève.");
@@ -359,23 +334,3 @@ document.addEventListener("partial:loaded", (e) => {
         });
     }
 });
-
-
-// ============================================================================
-// BUTTON HELPERS
-// ============================================================================
-function resetButtons(saveBtn, cancelBtn) {
-    saveBtn.classList.add("btn-outline-success", "disabled");
-    saveBtn.classList.remove("btn-success");
-
-    cancelBtn.classList.add("btn-outline-secondary", "disabled");
-    cancelBtn.classList.remove("btn-secondary");
-}
-
-function enableButtons(saveBtn, cancelBtn) {
-    saveBtn.classList.remove("btn-outline-success", "disabled");
-    saveBtn.classList.add("btn-success");
-
-    cancelBtn.classList.remove("btn-outline-secondary", "disabled");
-    cancelBtn.classList.add("btn-secondary");
-}

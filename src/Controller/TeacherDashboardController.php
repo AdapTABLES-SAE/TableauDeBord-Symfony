@@ -24,7 +24,7 @@ class TeacherDashboardController extends AbstractController
 
     // Main
     #[Route('/dashboard', name: 'class_dashboard')]
-    public function index(SessionInterface $session, Packages $assets): Response
+    public function index(Request $request, SessionInterface $session, Packages $assets): Response
     {
         if (!$session->get('teacher_id')) {
             return $this->redirectToRoute('teacher_login');
@@ -37,6 +37,13 @@ class TeacherDashboardController extends AbstractController
             ],
         ];
 
+        $validTargets = ['classes', 'trainings'];
+        $target = $request->query->get('target', 'classes');
+
+        if (!in_array($target, $validTargets, true)) {
+            $target = 'classes';
+        }
+
         // Only what the Twig really needs
         return $this->render('/dashboard/dashboard.html.twig', [
             "dashboard_css" => [
@@ -46,12 +53,55 @@ class TeacherDashboardController extends AbstractController
             ],
             "dashboard_js" => [
                 $assets->getUrl('js/partials/_class/classDetails.js'),
-                $assets->getUrl('js/partials/_training/carousel.js'),
+                $assets->getUrl('js/partials/_class/classList.js'),
+
+//                $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
             'breadcrumbItems' => $breadcrumbItems,
+            'target' => $target
         ]);
     }
+    #[Route('/dashboard/add-classroom', name: 'add_classroom', methods: ['POST'])]
+    public function addClassroom(
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session,
+        EntityManagerInterface $em
+    ): JsonResponse
+    {
+        $count = 0;
+
+        $teacherID = $session->get('teacher_id');
+        $teacher = $em->getRepository(Enseignant::class)->find($teacherID);
+
+        $name = $request->request->get('className');
+        if (empty($name)) return new JsonResponse(['success' => false]);
+
+        $generatedID = $name . $count;
+
+        //cant really do better cause parsing from a request sorted by name would not be foolproof
+        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
+        while (!$isNewId){
+            $generatedID = $name . ++$count;
+            $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
+        }
+
+        $ok = $apiClient->addClassroom($teacher->getIdProf(), $generatedID, $name);
+
+        if ($ok) {
+            $classe = new Classe();
+            $classe->setEnseignant($teacher);
+            $classe->setIdClasse($generatedID);
+            $classe->setName($name);
+
+            $em->persist($classe);
+            $em->flush();
+        }
+
+        return new JsonResponse(['success' => $ok]);
+    }
+
 
     // List
     #[Route('/dashboard/class/list', name: 'class_list_partial')]
@@ -111,21 +161,28 @@ class TeacherDashboardController extends AbstractController
         $studentId = $request->request->get('studentId');
 
         $classe = $em->getRepository(Classe::class)->find($id);
-        if (!$classe) return new JsonResponse(['success' => false]);
+        if (!$classe) return new JsonResponse(['success' => false, 'fatal' => true]);
 
-        $ok = $apiClient->addStudent($classe->getIdClasse(), $studentId, $nom, $prenom);
 
-        if ($ok) {
-            $eleve = new Eleve();
-            $eleve->setNomEleve($nom);
-            $eleve->setPrenomEleve($prenom);
-            $eleve->setLearnerId($studentId);
-            $eleve->setClasse($classe);
+        $canCreateStudent = empty($em->getRepository(Eleve::class)->find($studentId));
+        if($canCreateStudent){
+            $ok = $apiClient->addStudent($classe->getIdClasse(), $studentId, $nom, $prenom);
 
-            $em->persist($eleve);
-            $em->flush();
+            if ($ok) {
+                $eleve = new Eleve();
+                $eleve->setNomEleve($nom);
+                $eleve->setPrenomEleve($prenom);
+                $eleve->setLearnerId($studentId);
+                $eleve->setClasse($classe);
+
+                $em->persist($eleve);
+                $em->flush();
+            }
+
+            return new JsonResponse(['success' => $ok, 'fatal' => !$ok]);
+        }else{
+            return new JsonResponse(['success' => false, 'fatal' => false]);
         }
-        return new JsonResponse(['success' => $ok]);
     }
 
     #[Route('/dashboard/class/{id}/update-infos', name: 'class_update', methods: ['POST'])]

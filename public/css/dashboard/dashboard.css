@@ -5,6 +5,7 @@ body {
 .dashboard-container{
     height: 78vh;
     max-height: 78vh;
+    overflow: auto;
 }
 
 .element-list-container {
