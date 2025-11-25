@@ -1,4 +1,4 @@
-{% set classes = ['equipment-card'] %}
+{% set classes = ['equipment-card','equipment-toggle'] %}
 
 {% if item.isBought %}
     {% set classes = classes|merge(['equipment-owned']) %}
@@ -10,10 +10,14 @@
     {% set classes = classes|merge(['equipment-active']) %}
 {% endif %}
 
-<div class="{{ classes|join(' ') }}">
+<div class="{{ classes|join(' ') }}"
+     data-id="{{ item.id }}"
+     data-bought="{{ item.isBought ? 1 : 0 }}"
+     data-activated="{{ item.isActivated ? 1 : 0 }}">
+
     <div class="equipment-card-image-wrapper">
         <img src="{{ asset('images/equipment/' ~ (item.id|lower) ~ '.png') }}"
-             alt="{{ itemNames[item.id] ?? item.id }}"
+             alt="{{ item.label }}"
              class="equipment-card-image">
     </div>
 
@@ -23,17 +27,11 @@
 
     <div class="equipment-card-status">
         {% if item.isActivated %}
-            <span class="equipment-status-pill">
-                Acheté
-            </span>
+            <span class="equipment-status-pill">Acheté</span>
         {% elseif item.isBought %}
-            <span class="equipment-status-pill">
-                Désactivé
-            </span>
+            <span class="equipment-status-pill">Désactivé</span>
         {% else %}
-            <span class="equipment-status-pill">
-                Pas acheté
-            </span>
+            <span class="equipment-status-pill">Pas acheté</span>
         {% endif %}
     </div>
 </div>

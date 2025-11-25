@@ -308,6 +308,7 @@ class ApiClient
         }
     }
 
+
     public function fetchLearnerInventory(string $learnerId): array
     {
         $url = ApiEndpoints::BASE_URL . "store/learner/" . $learnerId;
@@ -320,8 +321,43 @@ class ApiClient
             }
 
             return $response->toArray();
+
         } catch (\Exception $e) {
             return ['items' => []];
+        }
+    }
+
+
+    public function updateLearnerEquipment(string $learnerId, array $items): array
+    {
+        $url = ApiEndpoints::BASE_URL . 'store';
+
+        try {
+            $response = $this->client->request('POST', $url, [
+                'json' => [
+                    'learnerID' => $learnerId,
+                    'items'     => $items,
+                    'usedCoins' => 0,
+                ],
+            ]);
+
+            $status = $response->getStatusCode();
+            $ok = ($status >= 200 && $status < 300);
+
+            $headers = $response->getHeaders(false);
+            $contentLength = $headers['content-length'][0] ?? null;
+            $hasBody = $contentLength !== null && (int) $contentLength > 0;
+
+            return [
+                'success'  => $ok,
+                'response' => $hasBody ? $response->toArray(false) : null,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
         }
     }
 
