@@ -41,9 +41,12 @@ class TeacherDashboardController extends AbstractController
         return $this->render('/dashboard/dashboard.html.twig', [
             "dashboard_css" => [
                 $assets->getUrl('css/dashboard/_class_partial.css'),
+                $assets->getUrl('css/caroussel.css'),
+                $assets->getUrl('css/training.css'),
             ],
             "dashboard_js" => [
-                $assets->getUrl('js/partials/classeDetails.js'),
+                $assets->getUrl('js/partials/_class/classDetails.js'),
+                $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
             'breadcrumbItems' => $breadcrumbItems,
@@ -206,19 +209,19 @@ class TeacherDashboardController extends AbstractController
             throw $this->createAccessDeniedException('Accès non autorisé à cet entraînement.');
         }
 
-        $objectives = $training->getObjectifs();
-        $students   = $training->getEleves();
+        $objectifs = $training->getObjectifs();
 
-        // Add this:
-        $trainingPaths = $em->getRepository(Entrainement::class)
-            ->findBy(['enseignant' => $teacherId]);
-
-        return $this->render('/dashboard/partials/_training/_trainingDetails.html.twig', [
-            'training'      => $training,
-            'objectives'    => $objectives,
-            'students'      => $students,
-            'trainingPaths' => $trainingPaths,   // <-- REQUIRED
+        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
+            'training' => $training,
+            'objectifs' => $objectifs
         ]);
+
+//        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
+//            'training'      => $training,
+//            'objectives'    => $objectives,
+//            'students'      => $students,
+//            'trainingPaths' => $trainingPaths,   // <-- REQUIRED
+//        ]);
     }
 
 
