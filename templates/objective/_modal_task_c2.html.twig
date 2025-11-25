@@ -1,0 +1,90 @@
+{# Tâche C2 : 2 éléments manquants #}
+<div class="modal fade task-modal" id="taskModalC2" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content task-modal-content">
+
+            <div class="modal-header task-modal-header bg-violet text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-2-circle me-2"></i> Tâche complétion – 2 éléments manquants (C2)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body task-modal-body">
+                <input type="hidden" id="c2_levelId">
+
+                <div class="task-section">
+                    <div class="task-section-title">Élément(s) recherchés</div>
+                    <div class="row">
+                        <div class="col-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="c2_target_operand_table">
+                                <label class="form-check-label" for="c2_target_operand_table">
+                                    Facteur + table
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="c2_target_operand_result">
+                                <label class="form-check-label" for="c2_target_operand_result">
+                                    Facteur + résultat
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="c2_target_table_result">
+                                <label class="form-check-label" for="c2_target_table_result">
+                                    Table + résultat
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="task-section">
+                    <div class="task-row">
+                        <span>Nombre de mauvaises réponses à proposer</span>
+                        <div class="task-slider">
+                            <input type="range" min="2" max="5" id="c2_nbIncorrect" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="c2_nbIncorrect_value">3</span> mauvaises propositions
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-row">
+                        <span>Durée max d’acceptation des réponses</span>
+                        <div class="task-slider">
+                            <input type="range" min="5" max="60" step="5" id="c2_time" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="c2_time_value">20</span> secondes
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-row">
+                        <span>Succès consécutifs pour valider un fait</span>
+                        <div class="task-slider">
+                            <input type="range" min="1" max="10" id="c2_successes" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="c2_successes_value">1</span> succès
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer task-modal-footer">
+                <button type="button" class="btn btn-outline-danger me-auto d-none" id="c2_deleteBtn">
+                    Supprimer la tâche
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-violet task-confirm-btn" id="c2_confirmBtn">
+                    <i class="bi bi-check2-circle me-1"></i> Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

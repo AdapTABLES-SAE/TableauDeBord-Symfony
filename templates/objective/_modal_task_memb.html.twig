@@ -1,0 +1,95 @@
+{# Tâche MEMB : appartenance des résultats #}
+<div class="modal fade task-modal" id="taskModalMEMB" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content task-modal-content">
+
+            <div class="modal-header task-modal-header bg-violet text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-diagram-2-fill me-2"></i> Tâche appartenance des résultats (MEMB)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body task-modal-body">
+                <input type="hidden" id="memb_levelId">
+
+                <div class="task-section">
+                    <div class="task-section-title">Objectif d’identification</div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="memb_target_correct">
+                                <label class="form-check-label" for="memb_target_correct">
+                                    Résultats corrects
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="memb_target_incorrect">
+                                <label class="form-check-label" for="memb_target_incorrect">
+                                    Résultats incorrects
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-text small text-muted">
+                        Utilisez ces bascules comme un toggle : l’un ou l’autre.
+                    </div>
+                </div>
+
+                <div class="task-section">
+                    <div class="task-row">
+                        <span>Nombre de résultats proposés faux</span>
+                        <div class="task-slider">
+                            <input type="range" min="0" max="3" id="memb_nbIncorrect" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="memb_nbIncorrect_value">0</span> faux
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-row">
+                        <span>Nombre de résultats proposés vrais</span>
+                        <div class="task-slider">
+                            <input type="range" min="0" max="3" id="memb_nbCorrect" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="memb_nbCorrect_value">0</span> vrai(s)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-row">
+                        <span>Durée max d’acceptation des réponses</span>
+                        <div class="task-slider">
+                            <input type="range" min="5" max="60" step="5" id="memb_time" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="memb_time_value">20</span> secondes
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-row">
+                        <span>Succès consécutifs pour valider un fait</span>
+                        <div class="task-slider">
+                            <input type="range" min="1" max="10" id="memb_successes" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="memb_successes_value">1</span> succès
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer task-modal-footer">
+                <button type="button" class="btn btn-outline-danger me-auto d-none" id="memb_deleteBtn">
+                    Supprimer la tâche
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-violet task-confirm-btn" id="memb_confirmBtn">
+                    <i class="bi bi-check2-circle me-1"></i> Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>

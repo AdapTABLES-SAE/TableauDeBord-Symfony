@@ -1,0 +1,108 @@
+.page-wrapper {
+    background-color: #f3f0ff;
+    min-height: 100vh;
+}
+
+.text-violet {
+    color: #7a5af8 !important;
+}
+
+.objective-card {
+    border-radius: 1rem;
+    transition: 0.2s ease-in-out;
+}
+
+.objective-card:hover {
+    background: #f4efff;
+    transform: translateY(-4px);
+}
+
+.objective-infos div {
+    margin-bottom: 0.2rem;
+}
+
+.objective-card-link .btn-violet {
+    background-color: #7a5af8;
+    color: #fff;
+    border: none;
+}
+
+.objective-card-link .btn-violet:hover {
+    background-color: #6547d5;
+}
+
+
+/* ========== MODALES TÂCHES (look maquette) ========== */
+.task-modal-content {
+    border-radius: 1rem;
+    background: #e3e3e3;
+    border: none;
+}
+
+.task-modal-header {
+    background: #e3e3e3;
+    border-bottom: none;
+}
+
+.task-modal-header .modal-title {
+    width: 100%;
+    text-align: center;
+    font-weight: 700;
+}
+
+.task-modal-body {
+    background: #d7d7d7;
+    border-radius: 0 0 1rem 1rem;
+}
+
+.task-section {
+    background: #cfcfcf;
+    border-radius: .5rem;
+    padding: .75rem .9rem;
+    margin-bottom: .6rem;
+}
+
+.task-section-title {
+    font-weight: 600;
+    margin-bottom: .5rem;
+}
+
+.task-row {
+    margin-bottom: .6rem;
+    font-size: .9rem;
+}
+
+.task-slider {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+}
+
+.task-slider .form-range {
+    flex: 1;
+}
+
+.task-slider-value {
+    font-size: .85rem;
+    white-space: nowrap;
+}
+
+.task-modal-footer {
+    background: #e3e3e3;
+    border-top: none;
+    border-radius: 0 0 1rem 1rem;
+}
+
+/* boutons façon “logiciel” */
+.task-modal-footer .btn-primary {
+    background: linear-gradient(#4f82c1, #305c8f);
+    border: none;
+    border-radius: 999px;
+    padding-inline: 2rem;
+}
+.task-modal-footer .btn-primary:hover {
+    filter: brightness(1.05);
+}
+.task-modal-footer .btn-secondary {
+    border-radius: 999px;
+}

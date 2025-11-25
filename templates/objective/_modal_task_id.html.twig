@@ -1,0 +1,89 @@
+{# Tâche ID : Validation d’un fait #}
+<div class="modal fade task-modal" id="taskModalID" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content task-modal-content">
+
+            <div class="modal-header task-modal-header bg-violet text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-check2-square me-2"></i> Tâche validation d’un fait (ID)
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+
+            <div class="modal-body task-modal-body">
+                <input type="hidden" id="id_levelId">
+
+                <div class="task-section">
+                    <div class="task-section-title">Nombre de faits présentés en même temps</div>
+                    <div class="task-row">
+                        <div class="task-slider">
+                            <input type="range" min="1" max="4" id="id_nbFacts" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="id_nbFacts_value">1</span> fait(s)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="task-section">
+                    <div class="task-section-title">
+                        Élément variable pour la construction des faits invalides
+                    </div>
+                    <div class="row">
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="id_var_result">
+                                <label class="form-check-label" for="id_var_result">
+                                    Résultat
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="id_var_operand">
+                                <label class="form-check-label" for="id_var_operand">
+                                    Facteur
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-text small text-muted">
+                        Utilisez ces bascules comme un "toggle" pour choisir l’élément qui varie.
+                    </div>
+                </div>
+
+                <div class="task-section">
+                    <div class="task-row">
+                        <span>Durée max d’acceptation des réponses</span>
+                        <div class="task-slider">
+                            <input type="range" min="5" max="60" step="5" id="id_time" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="id_time_value">20</span> secondes
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="task-row">
+                        <span>Succès consécutifs pour valider un fait</span>
+                        <div class="task-slider">
+                            <input type="range" min="1" max="10" id="id_successes" class="form-range">
+                            <span class="task-slider-value">
+                                <span id="id_successes_value">1</span> succès
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer task-modal-footer">
+                <button type="button" class="btn btn-outline-danger me-auto d-none" id="id_deleteBtn">
+                    Supprimer la tâche
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-violet task-confirm-btn" id="id_confirmBtn">
+                    <i class="bi bi-check2-circle me-1"></i> Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
