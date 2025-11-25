@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     /* ======================================================
-       CLICK SUR UN ÉQUIPEMENT — MODE OPTION C (pro)
+       CLICK SUR UN ÉQUIPEMENT
        ====================================================== */
 
     const equipmentCards = document.querySelectorAll('.equipment-toggle');
@@ -242,5 +242,58 @@ document.addEventListener('DOMContentLoaded', () => {
             pill.textContent = "Pas acheté";
         }
     }
+
+});
+
+/* ============================
+   TOOLTIP VIDÉO — HOVER ITEM
+   ============================ */
+
+let tooltip = null;
+let tooltipVideo = null;
+
+function createTooltip() {
+    tooltip = document.createElement("div");
+    tooltip.id = "video-tooltip";
+
+    tooltipVideo = document.createElement("video");
+    tooltipVideo.autoplay = true;
+    tooltipVideo.muted = true;
+    tooltipVideo.loop = true;
+    tooltipVideo.playsInline = true;
+
+    tooltip.appendChild(tooltipVideo);
+    document.body.appendChild(tooltip);
+}
+
+createTooltip();
+
+document.querySelectorAll(".equipment-toggle").forEach(card => {
+
+    card.addEventListener("mouseenter", () => {
+        const itemId = card.dataset.id;
+        const videoPath = `/videos/equipment/${itemId.toLowerCase()}.mp4`;
+
+        // Définition de la vidéo
+        tooltipVideo.src = videoPath;
+
+        // Affiche le tooltip
+        tooltip.style.display = "block";
+    });
+
+    card.addEventListener("mousemove", (e) => {
+        // Suit la souris tout en rajoutant un décalage esthétique
+        tooltip.style.left = (e.clientX + 20) + "px";
+        tooltip.style.top = (e.clientY + 20) + "px";
+    });
+
+    card.addEventListener("mouseleave", () => {
+        // Cache le tooltip
+        tooltip.style.display = "none";
+
+        // Stop la vidéo immédiatement
+        tooltipVideo.pause();
+        tooltipVideo.src = "";
+    });
 
 });
