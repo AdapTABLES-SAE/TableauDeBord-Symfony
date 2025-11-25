@@ -381,73 +381,75 @@
                         } %}
 
                         {% set inventoryMap = {} %}
-                        {% if learnerInventory and learnerInventory.items is defined %}
-                            {% for it in learnerInventory.items %}
-                                {% set inventoryMap = inventoryMap|merge({ (it.id) : it }) %}
-                            {% endfor %}
-                        {% endif %}
+                        {% for it in learnerInventory.items %}
+                            {% set inventoryMap = inventoryMap|merge({ (it.id): it }) %}
+                        {% endfor %}
 
-                        <!-- OBJETS UTILES -->
-                        <h5 class="equipment-category">
-                            <i class="bi bi-tools me-2"></i> Objets utiles
-                        </h5>
+                        <div class="equipment-wrapper">
 
-                        <div class="equipment-grid">
-                            {% for id, label in allItems %}
-                                {% if id in ['BAG','LANTERN','COMPAS','BOOTS','HP'] %}
-                                    {% include 'student/equipment_item.html.twig' with {
-                                        item: {
-                                            id: id,
-                                            label: label,
-                                            isBought: inventoryMap[id].isBought|default(false),
-                                            isActivated: inventoryMap[id].isActivated|default(false)
-                                        }
-                                    } %}
-                                {% endif %}
-                            {% endfor %}
+                            <!-- OBJETS UTILES -->
+                            <h5 class="equipment-category">
+                                <i class="bi bi-tools me-2"></i> Objets utiles
+                            </h5>
+
+                            <div class="equipment-grid">
+                                {% for id, label in allItems %}
+                                    {% if id in ['BAG','LANTERN','COMPAS','BOOTS','HP'] %}
+                                        {% include 'student/equipment_item.html.twig' with {
+                                            item: {
+                                                id: id,
+                                                label: label,
+                                                isBought: inventoryMap[id].isBought|default(false),
+                                                isActivated: inventoryMap[id].isActivated|default(false)
+                                            }
+                                        } %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+                            <!-- CAPACITÉS -->
+                            <h5 class="equipment-category mt-4">
+                                <i class="bi bi-lightning-fill me-2"></i> Capacités
+                            </h5>
+
+                            <div class="equipment-grid">
+                                {% for id, label in allItems %}
+                                    {% if id in ['BRACELET','BELT','GLOVE','KEYS','COAT','CARROT'] %}
+                                        {% include 'student/equipment_item.html.twig' with {
+                                            item: {
+                                                id: id,
+                                                label: label,
+                                                isBought: inventoryMap[id].isBought|default(false),
+                                                isActivated: inventoryMap[id].isActivated|default(false)
+                                            }
+                                        } %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+
+                            <!-- PROTECTION -->
+                            <h5 class="equipment-category mt-4">
+                                <i class="bi bi-shield-shaded me-2"></i> Protection
+                            </h5>
+
+                            <div class="equipment-grid">
+                                {% for id, label in allItems %}
+                                    {% if id in ['ARMOR','HELMET','PANTS','SHIELD','SHOULDERS'] %}
+                                        {% include 'student/equipment_item.html.twig' with {
+                                            item: {
+                                                id: id,
+                                                label: label,
+                                                isBought: inventoryMap[id].isBought|default(false),
+                                                isActivated: inventoryMap[id].isActivated|default(false)
+                                            }
+                                        } %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+
+
                         </div>
-
-                        <!-- CAPACITÉS -->
-                        <h5 class="equipment-category mt-4">
-                            <i class="bi bi-lightning-fill me-2"></i> Capacités
-                        </h5>
-
-                        <div class="equipment-grid">
-                            {% for id, label in allItems %}
-                                {% if id in ['BRACELET','BELT','GLOVE','KEYS','COAT','CARROT'] %}
-                                    {% include 'student/equipment_item.html.twig' with {
-                                        item: {
-                                            id: id,
-                                            label: label,
-                                            isBought: inventoryMap[id].isBought|default(false),
-                                            isActivated: inventoryMap[id].isActivated|default(false)
-                                        }
-                                    } %}
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-
-                        <!-- PROTECTION -->
-                        <h5 class="equipment-category mt-4">
-                            <i class="bi bi-shield-shaded me-2"></i> Protection
-                        </h5>
-
-                        <div class="equipment-grid">
-                            {% for id, label in allItems %}
-                                {% if id in ['ARMOR','HELMET','PANTS','SHIELD','SHOULDERS'] %}
-                                    {% include 'student/equipment_item.html.twig' with {
-                                        item: {
-                                            id: id,
-                                            label: label,
-                                            isBought: inventoryMap[id].isBought|default(false),
-                                            isActivated: inventoryMap[id].isActivated|default(false)
-                                        }
-                                    } %}
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-
-                    </div>
 
                 </div>
             </div>
@@ -610,4 +612,7 @@
     } %}
 
     <script type="module" src="{{ asset('js/student_tabs.js') }}"></script>
+    <script>
+        window.fullInventory = {{ learnerInventory.items|json_encode|raw }};
+    </script>
 {% endblock %}

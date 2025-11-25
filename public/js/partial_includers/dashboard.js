@@ -99,7 +99,7 @@ class DashboardPair {
 
             this.detailContainer.innerHTML = await response.text();
 
-            // Notify specific partial JS (classeDetails.js, trainingPartial.js, etc.)
+            // Notify specific partial JS (classDetails.js, trainingPartial.js, etc.)
             document.dispatchEvent(new CustomEvent('partial:loaded', {
                 detail: {
                     pair: this.name,

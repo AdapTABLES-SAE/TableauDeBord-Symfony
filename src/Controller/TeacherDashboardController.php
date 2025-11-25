@@ -41,9 +41,12 @@ class TeacherDashboardController extends AbstractController
         return $this->render('/dashboard/dashboard.html.twig', [
             "dashboard_css" => [
                 $assets->getUrl('css/dashboard/_class_partial.css'),
+                $assets->getUrl('css/caroussel.css'),
+                $assets->getUrl('css/training.css'),
             ],
             "dashboard_js" => [
-                $assets->getUrl('js/partials/classeDetails.js'),
+                $assets->getUrl('js/partials/_class/classDetails.js'),
+                $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
             'breadcrumbItems' => $breadcrumbItems,
@@ -61,7 +64,7 @@ class TeacherDashboardController extends AbstractController
         $classes = $teacher->getClasses();
 
         // `_classList.html.twig` expects `elements`
-        return $this->render('/partials/_class/_classList.html.twig', [
+        return $this->render('/dashboard/partials/_class/_classList.html.twig', [
             'classes' => $classes,
         ]);
     }
@@ -87,7 +90,7 @@ class TeacherDashboardController extends AbstractController
 
         $students = $class->getEleves();
 
-        return $this->render('/partials/_class/_classDetails.html.twig', [
+        return $this->render('/dashboard/partials/_class/_classDetails.html.twig', [
             'class'         => $class,
             'students'      => $students,
             'trainingPaths' => $trainingPaths,
@@ -154,14 +157,15 @@ class TeacherDashboardController extends AbstractController
             }
 
             if (isset($data['trainingPathId'])) {
-                if($data['trainingPathId'] !== "") {
+                if($data['trainingPathId'] === ""){
+                    $trainingAssignmentService->assignDefaultTraining($student);
+                    $student->setEntrainement(null);
+                }
+                else {
                     $entrainement = $em->getRepository(Entrainement::class)->find($data['trainingPathId']);
                     if ($entrainement) {
                         $trainingAssignmentService->assignTraining($student, $entrainement);
                     }
-                }else{
-                    $trainingAssignmentService->assignDefaultTraining($student);
-                    $student->setEntrainement(null);
                 }
             }
         }
@@ -182,7 +186,7 @@ class TeacherDashboardController extends AbstractController
 
         $trainings = $teacher->getEntrainements();
 
-        return $this->render('/partials/_training/_trainingList.html.twig', [
+        return $this->render('/dashboard/partials/_training/_trainingList.html.twig', [
             'trainings' => $trainings,
         ]);
     }
@@ -205,15 +209,21 @@ class TeacherDashboardController extends AbstractController
             throw $this->createAccessDeniedException('Accès non autorisé à cet entraînement.');
         }
 
-        $objectives = $training->getObjectifs();
-        $students   = $training->getEleves();
+        $objectifs = $training->getObjectifs();
 
-        return $this->render('/partials/_training/_trainingDetails.html.twig', [
-            'training'   => $training,
-            'objectives' => $objectives,
-            'students'   => $students,
+        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
+            'training' => $training,
+            'objectifs' => $objectifs
         ]);
+
+//        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
+//            'training'      => $training,
+//            'objectives'    => $objectives,
+//            'students'      => $students,
+//            'trainingPaths' => $trainingPaths,   // <-- REQUIRED
+//        ]);
     }
+
 
     #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
     public function trainingUpdate(

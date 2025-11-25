@@ -34,7 +34,7 @@ class ObjectiveController extends AbstractController
 
         $objectifs = $training->getObjectifs();
 
-        return $this->render('components/_entrainement_detail.html.twig', [
+        return $this->render('components/_trainingDetailsM.html.twig', [
             'training' => $training,
             'objectifs' => $objectifs
         ]);
