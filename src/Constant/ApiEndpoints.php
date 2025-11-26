@@ -12,7 +12,7 @@ final class ApiEndpoints
     public const STATS_URL = "statistics/learner/";
     public const ADD_CLASSROOM = "data/classroom/";
     public const MODIF_CLASSROOM = "data/classroom/";
-    public const DELETE_CLASSROOM_1 = "data/teachers/";
+    public const DELETE_CLASSROOM_1 = "data/teacher/";
     public const DELETE_CLASSROOM_2 = "classroom/";
     public const GET_STUDENTS_1 = "data/students/teacher/";
     public const GET_STUDENTS_2 = "classroom/";

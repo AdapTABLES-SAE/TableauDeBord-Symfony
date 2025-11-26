@@ -62,7 +62,7 @@ class TeacherDashboardController extends AbstractController
             'target' => $target
         ]);
     }
-    #[Route('/dashboard/add-classroom', name: 'add_classroom', methods: ['POST'])]
+    #[Route('/dashboard/classroom/add-classroom', name: 'add_classroom', methods: ['POST'])]
     public function addClassroom(
         Request $request,
         ApiClient $apiClient,
@@ -102,6 +102,25 @@ class TeacherDashboardController extends AbstractController
         return new JsonResponse(['success' => $ok]);
     }
 
+    #[Route('/dashboard/classroom/delete/{id}', name: 'delete_classroom', methods: ['DELETE'])]
+    public function deleteClassroom(
+        string $id,
+        SessionInterface $session,
+        ApiClient $api,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        $teacherId = $session->get('teacher_id');
+        $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
+        $class = $em->getRepository(Classe::class)->find($id);
+
+        $success = $api->deleteClassroom($teacher->getIdProf(), $class->getIdClasse());
+        if($success){
+            $em->remove($class);
+        }
+
+        $em->flush();
+        return new JsonResponse(['success' => $success]);
+    }
 
     // List
     #[Route('/dashboard/class/list', name: 'class_list_partial')]

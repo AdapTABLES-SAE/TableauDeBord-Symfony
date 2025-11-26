@@ -380,4 +380,61 @@ document.addEventListener("partial:loaded", (e) => {
             }
         });
     }
+    // ========================================================================
+// 10. DELETE CLASS
+// ========================================================================
+
+    const deleteBtn = q("#deleteClassBtn");
+    const deleteModalEl = q("#deleteClassModal");
+    const confirmDeleteBtn = q("#confirmDeleteClass");
+
+    if (deleteBtn && deleteModalEl && confirmDeleteBtn) {
+        const deleteModal = new bootstrap.Modal(deleteModalEl);
+        const classId = deleteBtn.dataset.classId;
+
+        deleteBtn.addEventListener("click", () => {
+            deleteModal.show();
+        });
+
+        confirmDeleteBtn.addEventListener("click", async () => {
+            try {
+                const response = await fetch(`/dashboard/classroom/delete/${classId}`, {
+                    method: "DELETE",
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const result = await response.json();
+
+                if (result.success) {
+                    deleteModal.hide();
+
+                    // Recharger uniquement la liste des classes
+                    await window.reloadListOnly("classes");
+
+                    // Puis vider le détail
+                    container.innerHTML = `
+                    <h2 class="fw-bold mb-3">Ma classe</h2>
+                    <p class="text-primary fs-5">
+                        Sélectionner une classe pour voir le détail.
+                    </p>
+                `;
+                } else {
+                    showToast(
+                        false,
+                        "Impossible de supprimer la classe",
+                        "."
+                    );
+                }
+
+            } catch (err) {
+                console.error("Delete error:", err);
+                showToast(
+                    false,
+                    "Erreur réseau lors de la suppression de la classe.",
+                    "."
+                );
+            }
+        });
+    }
 });

@@ -5,8 +5,15 @@
 
 <div id="includedDetailsPartial" class="w-100 h-100 py-3">
     <!-- NOM DE LA CLASSE -->
-    <div class="section-title-area mb-1 text-center">
+    <div class="section-title-area mb-1 text-center position-relative">
         <h2 class="fw-bold mb-3">Détails de ma classe</h2>
+
+        <button class="btn btn-outline-danger position-absolute top-0"
+                style="left: 20px"
+                id="deleteClassBtn"
+                data-class-id="{{ class.id }}">
+            <i class="bi bi-trash"></i>
+        </button>
 
         <div class="input-group justify-content-center w-auto mx-auto">
             <label>
@@ -17,6 +24,7 @@
             </label>
         </div>
     </div>
+
 
     <!-- TITRE -->
     <div class="section-students-area mb-4 pb-2 px-5 rounded-bottom-5">
@@ -217,6 +225,33 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button id="addStudentConfirm" class="btn btn-success px-4">
                         Ajouter
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <!-- MODAL DELETE CLASS -->
+    <div class="modal fade" id="deleteClassModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+
+                <div class="modal-header bg-light-subtle">
+                    <h5 class="modal-title text-danger fw-bold">Supprimer la classe</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    Voulez-vous vraiment supprimer cette classe ?<br>
+                    <strong>Cette action est irréversible.</strong>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button id="confirmDeleteClass" class="btn btn-danger px-4">
+                        Supprimer
                     </button>
                 </div>
 
