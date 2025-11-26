@@ -1,15 +1,18 @@
-document.addEventListener('partial:list:loaded', (e) => {
-    const { pair, container } = e.detail || {};
+import { showToast } from '../../toast/toast.js';
+document.addEventListener('partial:list:loaded', async (e) => {
+    const {pair, container} = e.detail || {};
     if (pair !== "classes") return;
     if (!container) return;
 
-    const modal = container.querySelector('#addClassModal');
+    await Promise.resolve();
+
+    const modal = new bootstrap.Modal("#addClassModal");
     const btn = container.querySelector('#addClassConfirm');
     const form = container.querySelector('#addClassForm');
 
     if (!modal || !btn || !form) return;
 
-    const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+    // const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
 
     btn.addEventListener('click', async () => {
         try {
@@ -24,14 +27,27 @@ document.addEventListener('partial:list:loaded', (e) => {
             const result = await response.json();
 
             if (result.success) {
-                modalInstance.hide();
+                modal.hide();
+                showToast(
+                    true,
+                    "Succès",
+                    "Classe ajoutée."
+                );
                 await window.reloadDashboardPair("classes");
             } else {
-                alert("Erreur lors de l'ajout de la classe.");
+                showToast(
+                    false,
+                    "Erreur de mise à jour",
+                    "Erreur lors de l'ajout de la classe."
+                );
             }
         } catch (err) {
             console.error("Erreur ajout classe:", err);
-            alert("Erreur réseau lors de l'ajout de la classe.");
+            showToast(
+                false,
+                "Erreur réseau lors de l'ajout de la classe.",
+                "Erreur de communication avec l'API."
+            );
         }
     });
 });

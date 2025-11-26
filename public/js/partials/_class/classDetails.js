@@ -2,6 +2,8 @@
 //  CLASS DETAIL PARTIAL — Activated when partial:loaded fires
 // ============================================================================
 
+import {showToast} from "../../toast/toast.js";
+
 document.addEventListener("partial:loaded", (e) => {
     const { pair, container } = e.detail || {};
 
@@ -174,17 +176,29 @@ document.addEventListener("partial:loaded", (e) => {
                 const result = await response.json();
 
                 if (result.success) {
-                    alert("Modifications enregistrées !");
+                    showToast(
+                        true,
+                        "Succès",
+                        "Modifications enregistrées !"
+                    );
                     setTimeout(() => window.reloadDashboardPair("classes"), 200);
                 } else {
-                    alert("Une erreur est survenue lors de la sauvegarde.");
+                    showToast(
+                        false,
+                        "Erreur",
+                        "Une erreur est survenue lors de la sauvegarde."
+                    );
                 }
 
                 resetButtons(saveBtn, cancelBtn);
 
             } catch (error) {
                 console.error("POST error:", error);
-                alert("Erreur de communication avec le serveur.");
+                showToast(
+                    false,
+                    "Erreur de communication avec le serveur.",
+                    ""
+                );
             }
         });
     }
@@ -200,7 +214,11 @@ document.addEventListener("partial:loaded", (e) => {
             const actionName = item.textContent.trim();
             const ids = [...selectedRows];
 
-            if (ids.length === 0) return alert("Aucun élève sélectionné.");
+            if (ids.length === 0) return showToast(
+                false,
+                "Erreur",
+                "Aucun élève selectioné."
+            );
 
             // DELETE
             if (actionName === "Supprimer les élèves") {
@@ -213,7 +231,11 @@ document.addEventListener("partial:loaded", (e) => {
                     row.dataset.rowEdited = "true";
                 });
 
-                alert(`${ids.length} élèves marqués pour suppression.`);
+                showToast(
+                    true,
+                    "Succès",
+                    `${ids.length} élèves marqués pour suppression.`
+                );
                 selectModeSwitch.checked = false;
                 selectModeSwitch.dispatchEvent(new Event("change"));
                 enableButtons(saveBtn, cancelBtn);
@@ -242,7 +264,11 @@ document.addEventListener("partial:loaded", (e) => {
                     modal.hide();
                     selectModeSwitch.checked = false;
                     selectModeSwitch.dispatchEvent(new Event("change"));
-                    alert("Entraînement appliqué !");
+                    showToast(
+                        true,
+                        "Succès",
+                        "Entrainement appliqué."
+                    );
                 };
             }
         });
@@ -300,7 +326,11 @@ document.addEventListener("partial:loaded", (e) => {
             let identifiant = studentIdInput.value.trim() || studentIdInput.placeholder;
 
             if (!nom || !prenom) {
-                alert("Veuillez remplir nom et prénom.");
+                showToast(
+                    false,
+                    "Erreur",
+                    "Veuillez remplir nom et prénom."
+                );
                 return;
             }
 
@@ -319,17 +349,34 @@ document.addEventListener("partial:loaded", (e) => {
                 const result = await response.json();
 
                 if (result.fatal){
-                    alert("Erreur lors de l'ajout de l'élève.");
+                    showToast(
+                        false,
+                        "Erreur",
+                        "L'élève n'a pas pu être ajouté."
+                    );
                 } else if (!result.success && !result.fatal) {
-                    alert("Cet identifiant existe déjà.");
+                    showToast(
+                        false,
+                        "Erreur",
+                        "Cet identifiant existe déjà."
+                    );
                 } else if (result.success && !result.fatal) {
                     addStudentModal.hide();
                     await window.reloadDetailOnly("classes", currentId);
+                    showToast(
+                        true,
+                        "Succès",
+                        "Elève ajouté."
+                    );
                 }
 
             } catch (err) {
                 console.error("Erreur ajout élève:", err);
-                alert("Erreur réseau lors de l'ajout de l'élève.");
+                showToast(
+                    false,
+                    "Erreur réseau lors de l'ajout de l'élève.",
+                    "."
+                );
             }
         });
     }

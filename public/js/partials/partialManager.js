@@ -7,9 +7,6 @@ window.reloadDashboardPair = async function (pairName) {
     const list = document.querySelector(
         `[data-partial-list][data-dashboard-pair="${pairName}"]`
     );
-    const detail = document.querySelector(
-        `[data-partial-detail][data-dashboard-pair="${pairName}"]`
-    );
 
     if (!list) return;
 
@@ -41,14 +38,9 @@ async function reloadDetailOnly(pairName, id) {
     const template = detail.dataset.detailUrlTemplate;
     if (!template) return;
 
-    const url = template.replace("__ID__", encodeURIComponent(id));
+    detail.innerHTML = _renderLoader("Chargement du détail...")
 
-    detail.innerHTML = `
-        <div class="text-center py-5">
-            <div class="spinner-border text-primary"></div>
-            <p class="mt-3">Chargement…</p>
-        </div>
-    `;
+    const url = template.replace("__ID__", encodeURIComponent(id));
 
     try {
         const res = await fetch(url);
@@ -73,7 +65,7 @@ async function reloadDetailOnly(pairName, id) {
 //  • If id is provided → auto re-check radio
 // ============================================================================
 
-async function reloadListOnly(pairName, id = null) {
+async function reloadListOnly(pairName, checkedID = null) {
     const list = document.querySelector(
         `[data-partial-list][data-dashboard-pair="${pairName}"]`
     );
@@ -82,16 +74,27 @@ async function reloadListOnly(pairName, id = null) {
     const urlList = list.dataset.listUrl;
     if (!urlList) return;
 
+    list.innerHTML=_renderLoader("Chargement de la liste...")
     try {
         const res = await fetch(urlList);
         if (!res.ok) throw new Error("HTTP " + res.status);
 
         list.innerHTML = await res.text();
 
+        // Restore change event
+        const radios = list.querySelectorAll('input[type="radio"][data-id]');
+        if (!radios.length) return;
+
+        radios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                reloadDetailOnly(pairName, radio.dataset.id);
+            });
+        });
+
         // Restore selection
-        if (id) {
+        if (checkedID) {
             const newSelected = list.querySelector(
-                `input[type="radio"][data-id="${id}"]`
+                `input[type="radio"][data-id="${checkedID}"]`
             );
             if (newSelected) {
                 newSelected.checked = true;
@@ -111,6 +114,14 @@ async function reloadListOnly(pairName, id = null) {
     }
 }
 
+function _renderLoader(text) {
+    return `
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">${text}</p>
+        </div>
+    `;
+}
 
 
 // ============================================================================
@@ -118,125 +129,7 @@ async function reloadListOnly(pairName, id = null) {
 // ============================================================================
 window.reloadListOnly = reloadListOnly;
 window.reloadDetailOnly = reloadDetailOnly;
-
-
-class DashboardPair {
-    constructor(name, listContainer, detailContainer) {
-        this.name = name;
-        this.listContainer = listContainer;
-        this.detailContainer = detailContainer;
-
-        this.listUrl = listContainer.dataset.listUrl;
-        this.detailUrlTemplate = detailContainer.dataset.detailUrlTemplate;
-
-        this.currentId = null;
-
-        this.init();
-    }
-
-    init() {
-        if (this.listUrl) {
-            this.loadList();
-        }
-    }
-
-    // -------------------------------
-    // Load LIST partial
-    // -------------------------------
-    async loadList() {
-        this.listContainer.innerHTML = this._renderLoader("Chargement de la liste...");
-
-        try {
-            const response = await fetch(this.listUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            this.listContainer.innerHTML = await response.text();
-
-            // Dispatch event in case some JS wants to hook on list load
-            document.dispatchEvent(new CustomEvent('partial:list:loaded', {
-                detail: {
-                    pair: this.name,
-                    container: this.listContainer
-                }
-            }));
-
-            this._bindListEvents();
-
-        } catch (err) {
-            console.error(`Erreur chargement liste [${this.name}]`, err);
-            this.listContainer.innerHTML = `
-                <div class="text-danger p-3">
-                    Erreur lors du chargement de la liste.
-                </div>
-            `;
-        }
-    }
-
-    _bindListEvents() {
-        const radios = this.listContainer.querySelectorAll('input[type="radio"][data-id]');
-        if (!radios.length) return;
-
-        radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                const id = radio.dataset.id;
-                this.currentId = id;
-                this.loadDetail(id);
-            });
-        });
-    }
-
-    // -------------------------------
-    // Load DETAIL partial
-    // -------------------------------
-    async loadDetail(id) {
-        if (!id) return;
-        if (!this.detailUrlTemplate) return;
-
-        const url = this.detailUrlTemplate.replace('__ID__', encodeURIComponent(id));
-
-        this.detailContainer.innerHTML = this._renderLoader("Chargement du détail...");
-
-        try {
-            const response = await fetch(url);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-            this.detailContainer.innerHTML = await response.text();
-
-            // Notify specific partial JS (classDetails.js, trainingPartial.js, etc.)
-            document.dispatchEvent(new CustomEvent('partial:loaded', {
-                detail: {
-                    pair: this.name,
-                    container: this.detailContainer
-                }
-            }));
-
-        } catch (err) {
-            console.error(`Erreur chargement détail [${this.name}]`, err);
-            this.detailContainer.innerHTML = `
-                <div class="text-danger p-3">
-                    Erreur lors du chargement du détail.
-                </div>
-            `;
-        }
-    }
-
-    // Reuse from elsewhere if needed
-    reloadCurrentDetail() {
-        if (this.currentId) {
-            this.loadDetail(this.currentId);
-        }
-    }
-
-    _renderLoader(text) {
-        return `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status"></div>
-                <p class="mt-3">${text}</p>
-            </div>
-        `;
-    }
-}
-
+window._renderLoader = _renderLoader;
 
 // ============================================================================
 // BUTTON HELPERS

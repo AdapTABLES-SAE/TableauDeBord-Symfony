@@ -46,7 +46,7 @@
 
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
-                        <div class="element-list-container shadow-sm dashboard-container"
+                        <div class="element-list-container shadow-sm dashboard-container overflow-auto"
                              data-dashboard-pair="classes"
                              data-partial-list
                              data-list-url="{{ path('class_list_partial') }}">
@@ -63,7 +63,6 @@
                         </div>
                     </div>
                 </div>
-
             </div>
 
             <div class="tab-pane fade {{ target == 'trainings' ? 'show active' : '' }}"
@@ -72,7 +71,7 @@
 
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
-                        <div class="element-list-container shadow-sm dashboard-container"
+                        <div class="element-list-container shadow-sm dashboard-container overflow-auto"
                              data-dashboard-pair="trainings"
                              data-partial-list
                              data-list-url="{{ path('training_list_partial') }}">
@@ -94,7 +93,7 @@
     </div>
 
     {% include '/components/toast.html.twig' with {
-        toast_success_title: "Élève mis à jour",
+        toast_success_title: "Informations mis à jour",
         toast_success_message: "Les informations ont bien été enregistrées.",
         toast_error_title: "Erreur de mise à jour",
         toast_error_message: "Impossible d’enregistrer les modifications."
@@ -104,16 +103,15 @@
 {% block javascripts %}
     {{ parent() }}
     <script src="{{ asset('js/partials/partialManager.js') }}"></script>
-    <script src="{{ asset('js/partial_includers/dashboard.js') }}"></script>
+    <script src="{{ asset('js/partials/dashboard.js') }}"></script>
 
     {% for jsFile in dashboard_js %}
-        <script src="{{ jsFile }}"></script>
+        <script type="module" src="{{ jsFile }}"></script>
     {% endfor %}
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
             const target = "{{ target }}";
-
             if (target === "trainings") {
                 window.reloadDashboardPair("trainings");
             } else {
@@ -121,4 +119,5 @@
             }
         });
     </script>
+
 {% endblock %}
