@@ -61,17 +61,17 @@
                     <div class="task-slider-block">
                         <div class="task-slider-header">
                             <span>Nombre de résultats faux proposés</span>
-                            <span class="task-slider-value" id="memb_nbIncorrect_value">0</span>
+                            <span class="task-slider-value" id="memb_nbIncorrect_value">1</span>
                         </div>
-                        <input type="range" min="0" max="3" id="memb_nbIncorrect">
+                        <input type="range" min="1" max="3" id="memb_nbIncorrect">
                     </div>
 
                     <div class="task-slider-block mb-0">
                         <div class="task-slider-header">
                             <span>Nombre de résultats vrais proposés</span>
-                            <span class="task-slider-value" id="memb_nbCorrect_value">0</span>
+                            <span class="task-slider-value" id="memb_nbCorrect_value">1</span>
                         </div>
-                        <input type="range" min="0" max="3" id="memb_nbCorrect">
+                        <input type="range" min="1" max="3" id="memb_nbCorrect">
                     </div>
                 </div>
 
@@ -91,6 +91,28 @@
                             <span class="task-slider-value" id="memb_successes_value">1</span>
                         </div>
                         <input type="range" min="1" max="10" id="memb_successes">
+                    </div>
+                </div>
+
+                {# ================= PREVIEW ================= #}
+                <div class="task-section-card memb-preview-block mt-3">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Aperçu interactif</div>
+                            <div class="task-section-helper">Un exemple généré selon vos paramètres.</div>
+                        </div>
+                    </div>
+
+                    <div id="memb_preview_content" class="memb-preview">
+
+                        <div class="preview-grid"></div>
+
+                        <div class="preview-hint small">
+                            L’élève valide pour chaque proposition si elle est correcte ou incorrecte.
+                        </div>
                     </div>
                 </div>
             </div>

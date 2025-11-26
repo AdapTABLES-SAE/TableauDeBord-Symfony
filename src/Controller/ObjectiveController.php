@@ -216,8 +216,8 @@ class ObjectiveController extends AbstractController
                 $targets = $data['targets'] ?? [];
                 $task->setTargets($targets);
 
-                $nbIncorrect = (int) ($data['nbIncorrectChoices'] ?? 2);
-                $nbIncorrect = max(2, min(5, $nbIncorrect));
+                $nbIncorrect = (int) ($data['nbIncorrectChoices'] ?? 3);
+                $nbIncorrect = max(3, min(6, $nbIncorrect));
                 $task->setNbIncorrectChoices($nbIncorrect);
                 break;
 

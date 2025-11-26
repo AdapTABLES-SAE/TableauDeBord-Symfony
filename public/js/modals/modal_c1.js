@@ -5,57 +5,63 @@ import { saveTask, deleteTask } from "./task_actions.js";
    ====================================================== */
 
 function generateC1Preview() {
-    const previewEq = document.querySelector("#c1_preview_content .preview-equation");
-    const previewOpt = document.querySelector("#c1_preview_content .preview-options");
+    const eq = document.querySelector("#c1_preview_content .preview-equation");
+    const optBox = document.querySelector("#c1_preview_content .preview-options");
+    const hint = document.querySelector("#c1_preview_content .preview-hint");
 
-    if (!previewEq || !previewOpt) return;
+    if (!eq || !optBox || !hint) return;
 
-    // Exemple aléatoire
-    const table = Math.floor(Math.random() * 10) + 1;
-    const factor = Math.floor(Math.random() * 10) + 1;
-    const result = table * factor;
+    /* Start transition */
+    eq.classList.add("updated");
+    setTimeout(() => eq.classList.remove("updated"), 10);
 
-    const selectedTarget = document.querySelector('input[name="c1_target"]:checked')?.value || "RESULT";
+    /* Valeurs aléatoires */
+    const t = Math.floor(Math.random() * 10) + 1;
+    const f = Math.floor(Math.random() * 10) + 1;
+    const r = t * f;
 
-    const hide = `<span class="preview-hidden">?</span>`;
-    let eqStr = "";
+    const target = document.querySelector('input[name="c1_target"]:checked')?.value || "RESULT";
 
-    if (selectedTarget === "OPERAND") {
-        eqStr = `${hide} × ${factor} = ${result}`;
-    } else if (selectedTarget === "TABLE") {
-        eqStr = `${table} × ${hide} = ${result}`;
-    } else {
-        eqStr = `${table} × ${factor} = ${hide}`;
-    }
+    // construction de l'équation
+    const H = `<span class="preview-hidden">?</span>`;
+    let equation = "";
 
-    previewEq.innerHTML = eqStr;
+    if (target === "OPERAND") equation = `${H} × ${f} = ${r}`;
+    if (target === "TABLE")   equation = `${t} × ${H} = ${r}`;
+    if (target === "RESULT")  equation = `${t} × ${f} = ${H}`;
 
-    // Options (switch CHOICE / INPUT)
+    eq.innerHTML = equation;
+
+    /* Mode choix ou saisie */
     const isChoice = document.getElementById("c1_mod_choice")?.checked;
-
-    previewOpt.innerHTML = ""; // clean
+    optBox.innerHTML = "";
 
     if (isChoice) {
         const nbInc = parseInt(document.getElementById("c1_nbIncorrect")?.value || "2", 10);
+        let options = new Set([r]);
 
-        let options = new Set([result]);
-
-        while (options.size < nbInc + 1) {
+        while (options.size < nbInc + 1)
             options.add(Math.floor(Math.random() * 90) + 1);
-        }
 
         options = Array.from(options).sort(() => Math.random() - 0.5);
 
-        options.forEach(opt => {
-            previewOpt.innerHTML += `<button class="preview-option-btn">${opt}</button>`;
+        options.forEach((value, i) => {
+            const btn = document.createElement("button");
+            btn.className = "preview-option-btn";
+            btn.textContent = value;
+            optBox.appendChild(btn);
+
+            setTimeout(() => btn.classList.add("show"), 50 + 80 * i);
         });
 
+        hint.textContent = "L’élève doit cliquer sur la bonne réponse.";
+
     } else {
-        previewOpt.innerHTML = `
-            <input class="preview-input" placeholder="Votre réponse…">
-        `;
+        optBox.innerHTML = `<input class="preview-input" placeholder="Votre réponse…">`;
+        hint.textContent = "L’élève saisit directement la réponse.";
     }
 }
+
 
 /* ======================================================
    OUVERTURE ET GESTION DE LA MODALE C1

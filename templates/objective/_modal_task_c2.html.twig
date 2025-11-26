@@ -68,9 +68,9 @@
                     <div class="task-slider-block">
                         <div class="task-slider-header">
                             <span>Nombre de mauvaises réponses proposées</span>
-                            <span class="task-slider-value" id="c2_nbIncorrect_value">2</span>
+                            <span class="task-slider-value" id="c2_nbIncorrect_value">3</span>
                         </div>
-                        <input type="range" min="2" max="5" id="c2_nbIncorrect">
+                        <input type="range" min="3" max="6" id="c2_nbIncorrect">
                     </div>
 
                     <div class="task-slider-block">
@@ -89,6 +89,26 @@
                         <input type="range" min="1" max="10" id="c2_successes">
                     </div>
                 </div>
+
+                {# ====================== APERÇU INTERACTIF ====================== #}
+                <div class="task-section-card mt-3" id="c2_preview_section">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Aperçu interactif</div>
+                            <div class="task-section-helper">Un exemple généré selon vos paramètres.</div>
+                        </div>
+                    </div>
+
+                    <div id="c2_preview_content" class="c2-preview-box">
+                        <div class="preview-equation"></div>
+                        <div class="preview-options mt-3"></div>
+                        <div class="preview-hint small mt-2 text-muted text-center"></div>
+                    </div>
+                </div>
+
             </div>
 
             <div class="modal-footer">
