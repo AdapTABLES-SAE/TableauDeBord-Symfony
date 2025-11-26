@@ -1,60 +1,71 @@
-{# Tâche REC : Reconstitution du fait #}
-<div class="modal fade task-modal" id="taskModalREC" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content task-modal-content">
+<div class="modal fade task-modal" id="taskModalREC" tabindex="-1"
+     aria-labelledby="taskModalRECLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
 
-            <div class="modal-header task-modal-header bg-violet text-white">
-                <h5 class="modal-title">
-                    <i class="bi bi-puzzle-fill me-2"></i> Tâche reconstitution du fait (REC)
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-
-            <div class="modal-body task-modal-body">
-                <input type="hidden" id="rec_levelId">
-
-                <div class="task-section">
-                    <div class="task-row">
-                        <span>Nombre de mauvaises réponses à proposer</span>
-                        <div class="task-slider">
-                            <input type="range" min="2" max="5" id="rec_nbIncorrect" class="form-range">
-                            <span class="task-slider-value">
-                                <span id="rec_nbIncorrect_value">3</span> mauvaises propositions
-                            </span>
-                        </div>
+            <div class="task-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="task-modal-icon">
+                        <i class="bi bi-puzzle"></i>
                     </div>
-
-                    <div class="task-row">
-                        <span>Durée max d’acceptation des réponses</span>
-                        <div class="task-slider">
-                            <input type="range" min="5" max="60" step="5" id="rec_time" class="form-range">
-                            <span class="task-slider-value">
-                                <span id="rec_time_value">20</span> secondes
-                            </span>
-                        </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title" id="taskModalRECLabel">
+                            Tâche reconstitution d’un fait (REC)
+                        </h5>
+                        <p class="task-modal-subtitle">
+                            L’élève reconstitue entièrement une multiplication à partir de propositions.
+                        </p>
                     </div>
-
-                    <div class="task-row">
-                        <span>Succès consécutifs pour valider un fait</span>
-                        <div class="task-slider">
-                            <input type="range" min="1" max="10" id="rec_successes" class="form-range">
-                            <span class="task-slider-value">
-                                <span id="rec_successes_value">1</span> succès
-                            </span>
-                        </div>
-                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
             </div>
 
-            <div class="modal-footer task-modal-footer">
-                <button type="button" class="btn btn-outline-danger me-auto d-none" id="rec_deleteBtn">
-                    Supprimer la tâche
-                </button>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <button type="button" class="btn btn-violet task-confirm-btn" id="rec_confirmBtn">
-                    <i class="bi bi-check2-circle me-1"></i> Confirmer
-                </button>
+            <div class="modal-body">
+                <input type="hidden" id="rec_levelId">
+
+                <div class="task-section-card">
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Nombre d’éléments incorrects proposés</span>
+                            <span class="task-slider-value" id="rec_nbIncorrect_value">2</span>
+                        </div>
+                        <input type="range" min="2" max="5" id="rec_nbIncorrect">
+                    </div>
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Temps de réponse maximum (secondes)</span>
+                            <span class="task-slider-value" id="rec_time_value">20</span>
+                        </div>
+                        <input type="range" min="5" max="60" step="5" id="rec_time">
+                    </div>
+
+                    <div class="task-slider-block mb-0">
+                        <div class="task-slider-header">
+                            <span>Succès consécutifs pour valider un fait</span>
+                            <span class="task-slider-value" id="rec_successes_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="10" id="rec_successes">
+                    </div>
+
+                </div>
             </div>
+
+            <div class="modal-footer">
+                <button type="button" class="task-btn-delete d-none" id="rec_deleteBtn">
+                    <i class="bi bi-trash"></i> Supprimer la tâche
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="task-btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button type="button" class="task-btn-primary" id="rec_confirmBtn">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>

@@ -1,0 +1,355 @@
+/* ================================
+   MODALES TÂCHES - STYLE ADAPTABLES
+   ================================ */
+
+.task-modal .modal-dialog {
+    max-width: 720px;
+}
+
+.task-modal .modal-content {
+    border-radius: 22px;
+    border: none;
+    overflow: hidden;
+    box-shadow: 0 14px 40px rgba(70, 54, 145, 0.25);
+    background-color: #fbf9ff;
+}
+
+/* HEADER VIOLET */
+
+.task-modal-header {
+    background: linear-gradient(90deg, #8e7bff, #6f58f5);
+    color: #fff;
+    padding: 18px 24px;
+}
+
+.task-modal-header .modal-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+
+.task-modal-subtitle {
+    font-size: 0.86rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.task-modal-header .task-modal-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    background-color: rgba(255, 255, 255, 0.18);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 10px;
+}
+
+.task-modal-header .task-modal-icon i {
+    font-size: 1.25rem;
+}
+
+.task-modal-header .btn-close {
+    filter: invert(1);
+    opacity: 0.9;
+}
+
+/* CORPS */
+
+.task-modal .modal-body {
+    padding: 18px 22px 10px 22px;
+}
+
+/* Section "carte" */
+
+.task-section-card {
+    background: #f6f3ff;
+    border-radius: 16px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+}
+
+.task-section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.task-section-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    background-color: rgba(111, 88, 245, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 8px;
+    color: #6f58f5;
+    font-size: 0.95rem;
+}
+
+.task-section-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #352f6c;
+}
+
+.task-section-helper {
+    font-size: 0.8rem;
+    color: #6c6b80;
+}
+
+/* Radios & checkboxes sous forme de boutons */
+
+.task-choice-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.task-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 6px 12px;
+    background-color: #ffffff;
+    border: 1px solid #d8d5ff;
+    font-size: 0.88rem;
+    color: #433f7a;
+    cursor: pointer;
+    transition: 0.15s ease-in-out;
+}
+
+.task-chip input {
+    display: none;
+}
+
+.task-chip .chip-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 999px;
+    border: 2px solid #b4a9ff;
+    background-color: transparent;
+    flex-shrink: 0;
+}
+
+.task-chip.active,
+.task-chip input:checked + .chip-label {
+    border-color: #6f58f5;
+    background-color: #ece7ff;
+    color: #2e2866;
+}
+
+.task-chip.active .chip-dot,
+.task-chip input:checked + .chip-label .chip-dot {
+    border-color: #6f58f5;
+    background-color: #6f58f5;
+}
+
+/* Pour pouvoir utiliser le même label avec les input cachés */
+.chip-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Switch */
+
+.task-switch-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+    margin-bottom: 8px;
+}
+
+.task-switch-text {
+    font-size: 0.9rem;
+    color: #403d70;
+}
+
+/* Switch inspiré du projet */
+.task-switch {
+    position: relative;
+    display: inline-block;
+    width: 46px;
+    height: 24px;
+}
+
+.task-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.task-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0; left: 0;
+    right: 0; bottom: 0;
+    background-color: #d8d7f0;
+    transition: .25s;
+    border-radius: 34px;
+}
+
+.task-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px; width: 18px;
+    left: 3px; bottom: 3px;
+    background-color: #fff;
+    transition: .25s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+
+.task-switch input:checked + .task-switch-slider {
+    background-color: #6f58f5;
+}
+
+.task-switch input:checked + .task-switch-slider:before {
+    transform: translateX(20px);
+}
+
+/* Sliders */
+
+.task-slider-block {
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+
+.task-slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #403d70;
+    margin-bottom: 4px;
+}
+
+.task-slider-value {
+    font-weight: 600;
+    color: #6f58f5;
+    min-width: 34px;
+    text-align: right;
+}
+
+.task-slider-block input[type="range"] {
+    width: 100%;
+    accent-color: #6f58f5;
+}
+
+/* FOOTER */
+
+.task-modal .modal-footer {
+    border: none;
+    padding: 14px 22px 20px 22px;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.task-btn-delete {
+    border-radius: 999px;
+    border: 1px solid #f3b4b4;
+    background: #fff4f4;
+    color: #ba2b2b;
+    padding: 6px 14px;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.task-btn-delete i {
+    font-size: 1rem;
+}
+
+.task-btn-secondary {
+    border-radius: 999px;
+    background: #f0eff9;
+    color: #4a4a6c;
+    border: 1px solid transparent;
+    padding: 6px 16px;
+    font-size: 0.9rem;
+}
+
+.task-btn-primary {
+    border-radius: 999px;
+    background: #58c47c;
+    color: #ffffff;
+    border: none;
+    padding: 6px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: 0 3px 8px rgba(34, 139, 58, 0.25);
+}
+
+.task-btn-primary i {
+    margin-right: 4px;
+}
+
+/* Utilitaires */
+
+.task-modal .small-hint {
+    font-size: 0.78rem;
+    color: #8a88a6;
+}
+
+
+
+
+/*
+====================================
+MODAL PREVIEW
+====================================
+ */
+
+#c1_preview_block .preview-equation {
+    font-size: 1.4rem;
+    font-weight: 600;
+    text-align: center;
+    color: #4c3fd7;
+}
+
+#c1_preview_block .preview-hidden {
+    display: inline-block;
+    width: 40px;
+    height: 28px;
+    background: #e7e3ff;
+    border-radius: 8px;
+    text-align: center;
+    line-height: 28px;
+    font-weight: 700;
+    color: #4c3fd7;
+}
+
+#c1_preview_block .preview-option-btn {
+    margin: 0 4px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: #f1eeff;
+    border: 1px solid #d6d0ff;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: #4a40c8;
+}
+
+#c1_preview_block .preview-input {
+    width: 120px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    border: 1px solid #d0caff;
+    font-size: 1rem;
+    text-align: center;
+}
+
+#c1_preview_block .preview-options {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
