@@ -15,6 +15,8 @@ document.addEventListener('partial:list:loaded', async (e) => {
     // const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
 
     btn.addEventListener('click', async () => {
+        e.preventDefault();      // ⬅ STOP native form submission
+        e.stopPropagation();     // ⬅ STOP bubbling (safety)
         try {
             const formData = new FormData(form);
             const response = await fetch(form.action, {
@@ -33,7 +35,7 @@ document.addEventListener('partial:list:loaded', async (e) => {
                     "Succès",
                     "Classe ajoutée."
                 );
-                await window.reloadDashboardPair("classes");
+                await window.reloadListOnly("classes");
             } else {
                 showToast(
                     false,

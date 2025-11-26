@@ -363,11 +363,12 @@ document.addEventListener("partial:loaded", (e) => {
                 } else if (result.success && !result.fatal) {
                     addStudentModal.hide();
                     await window.reloadDetailOnly("classes", currentId);
-                    showToast(
-                        true,
-                        "Succès",
-                        "Elève ajouté."
-                    );
+                    // not active because it blocks the add button
+                    // showToast(
+                    //     true,
+                    //     "Succès",
+                    //     "Elève ajouté."
+                    // );
                 }
 
             } catch (err) {
