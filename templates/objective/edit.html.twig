@@ -106,11 +106,15 @@
                             </div>
                         </div>
 
-                        <!-- Bouton sauvegarde de l'objectif -->
+                        <!-- Bouton sauvegarde -->
                         <div class="text-end">
-                            <button type="submit" class="btn btn-violet px-4">
-                                <i class="bi bi-save2 me-1"></i> Enregistrer l’objectif
+                            <button type="button" id="save-all-btn" class="btn btn-violet px-4">
+                                <i class="bi bi-save2 me-1"></i> Enregistrer toutes les modifications
                             </button>
+                        </div>
+                        <div id="save-loader" class="save-loader d-none">
+                            <div class="spinner-border text-violet" role="status"></div>
+                            <span class="ms-2">Enregistrement...</span>
                         </div>
                     </form>
                 </div>
@@ -172,7 +176,8 @@
             saveLevelUrlTemplate: '{{ path('objective_save_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
             deleteLevelUrlTemplate: '{{ path('objective_delete_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
             saveTaskUrlTemplate: '{{ path('objective_save_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
-            deleteTaskUrlTemplate: '{{ path('objective_delete_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}'
+            deleteTaskUrlTemplate: '{{ path('objective_delete_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
+            saveAllUrl: '{{ path('objective_save_all', {id: objectif.id}) }}'
         };
     </script>
     <script type="module" src="{{ asset('js/objective_builder.js') }}"></script>

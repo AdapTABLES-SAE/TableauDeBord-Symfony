@@ -13,25 +13,98 @@ import { openMembModal } from "./modals/modal_memb.js";
 import { saveTask, deleteTask } from "./modals/task_actions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+
     const config = window.OBJECTIVE_CONFIG || {};
 
-    // IDs EXACTS du Twig edit.html.twig
     const tablesWrapper   = document.getElementById("tables-wrapper");
     const previewBox      = document.getElementById("preview-box");
     const levelsContainer = document.getElementById("levels-container");
     const addLevelBtn     = document.getElementById("add-level-btn");
+    const saveAllBtn      = document.getElementById("save-all-btn");
 
-    /* =======================================================================
+    let unsavedChanges = false;
+    let initialState = null;
+
+    /* =========================================================================================
+       COLLECTEUR GLOBAL : objectif + niveaux + tâches
+    ========================================================================================= */
+
+    function collectAllData() {
+        const objective = {
+            name: document.getElementById("objective_name")?.value.trim() || "",
+            tables: getSelectedTables()
+        };
+
+        const levels = [];
+        const tasks = [];
+
+        document.querySelectorAll(".level-card").forEach(card => {
+            const levelId = parseInt(card.dataset.levelId, 10);
+
+            levels.push({
+                id: levelId,
+                name: card.querySelector(".level-name-input").value.trim(),
+                tables: JSON.parse(card.dataset.tables || "[]"),
+                intervalMin: parseInt(card.dataset.intervalMin),
+                intervalMax: parseInt(card.dataset.intervalMax),
+                equalPosition: card.dataset.equalPosition,
+                factorPosition: card.dataset.factorPosition
+            });
+
+            const tasksMap = JSON.parse(card.dataset.tasks || "{}");
+
+            for (const type in tasksMap) {
+                tasks.push({
+                    levelId,
+                    ...tasksMap[type]
+                });
+            }
+        });
+
+        return { objective, levels, tasks };
+    }
+
+    function captureInitialState() {
+        initialState = collectAllData();
+    }
+
+    function isSameState(a, b) {
+        return JSON.stringify(a) === JSON.stringify(b);
+    }
+
+    function refreshDirtyState() {
+        const current = collectAllData();
+
+        if (isSameState(initialState, current)) {
+            unsavedChanges = false;
+            if (saveAllBtn) saveAllBtn.classList.remove("pulse-warning");
+        } else {
+            unsavedChanges = true;
+            if (saveAllBtn) saveAllBtn.classList.add("pulse-warning");
+        }
+    }
+
+    function markDirty() {
+        refreshDirtyState();
+    }
+
+    window.addEventListener("beforeunload", (e) => {
+        if (!unsavedChanges) return;
+        e.preventDefault();
+        e.returnValue = "";
+    });
+
+    /* =========================================================================================
        TABLES 1..12
-       ======================================================================= */
+    ========================================================================================= */
 
     function getSelectedTables() {
         const out = [];
         if (!tablesWrapper) return out;
 
-        tablesWrapper.querySelectorAll(".table-pill.active").forEach(btn => {
-            out.push(btn.dataset.value);
-        });
+        tablesWrapper.querySelectorAll(".table-pill.active").forEach(btn =>
+            out.push(btn.dataset.value)
+        );
 
         return out;
     }
@@ -49,13 +122,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 updatePreview();
+                markDirty();
             });
         });
     }
 
-    /* =======================================================================
+    /* =========================================================================================
        PREVIEW MULTIPLICATIONS
-       ======================================================================= */
+    ========================================================================================= */
 
     function updatePreview() {
         if (!previewBox) return;
@@ -73,25 +147,18 @@ document.addEventListener("DOMContentLoaded", () => {
             list.push(`${t} × ${x} = ${t * x}`);
         }
 
-        previewBox.innerHTML = list.map(x => `<div>${x}</div>`).join("");
+        previewBox.innerHTML = list.map(v => `<div>${v}</div>`).join("");
     }
 
     updatePreview();
 
-    /* =======================================================================
+    /* =========================================================================================
        UTILITAIRES NIVEAUX / TÂCHES
-       ======================================================================= */
+    ========================================================================================= */
 
     function getTasksMap(card) {
-        try {
-            return JSON.parse(card.dataset.tasks || "{}");
-        } catch {
-            return {};
-        }
-    }
-
-    function setTasksMap(card, map) {
-        card.dataset.tasks = JSON.stringify(map || {});
+        try { return JSON.parse(card.dataset.tasks || "{}"); }
+        catch { return {}; }
     }
 
     function getTablesForCard(card) {
@@ -104,10 +171,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function computeFactsCount(card) {
         const tables = getTablesForCard(card);
-        const min = parseInt(card.dataset.intervalMin || "1", 10);
-        const max = parseInt(card.dataset.intervalMax || "10", 10);
-        const range = Math.max(0, max - min + 1);
-        return tables.length * range;
+        const min = parseInt(card.dataset.intervalMin || "1");
+        const max = parseInt(card.dataset.intervalMax || "10");
+        return tables.length * (max - min + 1);
     }
 
     function updateFactsCount(card) {
@@ -115,9 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (span) span.textContent = computeFactsCount(card);
     }
 
-    /* =======================================================================
+    /* =========================================================================================
        INITIALISATION D’UNE CARTE NIVEAU
-       ======================================================================= */
+    ========================================================================================= */
 
     function initLevelCard(card) {
         if (!card) return;
@@ -126,81 +192,73 @@ document.addEventListener("DOMContentLoaded", () => {
         const factorGroup  = card.querySelector(".factor-position-group");
         const interval     = card.querySelector(".level-interval-slider");
         const deleteBtn    = card.querySelector(".delete-level-btn");
-        const saveBtn      = card.querySelector(".save-level-btn");
         const toggleBtn    = card.querySelector(".toggle-level-details");
 
-        // --- toggle collapse des détails
+        // Collapse
         if (toggleBtn) {
             toggleBtn.addEventListener("click", () => {
                 card.classList.toggle("collapsed");
             });
         }
 
-        // --- position de l’égal
-        const eqCurrent = card.dataset.equalPosition || "RIGHT";
-        if (equalGroup) {
-            equalGroup.querySelectorAll("button").forEach(btn => {
-                if (btn.dataset.value === eqCurrent) {
-                    btn.classList.add("active");
-                }
+        // Equal position
+        const eqCurrent = card.dataset.equalPosition;
+        equalGroup?.querySelectorAll("button").forEach(btn => {
+            if (btn.dataset.value === eqCurrent) btn.classList.add("active");
 
-                btn.addEventListener("click", () => {
-                    equalGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    card.dataset.equalPosition = btn.dataset.value;
-                    updateFactsCount(card);
-                });
+            btn.addEventListener("click", () => {
+                equalGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+
+                card.dataset.equalPosition = btn.dataset.value;
+                updateFactsCount(card);
+                markDirty();
             });
-        }
+        });
 
-        // --- position du facteur
-        const facCurrent = card.dataset.factorPosition || "OPERAND_TABLE";
-        if (factorGroup) {
-            factorGroup.querySelectorAll("button").forEach(btn => {
-                if (btn.dataset.value === facCurrent) {
-                    btn.classList.add("active");
-                }
+        // Factor position
+        const facCurrent = card.dataset.factorPosition;
+        factorGroup?.querySelectorAll("button").forEach(btn => {
+            if (btn.dataset.value === facCurrent) btn.classList.add("active");
 
-                btn.addEventListener("click", () => {
-                    factorGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-                    btn.classList.add("active");
-                    card.dataset.factorPosition = btn.dataset.value;
-                    updateFactsCount(card);
-                });
+            btn.addEventListener("click", () => {
+                factorGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+
+                card.dataset.factorPosition = btn.dataset.value;
+                updateFactsCount(card);
+                markDirty();
             });
-        }
+        });
 
-        // --- intervalle (slider max)
+        // Interval slider
         const minSpan = card.querySelector("[data-interval-min]");
         const maxSpan = card.querySelector("[data-interval-max]");
 
         if (interval) {
-            // valeur initiale
-            interval.value = card.dataset.intervalMax || "10";
+            interval.value = card.dataset.intervalMax;
 
             interval.addEventListener("input", () => {
                 const max = parseInt(interval.value, 10);
-                const min = parseInt(card.dataset.intervalMin || "1", 10);
-
                 card.dataset.intervalMax = String(max);
-                if (maxSpan) maxSpan.textContent = String(max);
-                if (minSpan) minSpan.textContent = String(min);
+
+                maxSpan.textContent = max;
+                minSpan.textContent = card.dataset.intervalMin;
 
                 updateFactsCount(card);
                 updatePreview();
+                markDirty();
             });
         }
 
-        // Nombre de faits initial
         updateFactsCount(card);
 
-        // --- SUPPRESSION DU NIVEAU
+        // Suppression du niveau
         if (deleteBtn && config.deleteLevelUrlTemplate) {
             deleteBtn.addEventListener("click", async () => {
                 if (!confirm("Supprimer ce niveau ?")) return;
 
-                const levelId = card.dataset.levelId;
-                const url = config.deleteLevelUrlTemplate.replace("__LEVEL_ID__", levelId);
+                const url = config.deleteLevelUrlTemplate.replace("__LEVEL_ID__", card.dataset.levelId);
 
                 try {
                     const resp = await fetch(url, {
@@ -208,108 +266,99 @@ document.addEventListener("DOMContentLoaded", () => {
                         headers: { "X-Requested-With": "XMLHttpRequest" }
                     });
 
-                    const data = await resp.json();
-                    if (!resp.ok || !data.success) {
-                        showToast(false);
-                        return;
-                    }
+                    const json = await resp.json();
+                    if (!json.success) return showToast(false);
 
                     card.remove();
+                    markDirty();
                     showToast(true);
 
-                } catch (e) {
-                    console.error(e);
+                } catch (err) {
+                    console.error(err);
                     showToast(false);
                 }
             });
         }
 
-        // --- SAUVEGARDE DU NIVEAU
-        if (saveBtn && config.saveLevelUrlTemplate) {
-            saveBtn.addEventListener("click", async () => {
-                const levelId = card.dataset.levelId;
-                const url = config.saveLevelUrlTemplate.replace("__LEVEL_ID__", levelId);
-
-                const nameInput = card.querySelector(".level-name-input");
-                const name = nameInput ? nameInput.value.trim() : "";
-
-                const eqBtn = equalGroup ? equalGroup.querySelector("button.active") : null;
-                const facBtn = factorGroup ? factorGroup.querySelector("button.active") : null;
-
-                const payload = {
-                    name,
-                    tables: getTablesForCard(card),
-                    intervalMin: parseInt(card.dataset.intervalMin || "1", 10),
-                    intervalMax: parseInt(card.dataset.intervalMax || "10", 10),
-                    equalPosition: eqBtn ? eqBtn.dataset.value : "RIGHT",
-                    factorPosition: facBtn ? facBtn.dataset.value : "OPERAND_TABLE"
-                };
-
-                try {
-                    const resp = await fetch(url, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                            "X-Requested-With": "XMLHttpRequest"
-                        },
-                        body: JSON.stringify(payload)
-                    });
-
-                    const data = await resp.json();
-                    if (!resp.ok || !data.success) {
-                        showToast(false);
-                        return;
-                    }
-
-                    showToast(true);
-
-                } catch (e) {
-                    console.error(e);
-                    showToast(false);
-                }
-            });
-        }
-
-        // --- OUVERTURE DES MODALES DE TÂCHES
+        // Modales de tâches
         card.querySelectorAll(".task-pill").forEach(pill => {
             pill.addEventListener("click", () => {
-                const levelId  = card.dataset.levelId;
-                const taskType = pill.dataset.taskType;
-
+                const type = pill.dataset.taskType;
                 const tasksMap = getTasksMap(card);
-                const existing = tasksMap[taskType] || null;
+                const existing = tasksMap[type] || null;
 
-                switch (taskType) {
-                    case "C1":
-                        openC1Modal(levelId, existing, card);
-                        break;
-                    case "C2":
-                        openC2Modal(levelId, existing, card);
-                        break;
-                    case "REC":
-                        openRecModal(levelId, existing, card);
-                        break;
-                    case "ID":
-                        openIdModal(levelId, existing, card);
-                        break;
-                    case "MEMB":
-                        openMembModal(levelId, existing, card);
-                        break;
+                switch (type) {
+                    case "C1":  openC1Modal(card.dataset.levelId, existing, card); break;
+                    case "C2":  openC2Modal(card.dataset.levelId, existing, card); break;
+                    case "REC": openRecModal(card.dataset.levelId, existing, card); break;
+                    case "ID":  openIdModal(card.dataset.levelId, existing, card); break;
+                    case "MEMB":openMembModal(card.dataset.levelId, existing, card); break;
                 }
             });
         });
     }
 
     function initAllLevelCards() {
-        if (!levelsContainer) return;
-        levelsContainer.querySelectorAll(".level-card").forEach(card => initLevelCard(card));
+        levelsContainer?.querySelectorAll(".level-card").forEach(card =>
+            initLevelCard(card)
+        );
     }
 
     initAllLevelCards();
+    captureInitialState();
 
-    /* =======================================================================
-       AJOUT D’UN NIVEAU
-       ======================================================================= */
+    /* =========================================================================================
+       BOUTON SAVE-ALL
+    ========================================================================================= */
+
+    if (saveAllBtn) {
+        saveAllBtn.addEventListener("click", async () => {
+
+            // Vérification : au moins une table doit être sélectionnée
+            const selectedTables = getSelectedTables();
+            if (!selectedTables.length) {
+                showToast(false, "Sélectionnez au moins une table pour enregistrer.");
+                return;
+            }
+
+            const payload = collectAllData();
+            saveAllBtn.classList.add("loading");
+
+            try {
+                const resp = await fetch(config.saveAllUrl, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const json = await resp.json();
+
+                if (!json.success) {
+                    saveAllBtn.classList.remove("loading");
+                    return showToast(false);
+                }
+
+                initialState = collectAllData();
+                unsavedChanges = false;
+                saveAllBtn.classList.remove("pulse-warning");
+                saveAllBtn.classList.remove("loading");
+
+                showToast(true);
+
+            } catch (err) {
+                console.error(err);
+                saveAllBtn.classList.remove("loading");
+                showToast(false);
+            }
+        });
+    }
+
+    /* =========================================================================================
+       AJOUT NIVEAU
+    ========================================================================================= */
 
     if (addLevelBtn && config.addLevelUrl) {
         addLevelBtn.addEventListener("click", async () => {
@@ -319,33 +368,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     headers: { "X-Requested-With": "XMLHttpRequest" }
                 });
 
-                const data = await resp.json();
-                if (!resp.ok || !data.success || !data.html) {
-                    showToast(false);
-                    return;
-                }
+                const json = await resp.json();
+                if (!json.success || !json.html) return showToast(false);
 
                 const temp = document.createElement("div");
-                temp.innerHTML = data.html.trim();
+                temp.innerHTML = json.html.trim();
                 const newCard = temp.firstElementChild;
 
-                if (levelsContainer && newCard) {
-                    levelsContainer.appendChild(newCard);
-                    initLevelCard(newCard);
-                    showToast(true);
-                }
+                levelsContainer.appendChild(newCard);
+                initLevelCard(newCard);
+                markDirty();
+                showToast(true);
 
-            } catch (e) {
-                console.error(e);
+            } catch (err) {
+                console.error(err);
                 showToast(false);
             }
         });
     }
 
-    /* =======================================================================
-       Rendre saveTask / deleteTask accessibles aux modales via window
-       ======================================================================= */
-
+    // Export global pour les modales
     window.saveTask = saveTask;
     window.deleteTask = deleteTask;
 });

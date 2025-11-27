@@ -198,3 +198,54 @@
 .delete-level-btn {
     border-radius: 999px;
 }
+
+
+/* ============================================================
+   Loader spinner
+   ============================================================ */
+
+.save-loader {
+    display: flex;
+    align-items: center;
+    margin-top: 0.75rem;
+    color: #7a5af8;
+}
+
+.save-loader .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: .15rem;
+}
+
+.d-none {
+    display: none !important;
+}
+
+#save-loader {
+    vertical-align: middle;
+}
+
+/* ============================================================
+   Pulse / Glow pour signaler des modifications non sauvegardées
+   ============================================================ */
+
+.pulse-warning {
+    position: relative;
+    animation: pulseWarning 1.4s infinite ease-in-out;
+}
+
+@keyframes pulseWarning {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0.65); }
+    70%  { box-shadow: 0 0 0 12px rgba(255, 160, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0); }
+}
+
+/* Optionnel : texte rouge/orange quand non sauvegardé */
+.pulse-warning {
+    background-color: #ffb84d !important;
+    border-color: #ffb84d !important;
+    color: #4b3b0a !important;
+}
+.pulse-warning:hover {
+    background-color: #e6a441 !important;
+}

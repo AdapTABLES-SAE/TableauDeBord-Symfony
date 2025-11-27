@@ -149,6 +149,83 @@ class ObjectiveController extends AbstractController
         ]);
     }
 
+
+    #[Route('/objectif/{id}/save-all', name: 'save_all', methods: ['POST'])]
+    public function saveAll(Objectif $objectif, Request $request): JsonResponse
+    {
+        $payload = json_decode($request->getContent(), true);
+
+        if (!$payload) {
+            return new JsonResponse(['success' => false, 'message' => 'Missing payload'], 400);
+        }
+
+        /* --------------------------
+           1) Sauvegarde objectif
+           -------------------------- */
+        if (isset($payload['objective'])) {
+            $objectif->setName($payload['objective']['name'] ?? $objectif->getName());
+        }
+
+        /* --------------------------
+           2) Sauvegarde niveaux
+           -------------------------- */
+        if (isset($payload['levels']) && is_array($payload['levels'])) {
+            foreach ($payload['levels'] as $lvlData) {
+                $niveau = $this->em->getRepository(Niveau::class)->find($lvlData['id']);
+                if (!$niveau) continue;
+
+                $niveau->setName($lvlData['name']);
+                $niveau->setTables($lvlData['tables']);
+                $niveau->setIntervalMin($lvlData['intervalMin']);
+                $niveau->setIntervalMax($lvlData['intervalMax']);
+                $niveau->setResultLocation($lvlData['equalPosition']);
+                $niveau->setLeftOperand($lvlData['factorPosition']);
+            }
+        }
+
+        /* --------------------------
+           3) Sauvegarde tâches
+           -------------------------- */
+        if (isset($payload['tasks']) && is_array($payload['tasks'])) {
+            foreach ($payload['tasks'] as $taskPayload) {
+
+                $niveau = $this->em->getRepository(Niveau::class)->find($taskPayload['levelId']);
+                if (!$niveau) continue;
+
+                $task = $this->em->getRepository(Tache::class)->findOneBy([
+                    'niveau' => $niveau,
+                    'taskType' => $taskPayload['taskType']
+                ]);
+
+                if (!$task) {
+                    $task = new Tache();
+                    $task->setNiveau($niveau);
+                    $task->setTaskType($taskPayload['taskType']);
+                    $this->em->persist($task);
+                }
+
+                // Champs communs
+                $task->setTimeMaxSecond($taskPayload['timeMaxSecond']);
+                $task->setRepartitionPercent($taskPayload['repartitionPercent']);
+                $task->setSuccessiveSuccessesToReach($taskPayload['successiveSuccessesToReach']);
+
+                // Champs spécifiques
+                $task->setTargets($taskPayload['targets'] ?? null);
+                $task->setAnswerModality($taskPayload['answerModality'] ?? null);
+                $task->setNbIncorrectChoices($taskPayload['nbIncorrectChoices'] ?? null);
+                $task->setNbCorrectChoices($taskPayload['nbCorrectChoices'] ?? null);
+                $task->setNbFacts($taskPayload['nbFacts'] ?? null);
+                $task->setSourceVariation($taskPayload['sourceVariation'] ?? null);
+                $task->setTarget($taskPayload['target'] ?? null);
+            }
+        }
+
+        $this->em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+
     /**
      * Suppression d’un niveau.
      */
