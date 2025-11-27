@@ -77,10 +77,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isSameState(initialState, current)) {
             unsavedChanges = false;
-            if (saveAllBtn) saveAllBtn.classList.remove("pulse-warning");
+            saveAllBtn?.classList.remove("pulse-warning");
         } else {
             unsavedChanges = true;
-            if (saveAllBtn) saveAllBtn.classList.add("pulse-warning");
+            saveAllBtn?.classList.add("pulse-warning");
         }
     }
 
@@ -171,14 +171,106 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function computeFactsCount(card) {
         const tables = getTablesForCard(card);
-        const min = parseInt(card.dataset.intervalMin || "1");
-        const max = parseInt(card.dataset.intervalMax || "10");
-        return tables.length * (max - min + 1);
+        const min = parseInt(card.dataset.intervalMin || "1", 10);
+        const max = parseInt(card.dataset.intervalMax || "10", 10);
+        return tables.length * Math.max(0, max - min + 1);
     }
 
     function updateFactsCount(card) {
         const span = card.querySelector("[data-facts-count]");
         if (span) span.textContent = computeFactsCount(card);
+    }
+
+    /* =========================================================================================
+       SLIDER DOUBLE — VERSION PRO
+    ========================================================================================= */
+
+    function initDoubleSlider(card) {
+        const wrap = card.querySelector(".range-double");
+        if (!wrap) return;
+
+        const minLabel = card.querySelector("[data-interval-min]");
+        const maxLabel = card.querySelector("[data-interval-max]");
+
+        const track = wrap.querySelector(".range-track");
+        const range = wrap.querySelector(".range-range");
+        const handleMin = wrap.querySelector(".range-handle-min");
+        const handleMax = wrap.querySelector(".range-handle-max");
+
+        const MIN = 1;
+        const MAX = 10;
+
+        let minVal = parseInt(wrap.dataset.min, 10) || 1;
+        let maxVal = parseInt(wrap.dataset.max, 10) || 10;
+
+        function percent(value) {
+            return ((value - MIN) / (MAX - MIN)) * 100;
+        }
+
+        function updateUI() {
+            handleMin.style.left = percent(minVal) + "%";
+            handleMax.style.left = percent(maxVal) + "%";
+
+            range.style.left = percent(minVal) + "%";
+            range.style.right = (100 - percent(maxVal)) + "%";
+
+            minLabel.textContent = minVal;
+            maxLabel.textContent = maxVal;
+
+            card.dataset.intervalMin = minVal;
+            card.dataset.intervalMax = maxVal;
+
+            updateFactsCount(card);
+            updatePreview();
+            markDirty();
+        }
+
+        updateUI();
+
+        /* DRAG */
+        function startDrag(type) {
+            function move(e) {
+                const rect = wrap.getBoundingClientRect();
+                const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
+                const value = Math.round(MIN + pct * (MAX - MIN));
+
+                if (type === "min") {
+                    minVal = Math.min(value, maxVal);
+                } else {
+                    maxVal = Math.max(value, minVal);
+                }
+
+                updateUI();
+            }
+
+            function stop() {
+                window.removeEventListener("mousemove", move);
+                window.removeEventListener("mouseup", stop);
+            }
+
+            window.addEventListener("mousemove", move);
+            window.addEventListener("mouseup", stop);
+        }
+
+        handleMin.addEventListener("mousedown", () => startDrag("min"));
+        handleMax.addEventListener("mousedown", () => startDrag("max"));
+
+        /* CLICK SUR LA BARRE */
+        wrap.addEventListener("mousedown", (e) => {
+            if (e.target.classList.contains("range-handle")) return;
+
+            const rect = wrap.getBoundingClientRect();
+            const pct = (e.clientX - rect.left) / rect.width;
+            const val = Math.round(MIN + pct * (MAX - MIN));
+
+            if (Math.abs(val - minVal) < Math.abs(val - maxVal)) {
+                minVal = Math.min(val, maxVal);
+            } else {
+                maxVal = Math.max(val, minVal);
+            }
+
+            updateUI();
+        });
     }
 
     /* =========================================================================================
@@ -190,16 +282,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const equalGroup   = card.querySelector(".equal-position-group");
         const factorGroup  = card.querySelector(".factor-position-group");
-        const interval     = card.querySelector(".level-interval-slider");
         const deleteBtn    = card.querySelector(".delete-level-btn");
         const toggleBtn    = card.querySelector(".toggle-level-details");
 
         // Collapse
-        if (toggleBtn) {
-            toggleBtn.addEventListener("click", () => {
-                card.classList.toggle("collapsed");
-            });
-        }
+        toggleBtn?.addEventListener("click", () => {
+            card.classList.toggle("collapsed");
+        });
 
         // Equal position
         const eqCurrent = card.dataset.equalPosition;
@@ -231,25 +320,8 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        // Interval slider
-        const minSpan = card.querySelector("[data-interval-min]");
-        const maxSpan = card.querySelector("[data-interval-max]");
-
-        if (interval) {
-            interval.value = card.dataset.intervalMax;
-
-            interval.addEventListener("input", () => {
-                const max = parseInt(interval.value, 10);
-                card.dataset.intervalMax = String(max);
-
-                maxSpan.textContent = max;
-                minSpan.textContent = card.dataset.intervalMin;
-
-                updateFactsCount(card);
-                updatePreview();
-                markDirty();
-            });
-        }
+        /* -- Double slider PRO -- */
+        initDoubleSlider(card);
 
         updateFactsCount(card);
 

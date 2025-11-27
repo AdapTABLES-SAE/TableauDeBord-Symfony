@@ -1,52 +1,183 @@
+// public/js/modals/modal_c1.js
+
 import { saveTask, deleteTask } from "./task_actions.js";
+
+/* ======================================================
+   FONCTIONS UTILITAIRES
+   ====================================================== */
+
+function randInt(min, max) {
+    const a = parseInt(min, 10);
+    const b = parseInt(max, 10);
+    if (isNaN(a) || isNaN(b)) return 1;
+    const low = Math.min(a, b);
+    const high = Math.max(a, b);
+    return Math.floor(Math.random() * (high - low + 1)) + low;
+}
+
+function pickRandom(arr, fallback = 1) {
+    if (!Array.isArray(arr) || arr.length === 0) return fallback;
+    const idx = Math.floor(Math.random() * arr.length);
+    const raw = arr[idx];
+    const num = parseInt(raw, 10);
+    return isNaN(num) ? fallback : num;
+}
 
 /* ======================================================
    FONCTION DE PRÉVISUALISATION
    ====================================================== */
 
-function generateC1Preview() {
+function generateC1Preview(levelCard) {
     const eq = document.querySelector("#c1_preview_content .preview-equation");
     const optBox = document.querySelector("#c1_preview_content .preview-options");
     const hint = document.querySelector("#c1_preview_content .preview-hint");
 
-    if (!eq || !optBox || !hint) return;
+    if (!eq || !optBox || !hint || !levelCard) return;
 
-    /* Start transition */
+    // Effet de petite transition
     eq.classList.add("updated");
     setTimeout(() => eq.classList.remove("updated"), 10);
 
-    /* Valeurs aléatoires */
-    const t = Math.floor(Math.random() * 10) + 1;
-    const f = Math.floor(Math.random() * 10) + 1;
-    const r = t * f;
+    /* =============================
+       PARAMÈTRES DU NIVEAU
+       ============================= */
 
-    const target = document.querySelector('input[name="c1_target"]:checked')?.value || "RESULT";
+    // Tables travaillées (du niveau)
+    let tables = [];
+    try {
+        tables = JSON.parse(levelCard.dataset.tables || "[]");
+    } catch {
+        tables = [];
+    }
+    if (!Array.isArray(tables) || !tables.length) {
+        tables = ["1"]; // fallback
+    }
 
-    // construction de l'équation
+    const table = pickRandom(tables, 1);
+
+    // Intervalle min/max
+    const min = parseInt(levelCard.dataset.intervalMin || "1", 10);
+    const max = parseInt(levelCard.dataset.intervalMax || "10", 10);
+    const operand = randInt(min, max);
+
+    // Résultat
+    const result = table * operand;
+
+    // Position de l'égal
+    let equalPos = levelCard.dataset.equalPosition || "RIGHT"; // LEFT | RIGHT | MIX
+    if (equalPos === "MIX") {
+        equalPos = Math.random() < 0.5 ? "LEFT" : "RIGHT";
+    }
+
+    // Position du facteur
+    let factorPos = levelCard.dataset.factorPosition || "OPERAND_TABLE"; // OPERAND_TABLE | TABLE_OPERAND | MIX
+    if (factorPos === "MIX") {
+        factorPos = Math.random() < 0.5 ? "OPERAND_TABLE" : "TABLE_OPERAND";
+    }
+
+    /* =============================
+       PARAMÈTRES DE LA TÂCHE
+       ============================= */
+
+    const target =
+        document.querySelector('input[name="c1_target"]:checked')?.value
+        || "RESULT"; // OPERAND | TABLE | RESULT
+
+    const isChoiceMode = document.getElementById("c1_mod_choice")?.checked;
+    const nbIncorrectSlider = document.getElementById("c1_nbIncorrect");
+    const nbIncorrect = nbIncorrectSlider
+        ? parseInt(nbIncorrectSlider.value, 10) || 2
+        : 2;
+
+    /* =============================
+       CONSTRUCTION DE L'ÉQUATION
+       ============================= */
+
     const H = `<span class="preview-hidden">?</span>`;
-    let equation = "";
 
-    if (target === "OPERAND") equation = `${H} × ${f} = ${r}`;
-    if (target === "TABLE")   equation = `${t} × ${H} = ${r}`;
-    if (target === "RESULT")  equation = `${t} × ${f} = ${H}`;
+    const tableVal = table;
+    const operandVal = operand;
+
+    let leftFactorVal;
+    let rightFactorVal;
+
+    if (factorPos === "OPERAND_TABLE") {
+        leftFactorVal = operandVal;
+        rightFactorVal = tableVal;
+    } else {
+        // TABLE_OPERAND
+        leftFactorVal = tableVal;
+        rightFactorVal = operandVal;
+    }
+
+    let leftFactorDisp = leftFactorVal;
+    let rightFactorDisp = rightFactorVal;
+    let resultDisp = result;
+
+    // Détermination de la bonne réponse (selon l'élément masqué)
+    let correctAnswer = result;
+
+    if (target === "OPERAND") {
+        correctAnswer = operandVal;
+        if (leftFactorVal === operandVal && rightFactorVal !== operandVal) {
+            leftFactorDisp = H;
+        } else if (rightFactorVal === operandVal) {
+            rightFactorDisp = H;
+        } else {
+            leftFactorDisp = H; // fallback
+        }
+    } else if (target === "TABLE") {
+        correctAnswer = tableVal;
+        if (leftFactorVal === tableVal && rightFactorVal !== tableVal) {
+            leftFactorDisp = H;
+        } else if (rightFactorVal === tableVal) {
+            rightFactorDisp = H;
+        } else {
+            leftFactorDisp = H; // fallback
+        }
+    } else if (target === "RESULT") {
+        correctAnswer = result;
+        resultDisp = H;
+    }
+
+    const leftSide = `${leftFactorDisp} × ${rightFactorDisp}`;
+    const rightSide = `${resultDisp}`;
+
+    let equation = "";
+    if (equalPos === "LEFT") {
+        // résultat à gauche
+        equation = `${rightSide} = ${leftSide}`;
+    } else {
+        // RIGHT
+        equation = `${leftSide} = ${rightSide}`;
+    }
 
     eq.innerHTML = equation;
 
-    /* Mode choix ou saisie */
-    const isChoice = document.getElementById("c1_mod_choice")?.checked;
+    /* =============================
+       OPTIONS / INPUT
+       ============================= */
+
     optBox.innerHTML = "";
 
-    if (isChoice) {
-        const nbInc = parseInt(document.getElementById("c1_nbIncorrect")?.value || "2", 10);
-        let options = new Set([r]);
+    if (isChoiceMode) {
+        // Génération des mauvaises réponses
+        const optionsSet = new Set();
+        optionsSet.add(String(correctAnswer));
 
-        while (options.size < nbInc + 1)
-            options.add(Math.floor(Math.random() * 90) + 1);
+        while (optionsSet.size < nbIncorrect + 1) {
+            let delta = randInt(-10, 10);
+            if (delta === 0) delta = 1;
+            const candidate = Math.max(0, correctAnswer + delta);
+            optionsSet.add(String(candidate));
+        }
 
-        options = Array.from(options).sort(() => Math.random() - 0.5);
+        let options = Array.from(optionsSet).map(v => parseInt(v, 10));
+        options.sort(() => Math.random() - 0.5);
 
         options.forEach((value, i) => {
             const btn = document.createElement("button");
+            btn.type = "button";
             btn.className = "preview-option-btn";
             btn.textContent = value;
             optBox.appendChild(btn);
@@ -55,13 +186,16 @@ function generateC1Preview() {
         });
 
         hint.textContent = "L’élève doit cliquer sur la bonne réponse.";
-
     } else {
-        optBox.innerHTML = `<input class="preview-input" placeholder="Votre réponse…">`;
+        // Mode saisie
+        const input = document.createElement("input");
+        input.className = "preview-input";
+        input.placeholder = "Votre réponse…";
+        optBox.appendChild(input);
+
         hint.textContent = "L’élève saisit directement la réponse.";
     }
 }
-
 
 /* ======================================================
    OUVERTURE ET GESTION DE LA MODALE C1
@@ -78,7 +212,7 @@ export function openC1Modal(levelId, task, card) {
     const radios = document.querySelectorAll('input[name="c1_target"]');
     radios.forEach(r => {
         r.checked = false;
-        r.closest('.task-chip')?.classList.remove('active');
+        r.closest(".task-chip")?.classList.remove("active");
     });
 
     /* ---------- Switches modalité ---------- */
@@ -103,7 +237,9 @@ export function openC1Modal(levelId, task, card) {
 
     if (task) {
         const firstTarget = task.targets?.[0] ?? "RESULT";
-        const targetRadio = document.querySelector(`input[name="c1_target"][value="${firstTarget}"]`);
+        const targetRadio = document.querySelector(
+            `input[name="c1_target"][value="${firstTarget}"]`
+        );
         if (targetRadio) {
             targetRadio.checked = true;
             targetRadio.closest(".task-chip")?.classList.add("active");
@@ -129,7 +265,6 @@ export function openC1Modal(levelId, task, card) {
             succSlider.value = task.successiveSuccessesToReach ?? 1;
             if (succVal) succVal.textContent = succSlider.value;
         }
-
     } else {
         const resRadio = document.getElementById("c1_target_result");
         if (resRadio) {
@@ -154,16 +289,15 @@ export function openC1Modal(levelId, task, card) {
     }
 
     /* ======================================================
-       AJOUT DES generateC1Preview() PARTOUT
+       EVENTS → PREVIEW LIÉ AU NIVEAU (card)
        ====================================================== */
 
     // Radios
     radios.forEach(radio => {
         radio.addEventListener("change", () => {
-            radios.forEach(x => x.closest('.task-chip')?.classList.remove("active"));
-            radio.closest('.task-chip')?.classList.add("active");
-
-            generateC1Preview();
+            radios.forEach(x => x.closest(".task-chip")?.classList.remove("active"));
+            radio.closest(".task-chip")?.classList.add("active");
+            generateC1Preview(card);
         });
     });
 
@@ -181,7 +315,7 @@ export function openC1Modal(levelId, task, card) {
             switchInput.checked = true;
         }
 
-        generateC1Preview();
+        generateC1Preview(card);
     }
 
     if (switchChoice) switchChoice.addEventListener("change", enforceSwitchExclusivity);
@@ -191,21 +325,21 @@ export function openC1Modal(levelId, task, card) {
     if (nbIncSlider && nbIncVal) {
         nbIncSlider.oninput = () => {
             nbIncVal.textContent = nbIncSlider.value;
-            generateC1Preview();
+            generateC1Preview(card);
         };
     }
 
     if (timeSlider && timeVal) {
         timeSlider.oninput = () => {
             timeVal.textContent = timeSlider.value;
-            generateC1Preview();
+            generateC1Preview(card);
         };
     }
 
     if (succSlider && succVal) {
         succSlider.oninput = () => {
             succVal.textContent = succSlider.value;
-            generateC1Preview();
+            generateC1Preview(card);
         };
     }
 
@@ -214,7 +348,8 @@ export function openC1Modal(levelId, task, card) {
     if (deleteBtn) {
         if (task && task.id) {
             deleteBtn.classList.remove("d-none");
-            deleteBtn.onclick = () => deleteTask(levelId, "C1", card, "taskModalC1");
+            deleteBtn.onclick = () =>
+                deleteTask(levelId, "C1", card, "taskModalC1");
         } else {
             deleteBtn.classList.add("d-none");
             deleteBtn.onclick = null;
@@ -246,9 +381,9 @@ export function openC1Modal(levelId, task, card) {
         };
     }
 
-    /* ---------- AFFICHAGE MODALE + PREVIEW ---------- */
+    /* ---------- AFFICHAGE MODALE + PREVIEW INITIAL ---------- */
 
     const modal = new bootstrap.Modal(modalEl);
-    generateC1Preview();
+    generateC1Preview(card);
     modal.show();
 }

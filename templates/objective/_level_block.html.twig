@@ -107,25 +107,29 @@
             </div>
         </div>
 
-        {# ---------- INTERVALLE ---------- #}
-        <div class="level-section mb-3">
-            <div class="level-section-title mb-2">Intervalle de la table</div>
+        {# ---------- INTERVALLE (DOUBLE SLIDER PRO) ---------- #}
+        <div class="range-double" data-min="{{ niveau.intervalMin|default(1) }}" data-max="{{ niveau.intervalMax|default(10) }}">
 
-            <div class="d-flex align-items-center">
-                <span class="me-2 small">1</span>
-                <input type="range"
-                       class="form-range flex-grow-1 level-interval-slider"
-                       min="1"
-                       max="10"
-                       value="{{ niveau.intervalMax|default(10) }}">
-                <span class="ms-2 small">10</span>
-            </div>
+            <div class="range-track"></div>
+            <div class="range-range"></div>
 
-            <div class="text-end small text-muted">
-                Min : <span data-interval-min>{{ niveau.intervalMin|default(1) }}</span> —
-                Max : <span data-interval-max>{{ niveau.intervalMax|default(10) }}</span>
-            </div>
+            <div class="range-handle range-handle-min"></div>
+            <div class="range-handle range-handle-max"></div>
+
+            <!-- Le seul vrai input -->
+            <input type="range"
+                   min="1"
+                   max="10"
+                   value="1"
+                   class="range-real-input d-none">
         </div>
+
+        <div class="text-end small text-muted mt-1">
+            Min : <span data-interval-min>{{ niveau.intervalMin }}</span> —
+            Max : <span data-interval-max>{{ niveau.intervalMax }}</span>
+        </div>
+
+
 
         {# ---------- BOUTONS SUPPRIMER ---------- #}
         <div class="d-flex justify-content-between align-items-center mt-3">
