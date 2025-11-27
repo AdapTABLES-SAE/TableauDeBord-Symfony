@@ -172,7 +172,7 @@ class TeacherDashboardController extends AbstractController
         string $id,
         Request $request,
         ApiClient $apiClient,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
     ): JsonResponse
     {
         $nom     = $request->request->get('lname');
@@ -182,9 +182,8 @@ class TeacherDashboardController extends AbstractController
         $classe = $em->getRepository(Classe::class)->find($id);
         if (!$classe) return new JsonResponse(['success' => false, 'fatal' => true]);
 
-
-        $canCreateStudent = empty($em->getRepository(Eleve::class)->find($studentId));
-        if($canCreateStudent){
+        $canCreateStudent = $em->getRepository(Eleve::class)->findOneBy(["learnerId"=>$studentId]);
+        if(!$canCreateStudent){
             $ok = $apiClient->addStudent($classe->getIdClasse(), $studentId, $nom, $prenom);
 
             if ($ok) {

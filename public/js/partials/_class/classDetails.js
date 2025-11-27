@@ -196,8 +196,8 @@ document.addEventListener("partial:loaded", (e) => {
                 console.error("POST error:", error);
                 showToast(
                     false,
-                    "Erreur de communication avec le serveur.",
-                    ""
+                    "Erreur.",
+                    "Erreur de communication avec le serveur."
                 );
             }
         });
@@ -338,6 +338,7 @@ document.addEventListener("partial:loaded", (e) => {
             formData.append("lname", nom);
             formData.append("fname", prenom);
             formData.append("studentId", identifiant);
+            console.log(identifiant);
 
             try {
                 const response = await fetch(addStudentForm.action, {
@@ -348,6 +349,7 @@ document.addEventListener("partial:loaded", (e) => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
 
+                console.log(result);
                 if (result.fatal){
                     showToast(
                         false,
@@ -375,15 +377,15 @@ document.addEventListener("partial:loaded", (e) => {
                 console.error("Erreur ajout élève:", err);
                 showToast(
                     false,
-                    "Erreur réseau lors de l'ajout de l'élève.",
-                    "."
+                    "Erreur",
+                    "Erreur réseau lors de l'ajout de l'élève."
                 );
             }
         });
     }
     // ========================================================================
-// 10. DELETE CLASS
-// ========================================================================
+    // 10. DELETE CLASS
+    // ========================================================================
 
     const deleteBtn = q("#deleteClassBtn");
     const deleteModalEl = q("#deleteClassModal");
