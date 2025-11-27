@@ -1,117 +1,285 @@
+// public/js/modals/modal_c2.js
+
 import { saveTask, deleteTask } from "./task_actions.js";
 
 /* ======================================================
-   FONCTION DE PRÉVISUALISATION
+   OUTIL : récupération du contexte du niveau
+   ====================================================== */
+
+function getLevelContext() {
+    const ctx = window.CURRENT_LEVEL_CONTEXT || {};
+
+    let tables = Array.isArray(ctx.tables) ? ctx.tables : [];
+    tables = tables
+        .map(v => parseInt(v, 10))
+        .filter(v => !Number.isNaN(v));
+
+    if (!tables.length) {
+        tables = [2, 3, 4, 5, 6, 7, 8, 9];
+    }
+
+    let min = parseInt(ctx.intervalMin ?? "1", 10);
+    let max = parseInt(ctx.intervalMax ?? "10", 10);
+
+    if (Number.isNaN(min)) min = 1;
+    if (Number.isNaN(max)) max = 10;
+    if (min > max) [min, max] = [max, min];
+
+    const equalPosition  = ctx.equalPosition  || "RIGHT";
+    const factorPosition = ctx.factorPosition || "OPERAND_TABLE";
+
+    return {
+        tables,
+        min,
+        max,
+        equalPosition,
+        factorPosition,
+    };
+}
+
+/* ======================================================
+   OUTIL : MAUVAISES RÉPONSES COHÉRENTES
+   ====================================================== */
+
+function generateSmartWrongValues(correctPair, count, context, target, leftVal, rightVal, result, isLeftTable) {
+    const values = new Set(correctPair);
+
+    // Empêche toute répétition
+    const avoid = new Set(correctPair);
+
+    while (values.size < count + correctPair.length) {
+
+        let candidate;
+
+        const rand = Math.random();
+
+        /* ---------------------------------------------------------
+           35% : variation légère ±1 / ±2 autour d’un des bons nombres
+        --------------------------------------------------------- */
+        if (rand < 0.35) {
+            const base = correctPair[Math.floor(Math.random() * correctPair.length)];
+            const delta = (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 2) + 1);
+            candidate = base + delta;
+        }
+
+        /* ---------------------------------------------------------
+           25% : opérandes valides dans l’intervalle du niveau
+        --------------------------------------------------------- */
+        else if (rand < 0.60) {
+            candidate = Math.floor(Math.random() * (context.max - context.min + 1)) + context.min;
+        }
+
+        /* ---------------------------------------------------------
+           25% : “produits plausibles” = proches du résultat
+        --------------------------------------------------------- */
+        else if (rand < 0.85) {
+            const delta = (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 3) + 1);
+            candidate = result + delta;
+        }
+
+        /* ---------------------------------------------------------
+           15% : bruit plus large mais cohérent
+        --------------------------------------------------------- */
+        else {
+            const base = correctPair[Math.floor(Math.random() * correctPair.length)];
+            const delta = (Math.random() < 0.5 ? -1 : 1) * (Math.floor(Math.random() * 5) + 3);
+            candidate = base + delta;
+        }
+
+        if (candidate <= 0) continue;
+        if (avoid.has(candidate)) continue;
+
+        // Empêche de créer une réponse "presque correcte" selon la logique de la tâche
+        if (target === "OPERAND_TABLE") {
+            // on évite de reproduire exactement un facteur correct
+            if (candidate === leftVal || candidate === rightVal) continue;
+        }
+
+        if (target === "OPERAND_RESULT") {
+            // éviter un résultat valide
+            if (candidate === result) continue;
+        }
+
+        if (target === "TABLE_RESULT") {
+            // éviter de donner la table correcte
+            if (candidate === (isLeftTable ? leftVal : rightVal)) continue;
+        }
+
+        values.add(candidate);
+    }
+
+    return Array.from(values);
+}
+
+/* ======================================================
+   PRÉVISUALISATION C2
    ====================================================== */
 
 function generateC2Preview() {
-    const eq = document.querySelector("#c2_preview_content .preview-equation");
+    const eq     = document.querySelector("#c2_preview_content .preview-equation");
     const optBox = document.querySelector("#c2_preview_content .preview-options");
-    const hint = document.querySelector("#c2_preview_content .preview-hint");
+    const hint   = document.querySelector("#c2_preview_content .preview-hint");
 
     if (!eq || !optBox || !hint) return;
 
-    // petite anim sur l’équation
     eq.classList.add("updated");
     setTimeout(() => eq.classList.remove("updated"), 10);
 
-    // valeurs de base
-    const table  = Math.floor(Math.random() * 10) + 1; // "table"
-    const factor = Math.floor(Math.random() * 10) + 1; // "opérande"
-    const result = table * factor;
+    const ctx = getLevelContext();
 
-    const target = document.querySelector('input[name="c2_target"]:checked')?.value || "OPERAND_TABLE";
-    const H = `<span class="preview-hidden">?</span>`;
-    let equation = "";
+    /* Tirage d’un fait conforme au niveau */
+    const table = ctx.tables[Math.floor(Math.random() * ctx.tables.length)];
+    const operand = Math.floor(Math.random() * (ctx.max - ctx.min + 1)) + ctx.min;
+    const result = table * operand;
 
-    // équation générique affichée en haut
-    switch (target) {
-        case "OPERAND_TABLE":   // opérande & table masqués
-            equation = `${H} × ${H} = ${result}`;
-            break;
-        case "OPERAND_RESULT":  // opérande & résultat masqués
-            equation = `${H} × ${table} = ${H}`;
-            break;
-        case "TABLE_RESULT":    // table & résultat masqués
-            equation = `${H} × ${factor} = ${H}`;
-            break;
+    /* Position du facteur */
+    let factorPos = ctx.factorPosition;
+    if (factorPos === "MIX") {
+        factorPos = Math.random() < 0.5 ? "OPERAND_TABLE" : "TABLE_OPERAND";
     }
-    eq.innerHTML = equation;
 
-    // ----------------- Génération des propositions -----------------
+    let leftVal, rightVal, isLeftTable;
+
+    if (factorPos === "OPERAND_TABLE") {
+        leftVal = operand;
+        rightVal = table;
+        isLeftTable = false;
+    } else {
+        leftVal = table;
+        rightVal = operand;
+        isLeftTable = true;
+    }
+
+    /* Position de l’égal */
+    let equalPos = ctx.equalPosition;
+    if (equalPos === "MIX") {
+        equalPos = Math.random() < 0.5 ? "LEFT" : "RIGHT";
+    }
+
+    /* Cible de la tâche */
+    const target =
+        document.querySelector('input[name="c2_target"]:checked')?.value ||
+        "OPERAND_TABLE";
+
+    const unknown = { left: false, right: false, result: false };
+
+    if (target === "OPERAND_TABLE") {
+        unknown.left = true;
+        unknown.right = true;
+    }
+    else if (target === "OPERAND_RESULT") {
+        unknown.result = true;
+        unknown[isLeftTable ? "right" : "left"] = true;
+    }
+    else if (target === "TABLE_RESULT") {
+        unknown.result = true;
+        unknown[isLeftTable ? "left" : "right"] = true;
+    }
+
+    const H = `<span class="preview-hidden">?</span>`;
+    const span = v => `<span>${v}</span>`;
+
+    /* Rend l’équation selon la position de l’égal */
+    let html = "";
+
+    if (equalPos === "RIGHT") {
+        html = `${unknown.left ? H : span(leftVal)} × ${unknown.right ? H : span(rightVal)} = ${unknown.result ? H : span(result)}`;
+    } else {
+        html = `${unknown.result ? H : span(result)} = ${unknown.left ? H : span(leftVal)} × ${unknown.right ? H : span(rightVal)}`;
+    }
+
+    eq.innerHTML = html;
+
+    /* Détermination de la paire correcte */
+    let correctPair = [];
+
+    if (target === "OPERAND_TABLE") {
+        correctPair = [leftVal, rightVal];
+    }
+    else if (target === "OPERAND_RESULT") {
+        const operandDisplay = isLeftTable ? rightVal : leftVal;
+        correctPair = [operandDisplay, result];
+    }
+    else if (target === "TABLE_RESULT") {
+        const tableDisplay = isLeftTable ? leftVal : rightVal;
+        correctPair = [tableDisplay, result];
+    }
+
+    /* Génération intelligente */
+    const nbIncorrect = parseInt(document.getElementById("c2_nbIncorrect")?.value || "3", 10);
+
+    const values = generateSmartWrongValues(
+        correctPair,
+        nbIncorrect,
+        ctx,
+        target,
+        leftVal,
+        rightVal,
+        result,
+        isLeftTable
+    );
+
+    /* Mélange + rendu scène Zelda */
     optBox.innerHTML = "";
 
-    const nbIncSlider = document.getElementById("c2_nbIncorrect");
-    const nbIncorrect = parseInt(nbIncSlider?.value || "3", 10); // 3..6
-    const totalChoices = nbIncorrect + 1; // 1 bonne + nbIncorrect mauvaises
+    const all = values.sort(() => Math.random() - 0.5);
+    const half = Math.ceil(all.length / 2);
 
-    // bonne réponse (toujours la même valeur logique mais on l’adapte au texte)
-    const correct = { table, factor, result };
+    const topRow = document.createElement("div");
+    topRow.className = "c2-orb-row c2-orb-row-top";
 
-    // génère des candidates "equation" complètes
-    const candidates = [];
+    const bottomRow = document.createElement("div");
+    bottomRow.className = "c2-orb-row c2-orb-row-bottom";
 
-    // on commence par la bonne
-    candidates.push(correct);
-
-    // puis on génère des mauvaises (produit faux)
-    while (candidates.length < totalChoices) {
-        let t2 = Math.floor(Math.random() * 10) + 1;
-        let f2 = Math.floor(Math.random() * 10) + 1;
-        let r2 = Math.floor(Math.random() * 100) + 1; // volontairement libre
-
-        // on évite de retomber exactement sur la bonne combinaison
-        if (t2 === table && f2 === factor && r2 === result) continue;
-        // on évite les cas qui seraient exactement corrects pour la tâche choisie
-        if (target === "OPERAND_TABLE" && t2 * f2 === result) continue;
-        if (target === "OPERAND_RESULT" && t2 * table === r2) continue;
-        if (target === "TABLE_RESULT" && table * factor === r2 && t2 === table) continue;
-
-        candidates.push({ table: t2, factor: f2, result: r2 });
-    }
-
-    // mélange
-    candidates.sort(() => Math.random() - 0.5);
-
-    // rendu des boutons, en texte complet "a × b = c" selon la cible
-    candidates.forEach((c, i) => {
-        let label;
-        switch (target) {
-            case "OPERAND_TABLE":
-                label = `${c.table} × ${c.factor} = ${result}`;
-                break;
-            case "OPERAND_RESULT":
-                label = `${c.factor} × ${table} = ${c.result}`;
-                break;
-            case "TABLE_RESULT":
-                label = `${c.table} × ${factor} = ${c.result}`;
-                break;
-        }
-
-        const btn = document.createElement("button");
-        btn.className = "preview-option-btn";
-        btn.textContent = label;
-        optBox.appendChild(btn);
-
-        setTimeout(() => btn.classList.add("show"), 80 + i * 80);
+    all.slice(0, half).forEach((v, i) => {
+        const orb = document.createElement("div");
+        orb.className = "c2-orb preview-option-btn";
+        orb.textContent = v;
+        topRow.appendChild(orb);
+        setTimeout(() => orb.classList.add("show"), 60 + i * 70);
     });
 
-    hint.textContent = "L’élève doit choisir l’équation qui complète correctement les deux valeurs manquantes.";
+    all.slice(half).forEach((v, i) => {
+        const orb = document.createElement("div");
+        orb.className = "c2-orb preview-option-btn";
+        orb.textContent = v;
+        bottomRow.appendChild(orb);
+        setTimeout(() => orb.classList.add("show"), 60 + (i + half) * 70);
+    });
+
+    optBox.appendChild(topRow);
+    optBox.appendChild(bottomRow);
+
+    hint.textContent =
+        "Deux des potions correspondront aux éléments manquants de la multiplication ci-dessus.";
 }
 
 /* ======================================================
    OUVERTURE DE LA MODALE C2
    ====================================================== */
+
 export function openC2Modal(levelId, task, card) {
+    window.CURRENT_LEVEL_CONTEXT = {
+        tables: (() => {
+            try {
+                const arr = JSON.parse(card.dataset.tables || "[]");
+                return Array.isArray(arr) ? arr : [];
+            } catch {
+                return [];
+            }
+        })(),
+        equalPosition: card.dataset.equalPosition || "RIGHT",
+        factorPosition: card.dataset.factorPosition || "OPERAND_TABLE",
+        intervalMin: parseInt(card.dataset.intervalMin || "1", 10),
+        intervalMax: parseInt(card.dataset.intervalMax || "10", 10),
+    };
+
     const modalEl = document.getElementById("taskModalC2");
     if (!modalEl) return;
 
-    // ID du niveau
-    const levelInput = document.getElementById("c2_levelId");
-    if (levelInput) levelInput.value = levelId;
+    document.getElementById("c2_levelId").value = levelId;
 
     const radios = document.querySelectorAll('input[name="c2_target"]');
-
     const nbIncSlider = document.getElementById("c2_nbIncorrect");
     const timeSlider  = document.getElementById("c2_time");
     const succSlider  = document.getElementById("c2_successes");
@@ -120,51 +288,43 @@ export function openC2Modal(levelId, task, card) {
     const timeVal  = document.getElementById("c2_time_value");
     const succVal  = document.getElementById("c2_successes_value");
 
-    // ---------- Pré-remplissage ----------
+    /* RESET VISUEL */
+    radios.forEach(r => {
+        r.checked = false;
+        r.closest(".task-chip")?.classList.remove("active");
+    });
+
+    /* PRÉ-REMPLISSAGE */
     if (task) {
-        const target = task.targets?.[0] ?? "OPERAND_TABLE";
-        const radioEl = document.querySelector(`input[name="c2_target"][value="${target}"]`);
-        if (radioEl) {
-            radioEl.checked = true;
-            radioEl.closest(".task-chip")?.classList.add("active");
+        const radio = document.querySelector(`input[name="c2_target"][value="${task.targets?.[0]}"]`);
+        if (radio) {
+            radio.checked = true;
+            radio.closest(".task-chip")?.classList.add("active");
         }
+        nbIncSlider.value = task.nbIncorrectChoices;
+        nbIncVal.textContent = nbIncSlider.value;
 
-        if (nbIncSlider) {
-            nbIncSlider.value = task.nbIncorrectChoices ?? 3;
-            if (nbIncVal) nbIncVal.textContent = nbIncSlider.value;
-        }
-        if (timeSlider) {
-            timeSlider.value = task.timeMaxSecond ?? 20;
-            if (timeVal) timeVal.textContent = timeSlider.value;
-        }
-        if (succSlider) {
-            succSlider.value = task.successiveSuccessesToReach ?? 1;
-            if (succVal) succVal.textContent = succSlider.value;
-        }
+        timeSlider.value = task.timeMaxSecond;
+        timeVal.textContent = timeSlider.value;
 
+        succSlider.value = task.successiveSuccessesToReach;
+        succVal.textContent = succSlider.value;
     } else {
-        // valeurs par défaut pour nouvelle tâche
-        const defaultRadio = document.querySelector('input[name="c2_target"][value="OPERAND_TABLE"]');
-        if (defaultRadio) {
-            defaultRadio.checked = true;
-            defaultRadio.closest(".task-chip")?.classList.add("active");
-        }
+        const def = document.querySelector('input[name="c2_target"][value="OPERAND_TABLE"]');
+        def.checked = true;
+        def.closest(".task-chip")?.classList.add("active");
 
-        if (nbIncSlider) {
-            nbIncSlider.value = 3;
-            if (nbIncVal) nbIncVal.textContent = "3";
-        }
-        if (timeSlider) {
-            timeSlider.value = 20;
-            if (timeVal) timeVal.textContent = "20";
-        }
-        if (succSlider) {
-            succSlider.value = 1;
-            if (succVal) succVal.textContent = "1";
-        }
+        nbIncSlider.value = 3;
+        nbIncVal.textContent = "3";
+
+        timeSlider.value = 20;
+        timeVal.textContent = "20";
+
+        succSlider.value = 1;
+        succVal.textContent = "1";
     }
 
-    // ---------- radios → visuel + preview ----------
+    /* LISTENERS */
     radios.forEach(r => {
         r.addEventListener("change", () => {
             radios.forEach(x => x.closest(".task-chip")?.classList.remove("active"));
@@ -173,57 +333,43 @@ export function openC2Modal(levelId, task, card) {
         });
     });
 
-    // ---------- sliders → texte + preview ----------
-    if (nbIncSlider && nbIncVal) {
-        nbIncSlider.oninput = () => {
-            nbIncVal.textContent = nbIncSlider.value;
-            generateC2Preview();
-        };
-    }
-    if (timeSlider && timeVal) {
-        timeSlider.oninput = () => {
-            timeVal.textContent = timeSlider.value;
-            generateC2Preview();
-        };
-    }
-    if (succSlider && succVal) {
-        succSlider.oninput = () => {
-            succVal.textContent = succSlider.value;
-            // pas forcément utile pour l’aperçu, mais on peut regénérer
-            generateC2Preview();
-        };
-    }
+    nbIncSlider.oninput = () => {
+        nbIncVal.textContent = nbIncSlider.value;
+        generateC2Preview();
+    };
+    timeSlider.oninput = () => {
+        timeVal.textContent = timeSlider.value;
+        generateC2Preview();
+    };
+    succSlider.oninput = () => {
+        succVal.textContent = succSlider.value;
+        generateC2Preview();
+    };
 
-    // ---------- suppression ----------
+    /* SUPPRESSION */
     const deleteBtn = document.getElementById("c2_deleteBtn");
-    if (deleteBtn) {
-        if (task && task.id) {
-            deleteBtn.classList.remove("d-none");
-            deleteBtn.onclick = () => deleteTask(levelId, "C2", card, "taskModalC2");
-        } else {
-            deleteBtn.classList.add("d-none");
-            deleteBtn.onclick = null;
-        }
+    if (task && task.id) {
+        deleteBtn.classList.remove("d-none");
+        deleteBtn.onclick = () => deleteTask(levelId, "C2", card, "taskModalC2");
+    } else {
+        deleteBtn.classList.add("d-none");
+        deleteBtn.onclick = null;
     }
 
-    // ---------- confirmation ----------
-    const confirmBtn = document.getElementById("c2_confirmBtn");
-    if (confirmBtn) {
-        confirmBtn.onclick = async () => {
-            const target = document.querySelector('input[name="c2_target"]:checked').value;
+    /* ENREGISTREMENT */
+    document.getElementById("c2_confirmBtn").onclick = async () => {
+        const target = document.querySelector('input[name="c2_target"]:checked')?.value;
 
-            const payload = {
-                taskType: "C2",
-                targets: [target],
-                nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
-                timeMaxSecond: parseInt(timeSlider.value, 10),
-                successiveSuccessesToReach: parseInt(succSlider.value, 10)
-            };
+        await saveTask(levelId, {
+            taskType: "C2",
+            targets: [target],
+            nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
+            timeMaxSecond: parseInt(timeSlider.value, 10),
+            successiveSuccessesToReach: parseInt(succSlider.value, 10),
+        }, card, "C2", "taskModalC2");
+    };
 
-            await saveTask(levelId, payload, card, "C2", "taskModalC2");
-        };
-    }
-
+    /* Lancement */
     const modal = new bootstrap.Modal(modalEl);
     generateC2Preview();
     modal.show();

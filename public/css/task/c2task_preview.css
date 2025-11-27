@@ -1,0 +1,106 @@
+/****************************************************
+ *   APERÇU INTERACTIF — C2 (Style Mini-Salle)
+ ****************************************************/
+
+.c2-preview-box {
+    background: #f7f4ff;
+    border: 1px solid #e7dcff;
+    padding: 26px;
+    border-radius: 16px;
+    transition: all 0.3s ease;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Équation au centre */
+.c2-preview-box .preview-equation {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #5a3df0;
+    margin-bottom: 24px;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.c2-preview-box .preview-equation.updated {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+/* ? masqué */
+.c2-preview-box .preview-hidden {
+    color: white;
+    background: #7b57ff;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    animation: c2Pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes c2Pulse {
+    0%   { box-shadow: 0 0 0px rgba(123,87,255,0.3); }
+    50%  { box-shadow: 0 0 10px rgba(123,87,255,0.6); }
+    100% { box-shadow: 0 0 0px rgba(123,87,255,0.3); }
+}
+
+/****************************************************
+ *   Disposition "salle" : 2 lignes de potions
+ ****************************************************/
+
+.c2-orb-row {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.c2-orb-row-bottom {
+    margin-top: 6px;
+}
+
+/****************************************************
+ *   Potion / orbe / token / tuile cliquable
+ ****************************************************/
+
+.c2-orb {
+    background: #ffffff;
+    border: 2px solid #c8baff;
+    padding: 10px 16px;
+    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #5b4ae0;
+    cursor: pointer;
+
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s ease, transform 0.3s ease, background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.c2-orb.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.c2-orb:hover {
+    background: #eee7ff;
+    border-color: #b39aff;
+    box-shadow: 0 0 8px rgba(136, 106, 255, 0.35);
+}
+
+/****************************************************
+ *   Texte d’aide
+ ****************************************************/
+
+.c2-preview-box .preview-hint {
+    color: #7a72a8 !important;
+    margin-top: 12px;
+    font-style: italic;
+    font-size: 0.9rem;
+    opacity: 0.85;
+}

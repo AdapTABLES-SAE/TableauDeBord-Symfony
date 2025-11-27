@@ -1,0 +1,90 @@
+/* =========================================================
+   ID — VALIDATION D’UN FAIT
+   ========================================================= */
+
+.id-preview-block {
+    background: #f7f4ff;
+    border-radius: 20px;
+    padding: 25px;
+    border: 1px solid #e4ddff;
+}
+
+/* Container */
+.id-preview .preview-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 18px;
+    margin-top: 20px;
+}
+
+@media (min-width: 600px) {
+    .id-preview .preview-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Chaque item (fait) */
+.preview-item {
+    background: #ffffff;
+    border: 1px solid #e8e3ff;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: all .25s ease-out;
+}
+
+.preview-item.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Équation */
+.preview-eq {
+    font-weight: 600;
+    color: #5138ee;
+    margin-right: 15px;
+    white-space: nowrap;
+    font-size: 20px;
+}
+
+/* TAG VRAI / FAUX */
+.tag-ok,
+.tag-ko {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* Vrai */
+.tag-ok {
+    background: rgba(0, 200, 120, 0.13);
+    color: #0c884c;
+    border: 1px solid #77e2b4;
+}
+
+/* Faux */
+.tag-ko {
+    background: rgba(255, 80, 80, 0.13);
+    color: #c22929;
+    border: 1px solid #ffa3a3;
+}
+
+/* Hint */
+.id-preview .preview-hint {
+    margin-top: 24px;
+    text-align: center;
+    font-size: 14px;
+    color: #6656b8;
+}
+
+/* Séparateur dans les cards */
+.id-preview-block .task-section-header .task-section-title {
+    margin-bottom: 3px;
+}
