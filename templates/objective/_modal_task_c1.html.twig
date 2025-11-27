@@ -1,0 +1,173 @@
+<div class="modal fade task-modal" id="taskModalC1" tabindex="-1"
+     aria-labelledby="taskModalC1Label" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="task-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="task-modal-icon">
+                        <i class="bi bi-1-circle"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title" id="taskModalC1Label">
+                            Tâche 1 élément manquant (C1)
+                        </h5>
+                        <p class="task-modal-subtitle">
+                            L’élève doit compléter un seul élément de la multiplication.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+            </div>
+
+            <div class="modal-body">
+
+                <input type="hidden" id="c1_levelId">
+
+                {# Élément recherché #}
+                <div class="task-section-card">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-search"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Élément recherché</div>
+                            <div class="task-section-helper">
+                                Choisissez quels éléments seront masqués dans les faits.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-choice-row mt-2">
+
+                        <label class="task-chip">
+                            <input type="radio" name="c1_target" id="c1_target_operand" value="OPERAND">
+                            <span class="chip-label">
+                                <span class="chip-dot"></span>
+                                Facteur
+                            </span>
+                        </label>
+
+                        <label class="task-chip">
+                            <input type="radio" name="c1_target" id="c1_target_table" value="TABLE">
+                            <span class="chip-label">
+                                <span class="chip-dot"></span>
+                                Table
+                            </span>
+                        </label>
+
+                        <label class="task-chip">
+                            <input type="radio" name="c1_target" id="c1_target_result" value="RESULT">
+                            <span class="chip-label">
+                                <span class="chip-dot"></span>
+                                Résultat
+                            </span>
+                        </label>
+
+                    </div>
+
+                </div>
+
+                {# Modalité de réponse #}
+                <div class="task-section-card">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-chat-square-text"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Modalité de réponse</div>
+                            <div class="task-section-helper">
+                                Une seule modalité doit être sélectionnée.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-switch-group">
+                        <span class="task-switch-text">Choix parmi plusieurs réponses</span>
+                        <label class="task-switch">
+                            <input type="checkbox" id="c1_mod_choice" class="c1_mod_switch">
+                            <span class="task-switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="task-switch-group">
+                        <span class="task-switch-text">Saisie de la réponse</span>
+                        <label class="task-switch">
+                            <input type="checkbox" id="c1_mod_input" class="c1_mod_switch">
+                            <span class="task-switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="small-hint">
+                        Lorsque la saisie est choisie, aucune mauvaise réponse n’est proposée.
+                    </div>
+                </div>
+
+                {# Paramètres numériques #}
+                <div class="task-section-card">
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Nombre de mauvaises réponses proposées</span>
+                            <span class="task-slider-value" id="c1_nbIncorrect_value">2</span>
+                        </div>
+                        <input type="range" min="2" max="5" id="c1_nbIncorrect">
+                    </div>
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Temps de réponse maximum (secondes)</span>
+                            <span class="task-slider-value" id="c1_time_value">20</span>
+                        </div>
+                        <input type="range" min="5" max="60" step="5" id="c1_time">
+                    </div>
+
+                    <div class="task-slider-block mb-0">
+                        <div class="task-slider-header">
+                            <span>Succès consécutifs pour valider un fait</span>
+                            <span class="task-slider-value" id="c1_successes_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="10" id="c1_successes">
+                    </div>
+
+                </div>
+
+                {# ================= PREVIEW ================= #}
+                <div class="task-section-card mt-3" id="c1_preview_section">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Aperçu interactif</div>
+                            <div class="task-section-helper">Un exemple généré selon vos paramètres.</div>
+                        </div>
+                    </div>
+
+                    <div id="c1_preview_content" class="c1-preview-box">
+                        <div class="preview-equation"></div>
+                        <div class="preview-options mt-3"></div>
+                        <div class="preview-hint small mt-2 text-muted text-center"></div>
+                    </div>
+                </div>
+
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="task-btn-delete d-none" id="c1_deleteBtn">
+                    <i class="bi bi-trash"></i> Supprimer la tâche
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="task-btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button type="button" class="task-btn-primary" id="c1_confirmBtn">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

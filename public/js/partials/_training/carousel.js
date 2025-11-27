@@ -1,5 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
-
+document.addEventListener("partial:loaded", () => {
     let track = document.getElementById("carouselTrack");
     const leftBtn = document.querySelector(".arrow-left");
     const rightBtn = document.querySelector(".arrow-right");

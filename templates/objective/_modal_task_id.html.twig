@@ -1,0 +1,126 @@
+<div class="modal fade task-modal" id="taskModalID" tabindex="-1"
+     aria-labelledby="taskModalIDLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="task-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="task-modal-icon">
+                        <i class="bi bi-eyeglasses"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title" id="taskModalIDLabel">
+                            Tâche identification des faits (ID)
+                        </h5>
+                        <p class="task-modal-subtitle">
+                            L’élève identifie les faits corrects parmi plusieurs propositions.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="id_levelId">
+
+                <div class="task-section-card">
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Nombre de faits présentés en même temps</span>
+                            <span class="task-slider-value" id="id_nbFacts_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="4" id="id_nbFacts">
+                    </div>
+                </div>
+
+                <div class="task-section-card">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-shuffle"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Élément variable</div>
+                            <div class="task-section-helper">
+                                Élément utilisé pour créer les faits incorrects.
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-switch-group">
+                        <span class="task-switch-text">Résultat variable</span>
+                        <label class="task-switch">
+                            <input type="checkbox" id="id_var_result">
+                            <span class="task-switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="task-switch-group">
+                        <span class="task-switch-text">Opérande variable</span>
+                        <label class="task-switch">
+                            <input type="checkbox" id="id_var_operand">
+                            <span class="task-switch-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="task-section-card">
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Temps de réponse maximum (secondes)</span>
+                            <span class="task-slider-value" id="id_time_value">20</span>
+                        </div>
+                        <input type="range" min="5" max="60" step="5" id="id_time">
+                    </div>
+
+                    <div class="task-slider-block mb-0">
+                        <div class="task-slider-header">
+                            <span>Succès consécutifs pour valider un fait</span>
+                            <span class="task-slider-value" id="id_successes_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="10" id="id_successes">
+                    </div>
+                </div>
+
+                {# ================= PREVIEW ================= #}
+                <div class="task-section-card id-preview-block mt-3">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Aperçu interactif</div>
+                            <div class="task-section-helper">Un exemple généré selon vos paramètres.</div>
+                        </div>
+                    </div>
+
+                    <div id="id_preview_content" class="id-preview">
+
+                        <div class="preview-grid"></div>
+
+                        <div class="preview-hint small">
+                            L’élève doit identifier le fait correct parmi plusieurs propositions.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="task-btn-delete d-none" id="id_deleteBtn">
+                    <i class="bi bi-trash"></i> Supprimer la tâche
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="task-btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button type="button" class="task-btn-primary" id="id_confirmBtn">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

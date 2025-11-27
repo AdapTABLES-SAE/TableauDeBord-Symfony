@@ -10,8 +10,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\Routing\Annotation\Route;
 
 class StudentController extends AbstractController
 {
@@ -219,6 +219,31 @@ class StudentController extends AbstractController
             'message'          => 'Nouvel entraînement attribué avec succès.',
             'entrainementName' => $entrainement->getLearningPathID()
         ]);
+    }
+
+    #[Route('/enseignant/classes/{learnerId}/store', name: 'student_update_equipment', methods: ['POST'])]
+    public function updateEquipment(
+        string $learnerId,
+        Request $request,
+        ApiClient $apiClient
+    ): JsonResponse {
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['items'])) {
+            return new JsonResponse(['error' => 'Invalid payload'], 400);
+        }
+
+        $result = $apiClient->updateLearnerEquipment($learnerId, $data['items']);
+
+        if ($result['success']) {
+            return new JsonResponse(['success' => true]);
+        }
+
+        return new JsonResponse([
+            'success' => false,
+            'error'   => $result['error'] ?? 'API error'
+        ], 500);
     }
 
 }

@@ -270,6 +270,37 @@ class ApiClient
         return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
 
+    public function addClassroom(string $teacherId, string $classId, string $className): bool
+    {
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_CLASSROOM;
+
+        $payload = [
+            'idProf' => $teacherId,
+            'classe' => [
+                'id'   => $classId,
+                'name' => $className,
+            ],
+        ];
+
+        $response = $this->client->request('POST', $url, [
+            'json' => $payload,
+        ]);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+    }
+
+    public function deleteClassroom(string $teacherId, string $classroomId): bool
+    {
+        $url = ApiEndpoints::BASE_URL .
+                ApiEndpoints::DELETE_CLASSROOM_1 . $teacherId . "/" .
+                ApiEndpoints::DELETE_CLASSROOM_2 . $classroomId;
+
+        $response = $this->client->request('DELETE', $url);
+
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+    }
+
+
 
     /**
      * Envoie / met à jour un parcours complet dans /path/training
@@ -308,6 +339,7 @@ class ApiClient
         }
     }
 
+
     public function fetchLearnerInventory(string $learnerId): array
     {
         $url = ApiEndpoints::BASE_URL . "store/learner/" . $learnerId;
@@ -320,8 +352,43 @@ class ApiClient
             }
 
             return $response->toArray();
+
         } catch (\Exception $e) {
             return ['items' => []];
+        }
+    }
+
+
+    public function updateLearnerEquipment(string $learnerId, array $items): array
+    {
+        $url = ApiEndpoints::BASE_URL . 'store';
+
+        try {
+            $response = $this->client->request('POST', $url, [
+                'json' => [
+                    'learnerID' => $learnerId,
+                    'items'     => $items,
+                    'usedCoins' => 0,
+                ],
+            ]);
+
+            $status = $response->getStatusCode();
+            $ok = ($status >= 200 && $status < 300);
+
+            $headers = $response->getHeaders(false);
+            $contentLength = $headers['content-length'][0] ?? null;
+            $hasBody = $contentLength !== null && (int) $contentLength > 0;
+
+            return [
+                'success'  => $ok,
+                'response' => $hasBody ? $response->toArray(false) : null,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error'   => $e->getMessage(),
+            ];
         }
     }
 
