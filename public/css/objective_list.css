@@ -1,0 +1,34 @@
+.page-wrapper {
+    background-color: #f3f0ff;
+    min-height: 100vh;
+}
+
+.text-violet {
+    color: #7a5af8 !important;
+}
+
+.objective-card {
+    border-radius: 1rem;
+    transition: 0.2s ease-in-out;
+}
+
+.objective-card:hover {
+    background: #f4efff;
+    transform: translateY(-4px);
+}
+
+.objective-infos div {
+    margin-bottom: 0.2rem;
+}
+
+.objective-card-link .btn-violet {
+    background-color: #7a5af8;
+    color: #fff;
+    border: none;
+}
+
+.objective-card-link .btn-violet:hover {
+    background-color: #6547d5;
+}
+
+

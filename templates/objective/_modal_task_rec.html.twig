@@ -1,0 +1,98 @@
+<div class="modal fade task-modal" id="taskModalREC" tabindex="-1"
+     aria-labelledby="taskModalRECLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="task-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="task-modal-icon">
+                        <i class="bi bi-puzzle"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title" id="taskModalRECLabel">
+                            Tâche reconstitution d’un fait (REC)
+                        </h5>
+                        <p class="task-modal-subtitle">
+                            L’élève reconstitue entièrement une multiplication à partir de propositions.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="rec_levelId">
+
+                <div class="task-section-card">
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Nombre d’éléments incorrects proposés</span>
+                            <span class="task-slider-value" id="rec_nbIncorrect_value">2</span>
+                        </div>
+                        <input type="range" min="2" max="5" id="rec_nbIncorrect">
+                    </div>
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Temps de réponse maximum (secondes)</span>
+                            <span class="task-slider-value" id="rec_time_value">20</span>
+                        </div>
+                        <input type="range" min="5" max="60" step="5" id="rec_time">
+                    </div>
+
+                    <div class="task-slider-block mb-0">
+                        <div class="task-slider-header">
+                            <span>Succès consécutifs pour valider un fait</span>
+                            <span class="task-slider-value" id="rec_successes_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="10" id="rec_successes">
+                    </div>
+
+                </div>
+
+                {# ================= PREVIEW ================= #}
+                <div class="task-section-card rec-preview-block mt-3">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Aperçu interactif</div>
+                            <div class="task-section-helper">Un exemple généré selon vos paramètres.</div>
+                        </div>
+                    </div>
+
+                    <div id="rec_preview_content" class="rec-preview">
+
+                        <div class="preview-equation">
+                            <!-- dynamique -->
+                        </div>
+
+                        <div class="preview-options"></div>
+
+                        <div class="preview-hint small">
+                            L’élève doit sélectionner les éléments qui reconstituent la multiplication.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="task-btn-delete d-none" id="rec_deleteBtn">
+                    <i class="bi bi-trash"></i> Supprimer la tâche
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="task-btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button type="button" class="task-btn-primary" id="rec_confirmBtn">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
