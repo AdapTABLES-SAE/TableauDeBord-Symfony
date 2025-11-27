@@ -76,30 +76,26 @@ class TeacherDashboardController extends AbstractController
         $teacher = $em->getRepository(Enseignant::class)->find($teacherID);
 
         $name = $request->request->get('className');
-        if (empty($name)) return new JsonResponse(['success' => false]);
+        $id = $request->request->get('classID');
 
-        $generatedID = $name . $count;
+        if (empty($name) || empty($id)) return new JsonResponse(['success' => false]);
 
-        //cant really do better cause parsing from a request sorted by name would not be foolproof
-        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
-        while (!$isNewId){
-            $generatedID = $name . ++$count;
-            $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
+        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $id]));
+        if($isNewId){
+            $ok = $apiClient->addClassroom($teacher->getIdProf(), $id, $name);
+            if ($ok) {
+                $classe = new Classe();
+                $classe->setEnseignant($teacher);
+                $classe->setIdClasse($id);
+                $classe->setName($name);
+
+                $em->persist($classe);
+                $em->flush();
+            }
+            return new JsonResponse(['success' => $ok, 'fatal' => !$ok]);
+        }else {
+            return new JsonResponse(['success' => false, 'fatal' => false]);
         }
-
-        $ok = $apiClient->addClassroom($teacher->getIdProf(), $generatedID, $name);
-
-        if ($ok) {
-            $classe = new Classe();
-            $classe->setEnseignant($teacher);
-            $classe->setIdClasse($generatedID);
-            $classe->setName($name);
-
-            $em->persist($classe);
-            $em->flush();
-        }
-
-        return new JsonResponse(['success' => $ok]);
     }
 
     #[Route('/dashboard/classroom/delete/{id}', name: 'delete_classroom', methods: ['DELETE'])]

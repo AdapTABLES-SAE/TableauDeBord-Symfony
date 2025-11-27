@@ -338,7 +338,6 @@ document.addEventListener("partial:loaded", (e) => {
             formData.append("lname", nom);
             formData.append("fname", prenom);
             formData.append("studentId", identifiant);
-            console.log(identifiant);
 
             try {
                 const response = await fetch(addStudentForm.action, {
@@ -349,7 +348,6 @@ document.addEventListener("partial:loaded", (e) => {
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
 
-                console.log(result);
                 if (result.fatal){
                     showToast(
                         false,
