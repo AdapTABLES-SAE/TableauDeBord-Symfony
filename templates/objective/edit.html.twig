@@ -1,0 +1,180 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Édition objectif - AdapTABLES{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/objective_builder.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/task_modals.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/task_preview.css') }}">
+{% endblock %}
+
+{% block body %}
+    {% include 'components/header.html.twig' with {
+        breadcrumb_items: [
+            {'label': 'Mes classes', 'url': path('class_dashboard')},
+            {'label': 'Objectif', 'url': '#'}
+        ]
+    } %}
+
+    {% set baseTables = (objectif.niveaux|first ? (objectif.niveaux|first).tables : []) %}
+    {% set selectedTables = baseTables is iterable ? baseTables : [] %}
+
+    <div class="page-wrapper mt-3 py-4">
+        <div class="container card shadow section-card p-4">
+
+            <div class="row">
+                <!-- Colonne gauche -->
+                <div class="col-lg-4 left-panel">
+
+                    <!-- Nom de l'objectif -->
+                    <div class="section-title mb-3">
+                        <i class="bi bi-bullseye me-2"></i> Nom de l’objectif :
+                    </div>
+
+                    <form id="objectiveForm" method="post">
+                        <div class="input-group mb-4 objective-name-group">
+                            <input type="text"
+                                   class="form-control form-control-lg"
+                                   name="objective_name"
+                                   id="objective_name"
+                                   value="{{ objectif.name }}"
+                                   autocomplete="off">
+                            <span class="input-group-text">
+                                <i class="bi bi-pencil"></i>
+                            </span>
+                        </div>
+
+                        <!-- Tables travaillées (appliquées à tous les niveaux) -->
+                        <div class="section-title mb-2">
+                            <i class="bi bi-grid-3x3-gap-fill me-2"></i> Tables travaillées
+                        </div>
+
+                        <div id="tables-wrapper" class="tables-grid mb-4">
+                            {% for t in 1..12 %}
+                                <button type="button"
+                                        class="btn table-pill {{ t in selectedTables ? 'active' : '' }}"
+                                        data-value="{{ t }}">
+                                    {{ t }}
+                                </button>
+                            {% endfor %}
+                        </div>
+
+                        <!-- Prérequis (vues / complétées) -->
+                        <div class="section-title mb-2">
+                            <i class="bi bi-flag me-2"></i> Prérequis
+                        </div>
+
+                        <div class="prereq-block mb-4">
+                            <div class="prereq-row mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>Vus</span>
+                                    <span id="prereq_seen_value">{{ prereq_seen }}%</span>
+                                </div>
+                                <input type="range"
+                                       class="form-range"
+                                       min="0"
+                                       max="100"
+                                       value="{{ prereq_seen }}"
+                                       name="prereq_seen"
+                                       id="prereq_seen_slider">
+                            </div>
+
+                            <div class="prereq-row">
+                                <div class="d-flex justify-content-between">
+                                    <span>Complétés</span>
+                                    <span id="prereq_completed_value">{{ prereq_done }}%</span>
+                                </div>
+                                <input type="range"
+                                       class="form-range"
+                                       min="0"
+                                       max="100"
+                                       value="{{ prereq_done }}"
+                                       name="prereq_completed"
+                                       id="prereq_completed_slider">
+                            </div>
+                        </div>
+
+                        <!-- Preview params -->
+                        <div class="section-title mb-2">
+                            <i class="bi bi-eye me-2"></i> Preview params
+                        </div>
+
+                        <div class="preview-card mb-4">
+                            <div id="preview-box" class="small text-center text-muted">
+                                En attente de paramètres…
+                            </div>
+                        </div>
+
+                        <!-- Bouton sauvegarde de l'objectif -->
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-violet px-4">
+                                <i class="bi bi-save2 me-1"></i> Enregistrer l’objectif
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Colonne droite : Niveaux -->
+                <div class="col-lg-8 right-panel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="section-title mb-0">
+                            <i class="bi bi-diagram-3 me-2"></i> Niveaux :
+                        </div>
+
+                        <button type="button"
+                                id="add-level-btn"
+                                class="btn btn-violet btn-sm">
+                            <i class="bi bi-plus-circle me-1"></i> Ajouter un niveau
+                        </button>
+                    </div>
+
+                    <div id="levels-container" class="levels-container">
+                        {% if objectif.niveaux is not empty %}
+                            {% for niveau in objectif.niveaux %}
+                                {% include 'objective/_level_block.html.twig' with {
+                                    niveau: niveau,
+                                    index: loop.index,
+                                    active: loop.first
+                                } %}
+                            {% endfor %}
+                        {% else %}
+                            <div class="alert alert-info small">
+                                Aucun niveau pour le moment. Cliquez sur <strong>Ajouter un niveau</strong>.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    {# ===================== MODALES DE TÂCHES ===================== #}
+    {% include 'objective/_modal_task_c1.html.twig' %}
+    {% include 'objective/_modal_task_c2.html.twig' %}
+    {% include 'objective/_modal_task_rec.html.twig' %}
+    {% include 'objective/_modal_task_id.html.twig' %}
+    {% include 'objective/_modal_task_memb.html.twig' %}
+
+    {# Toasts génériques pour showToast() #}
+    {% include 'components/toast.html.twig' with {
+        toast_success_title: "Modifications enregistrées",
+        toast_success_message: "Les paramètres ont bien été enregistrés.",
+        toast_error_title: "Erreur",
+        toast_error_message: "Une erreur est survenue lors de l’enregistrement."
+    } %}
+
+    <script>
+        window.OBJECTIVE_CONFIG = {
+            objectiveId: {{ objectif.id }},
+            addLevelUrl: '{{ path('objective_add_level', {id: objectif.id}) }}',
+            saveLevelUrlTemplate: '{{ path('objective_save_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
+            deleteLevelUrlTemplate: '{{ path('objective_delete_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
+            saveTaskUrlTemplate: '{{ path('objective_save_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
+            deleteTaskUrlTemplate: '{{ path('objective_delete_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}'
+        };
+    </script>
+    <script type="module" src="{{ asset('js/objective_builder.js') }}"></script>
+
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}
+    Objectifs de {{ entrainement.learningPathID }} - AdapTABLES
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('css/objective_list.css') }}">
+{% endblock %}
+
+{% block body %}
+
+    {% include 'components/header.html.twig' with {
+        breadcrumb_items: [
+            {'label': 'Mes classes', 'url': path('class_dashboard')},
+            {'label': 'Objectifs de l\'entraînement', 'url': '#'}
+        ]
+    } %}
+
+    <div class="page-wrapper mt-4">
+
+        <div class="container card shadow p-4 mb-4">
+            <h2 class="text-violet fw-bold mb-3">
+                <i class="bi bi-bullseye me-2"></i>
+                Objectifs de l'entraînement <span class="text-dark"> {{ entrainement.learningPathID }} </span>
+            </h2>
+
+            {% if objectifs is empty %}
+                <p class="text-muted fst-italic">
+                    Aucun objectif n'a encore été défini pour cet entraînement.
+                </p>
+            {% else %}
+
+                <div class="row g-4">
+
+                    {% for obj in objectifs %}
+                        <div class="col-md-6 col-lg-4">
+                            <a href="{{ path('objective_edit', {'id': obj.id, 'entrainement': entrainement.id}) }}"
+                               class="objective-card-link text-decoration-none">
+
+                                <div class="objective-card card shadow-sm h-100 p-3">
+
+                                    <h5 class="fw-bold text-violet">
+                                        {{ obj.name }}
+                                    </h5>
+
+                                    <div class="small text-muted mb-2">
+                                        ID : {{ obj.objID }}
+                                    </div>
+
+                                    <div class="objective-infos small">
+                                        <div>
+                                            <i class="bi bi-layers me-1"></i>
+                                            {{ obj.niveaux|length }} niveaux
+                                        </div>
+                                        <div>
+                                            <i class="bi bi-clipboard-check me-1"></i>
+                                            {{ obj.prerequis|length }} prérequis
+                                        </div>
+                                    </div>
+
+                                    <div class="text-end mt-3">
+                                    <span class="btn btn-violet btn-sm">
+                                        Modifier
+                                    </span>
+                                    </div>
+
+                                </div>
+
+                            </a>
+                        </div>
+                    {% endfor %}
+
+                </div>
+
+            {% endif %}
+        </div>
+
+        <div class="text-center mt-3">
+            <a href="{{ path('objective_new', {'entrainement': entrainement.id}) }}" class="btn btn-success px-4">
+                <i class="bi bi-plus-circle me-1"></i>
+                Ajouter un objectif
+            </a>
+        </div>
+
+    </div>
+
+{% endblock %}

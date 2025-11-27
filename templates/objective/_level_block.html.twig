@@ -1,0 +1,144 @@
+{# ----------------------------------------------
+   Mapping JSON des tâches existantes
+   ---------------------------------------------- #}
+{% set tasksMap = {} %}
+{% for t in niveau.taches %}
+    {% set tasksMap = tasksMap|merge({
+        (t.taskType): {
+            'id': t.id,
+            'taskType': t.taskType,
+            'targets': t.targets,
+            'answerModality': t.answerModality,
+            'nbIncorrectChoices': t.nbIncorrectChoices,
+            'nbCorrectChoices': t.nbCorrectChoices,
+            'nbFacts': t.nbFacts,
+            'sourceVariation': t.sourceVariation,
+            'target': t.target,
+            'timeMaxSecond': t.timeMaxSecond,
+            'successiveSuccessesToReach': t.successiveSuccessesToReach,
+            'repartitionPercent': t.repartitionPercent
+        }
+    }) %}
+{% endfor %}
+
+{% set activeClass = active ? 'level-active' : '' %}
+{% set dataTables = niveau.tables is iterable ? niveau.tables : [] %}
+
+<div class="level-card {{ activeClass }} mb-3"
+     data-level-id="{{ niveau.id }}"
+     data-level-index="{{ index }}"
+     data-equal-position="{{ niveau.resultLocation|default('RIGHT') }}"
+     data-factor-position="{{ niveau.leftOperand|default('OPERAND_TABLE') }}"
+     data-interval-min="{{ niveau.intervalMin|default(1) }}"
+     data-interval-max="{{ niveau.intervalMax|default(10) }}"
+     data-tables="{{ dataTables|json_encode }}"
+     data-tasks="{{ tasksMap|json_encode }}">
+
+    {# ----------------------------------------------
+       HEADER DU NIVEAU
+       ---------------------------------------------- #}
+    <div class="level-header d-flex justify-content-between align-items-center">
+        <div>
+            <div class="level-title">Niveau {{ index }} :</div>
+            <input type="text"
+                   class="form-control form-control-sm level-name-input"
+                   value="{{ niveau.name ?? ('Niveau ' ~ index) }}">
+        </div>
+
+        <div class="level-facts text-end">
+            <div class="facts-label">Nombre de faits</div>
+            <div class="facts-value" data-facts-count>0</div>
+        </div>
+
+        <button type="button"
+                class="btn btn-link btn-sm ms-3 toggle-level-details">
+            <i class="bi bi-chevron-down"></i>
+        </button>
+    </div>
+
+    {# ----------------------------------------------
+       CORPS DU NIVEAU (PARAMÈTRES)
+       ---------------------------------------------- #}
+    <div class="level-body">
+
+        {# ---------- TÂCHES ---------- #}
+        <div class="level-section mb-3">
+            <div class="level-section-title">Tâches</div>
+
+            {% set taskTypes = {
+                'C1': '1 élément manquant',
+                'C2': '2 éléments manquants',
+                'REC': 'Reconstitution d’un fait',
+                'ID': 'Validation d’un fait',
+                'MEMB': 'Identification des résultats'
+            } %}
+
+            <div class="task-types-row">
+                {% for code, label in taskTypes %}
+                    {% set activeTask = niveau.taches|filter(t => t.taskType == code)|first %}
+                    <button type="button"
+                            class="task-pill {{ activeTask ? 'task-active' : '' }}"
+                            data-task-type="{{ code }}">
+                        <span class="task-code">{{ code }}</span>
+                        <span class="task-label">{{ label }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        </div>
+
+        {# ---------- POSITION DE L'ÉGAL ET FACTEUR ---------- #}
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="level-section-title mb-2">Position de l’égal</div>
+                <div class="btn-group w-100 equal-position-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" data-value="LEFT">Gauche</button>
+                    <button type="button" class="btn btn-outline-secondary" data-value="MIX">Les deux</button>
+                    <button type="button" class="btn btn-outline-secondary" data-value="RIGHT">Droite</button>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="level-section-title mb-2">Position du facteur</div>
+                <div class="btn-group w-100 factor-position-group" role="group">
+                    <button type="button" class="btn btn-outline-secondary" data-value="OPERAND_TABLE">Gauche</button>
+                    <button type="button" class="btn btn-outline-secondary" data-value="MIX">Les deux</button>
+                    <button type="button" class="btn btn-outline-secondary" data-value="TABLE_OPERAND">Droite</button>
+                </div>
+            </div>
+        </div>
+
+        {# ---------- INTERVALLE ---------- #}
+        <div class="level-section mb-3">
+            <div class="level-section-title mb-2">Intervalle de la table</div>
+
+            <div class="d-flex align-items-center">
+                <span class="me-2 small">1</span>
+                <input type="range"
+                       class="form-range flex-grow-1 level-interval-slider"
+                       min="1"
+                       max="10"
+                       value="{{ niveau.intervalMax|default(10) }}">
+                <span class="ms-2 small">10</span>
+            </div>
+
+            <div class="text-end small text-muted">
+                Min : <span data-interval-min>{{ niveau.intervalMin|default(1) }}</span> —
+                Max : <span data-interval-max>{{ niveau.intervalMax|default(10) }}</span>
+            </div>
+        </div>
+
+        {# ---------- BOUTONS SUPPRIMER / ENREGISTRER ---------- #}
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <button type="button"
+                    class="btn btn-outline-danger btn-sm delete-level-btn">
+                <i class="bi bi-trash me-1"></i> Supprimer le niveau
+            </button>
+
+            <button type="button"
+                    class="btn btn-violet btn-sm save-level-btn">
+                <i class="bi bi-save2 me-1"></i> Enregistrer les modifications
+            </button>
+        </div>
+
+    </div>
+</div>

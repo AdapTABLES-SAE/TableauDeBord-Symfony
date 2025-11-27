@@ -20,13 +20,17 @@
             <ul class="nav nav-tabs custom-wide-centered-tabs justify-content-center">
 
                 <li class="nav-item">
-                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#classes-pane">
+                    <button class="nav-link {{ target == 'classes' ? 'active' : '' }}"
+                            data-bs-toggle="tab"
+                            data-bs-target="#classes-pane">
                         Classes
                     </button>
                 </li>
 
                 <li class="nav-item">
-                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#trainings-pane">
+                    <button class="nav-link {{ target == 'trainings' ? 'active' : '' }}"
+                            data-bs-toggle="tab"
+                            data-bs-target="#trainings-pane">
                         Entraînements
                     </button>
                 </li>
@@ -35,10 +39,14 @@
         </div>
 
         <div class="tab-content" id="dashboardTabsContent">
-            <div class="tab-pane fade show active" id="classes-pane" role="tabpanel">
+
+            <div class="tab-pane fade {{ target == 'classes' ? 'show active' : '' }}"
+                 id="classes-pane"
+                 role="tabpanel">
+
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
-                        <div class="element-list-container shadow-sm dashboard-container"
+                        <div class="element-list-container shadow-sm dashboard-container overflow-auto"
                              data-dashboard-pair="classes"
                              data-partial-list
                              data-list-url="{{ path('class_list_partial') }}">
@@ -57,10 +65,13 @@
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="trainings-pane" role="tabpanel">
+            <div class="tab-pane fade {{ target == 'trainings' ? 'show active' : '' }}"
+                 id="trainings-pane"
+                 role="tabpanel">
+
                 <div class="row h-100 g-3">
                     <div class="col-12 col-md-4 col-lg-3">
-                        <div class="element-list-container shadow-sm dashboard-container"
+                        <div class="element-list-container shadow-sm dashboard-container overflow-auto"
                              data-dashboard-pair="trainings"
                              data-partial-list
                              data-list-url="{{ path('training_list_partial') }}">
@@ -75,13 +86,14 @@
                         </div>
                     </div>
                 </div>
+
             </div>
 
         </div>
     </div>
 
     {% include '/components/toast.html.twig' with {
-        toast_success_title: "Élève mis à jour",
+        toast_success_title: "Informations mis à jour",
         toast_success_message: "Les informations ont bien été enregistrées.",
         toast_error_title: "Erreur de mise à jour",
         toast_error_message: "Impossible d’enregistrer les modifications."
@@ -90,8 +102,22 @@
 
 {% block javascripts %}
     {{ parent() }}
-    <script src="{{ asset('js/partial_includers/dashboard.js') }}"></script>
+    <script src="{{ asset('js/partials/partialManager.js') }}"></script>
+    <script src="{{ asset('js/partials/dashboard.js') }}"></script>
+
     {% for jsFile in dashboard_js %}
-        <script src="{{ jsFile }}"></script>
+        <script type="module" src="{{ jsFile }}"></script>
     {% endfor %}
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const target = "{{ target }}";
+            if (target === "trainings") {
+                window.reloadDashboardPair("trainings");
+            } else {
+                window.reloadDashboardPair("classes");
+            }
+        });
+    </script>
+
 {% endblock %}

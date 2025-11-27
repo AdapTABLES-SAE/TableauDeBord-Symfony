@@ -1,0 +1,136 @@
+<div class="modal fade task-modal" id="taskModalMEMB" tabindex="-1"
+     aria-labelledby="taskModalMEMBLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+            <div class="task-modal-header">
+                <div class="d-flex align-items-center">
+                    <div class="task-modal-icon">
+                        <i class="bi bi-collection-play"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title" id="taskModalMEMBLabel">
+                            Tâche validation des résultats (MEMB)
+                        </h5>
+                        <p class="task-modal-subtitle">
+                            L’élève doit décider si les résultats proposés sont corrects ou non.
+                        </p>
+                    </div>
+                    <button type="button" class="btn-close ms-2" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+            </div>
+
+            <div class="modal-body">
+                <input type="hidden" id="memb_levelId">
+
+                <div class="task-section-card">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-check2-square"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Objectif d’identification</div>
+                            <div class="task-section-helper">
+                                Quel type de résultats l’élève doit-il valider ?
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="task-switch-group">
+                        <span class="task-switch-text">Résultats corrects</span>
+                        <label class="task-switch">
+                            <input type="checkbox" id="memb_correct">
+                            <span class="task-switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="task-switch-group">
+                        <span class="task-switch-text">Résultats incorrects</span>
+                        <label class="task-switch">
+                            <input type="checkbox" id="memb_incorrect">
+                            <span class="task-switch-slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="small-hint">
+                        Une seule option sera envoyée à l’API : correct ou incorrect.
+                    </div>
+                </div>
+
+                <div class="task-section-card">
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Nombre de résultats faux proposés</span>
+                            <span class="task-slider-value" id="memb_nbIncorrect_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="3" id="memb_nbIncorrect">
+                    </div>
+
+                    <div class="task-slider-block mb-0">
+                        <div class="task-slider-header">
+                            <span>Nombre de résultats vrais proposés</span>
+                            <span class="task-slider-value" id="memb_nbCorrect_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="3" id="memb_nbCorrect">
+                    </div>
+                </div>
+
+                <div class="task-section-card">
+
+                    <div class="task-slider-block">
+                        <div class="task-slider-header">
+                            <span>Temps de réponse maximum (secondes)</span>
+                            <span class="task-slider-value" id="memb_time_value">20</span>
+                        </div>
+                        <input type="range" min="5" max="60" step="5" id="memb_time">
+                    </div>
+
+                    <div class="task-slider-block mb-0">
+                        <div class="task-slider-header">
+                            <span>Succès consécutifs pour valider un fait</span>
+                            <span class="task-slider-value" id="memb_successes_value">1</span>
+                        </div>
+                        <input type="range" min="1" max="10" id="memb_successes">
+                    </div>
+                </div>
+
+                {# ================= PREVIEW ================= #}
+                <div class="task-section-card memb-preview-block mt-3">
+                    <div class="task-section-header">
+                        <div class="task-section-icon">
+                            <i class="bi bi-stars"></i>
+                        </div>
+                        <div>
+                            <div class="task-section-title">Aperçu interactif</div>
+                            <div class="task-section-helper">Un exemple généré selon vos paramètres.</div>
+                        </div>
+                    </div>
+
+                    <div id="memb_preview_content" class="memb-preview">
+
+                        <div class="preview-grid"></div>
+
+                        <div class="preview-hint small">
+                            L’élève valide pour chaque proposition si elle est correcte ou incorrecte.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="task-btn-delete d-none" id="memb_deleteBtn">
+                    <i class="bi bi-trash"></i> Supprimer la tâche
+                </button>
+                <div class="ms-auto d-flex gap-2">
+                    <button type="button" class="task-btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button type="button" class="task-btn-primary" id="memb_confirmBtn">
+                        <i class="bi bi-check-circle"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
