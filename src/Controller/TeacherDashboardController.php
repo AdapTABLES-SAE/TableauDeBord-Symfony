@@ -48,7 +48,7 @@ class TeacherDashboardController extends AbstractController
         return $this->render('/dashboard/dashboard.html.twig', [
             "dashboard_css" => [
                 $assets->getUrl('css/dashboard/_class_partial.css'),
-                $assets->getUrl('css/caroussel.css'),
+                $assets->getUrl('css/carousel.css'),
                 $assets->getUrl('css/training.css'),
             ],
             "dashboard_js" => [

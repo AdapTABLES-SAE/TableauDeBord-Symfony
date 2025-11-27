@@ -1,4 +1,4 @@
-<div class="training-container">
+<div class="training-container" id="trainingContainer">
     <div class="training-header">
         <div class="training-title">Nom de l’entraînement :</div>
 
@@ -19,7 +19,7 @@
     <div class="carousel">
         <button class="carousel-arrow arrow-left">❮</button>
 
-        <div class="carousel-viewport">
+        <div class="carousel-viewport" style="max-width: 730px !important; overflow: hidden !important;">
             <div class="carousel-track" id="carouselTrack">
                 {% for objectif in objectifs %}
                     <div class="objective-card card border-0 shadow-sm text-center hover-card" data-id="{{ objectif.id }}">

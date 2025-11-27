@@ -3,19 +3,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-direction: row !important;
     height: 280px;
     gap: 10px;
-    width: 80%;
+    width: 20% !important;
     margin: 0 auto;
 }
 
-.carousel-viewport {
-    width: 730px;
-    overflow: hidden;
+body .carousel-viewport {
+    min-width: 730px !important;
+    overflow: hidden !important;
 }
 
 .carousel-track {
-    justify-content: center;
+    justify-content: center !important;
     display: flex;
     padding: 20px 0;
     gap: 20px;
@@ -27,7 +28,7 @@
 }
 
 .objective-card {
-    background-color: #ffffff;
+    background-color: #fff;
     border-radius: 1rem;
     transition: all 0.2s ease;
     /*min-height: 260px;*/
@@ -36,6 +37,8 @@
     max-width: 260px;
     margin: 0 5px;
 }
+
+
 
 
 .objective-card .card-body {
@@ -103,3 +106,4 @@
     text-align: center;
     color: #333;
 }
+
