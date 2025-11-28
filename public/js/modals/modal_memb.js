@@ -2,7 +2,57 @@
 import { saveTask, deleteTask } from "./task_actions.js";
 
 /* ======================================================
-   PREVIEW — MEMB
+   OUTIL : contexte du niveau (table + intervalle)
+   ====================================================== */
+function getLevelContext() {
+    const ctx = window.CURRENT_LEVEL_CONTEXT || {};
+
+    let tables = Array.isArray(ctx.tables) ? ctx.tables : [];
+    tables = tables
+        .map(v => parseInt(v, 10))
+        .filter(v => !Number.isNaN(v));
+
+    if (!tables.length) {
+        tables = [2, 3, 4, 5, 6, 7, 8, 9];
+    }
+
+    let min = parseInt(ctx.intervalMin ?? "1", 10);
+    let max = parseInt(ctx.intervalMax ?? "10", 10);
+
+    if (Number.isNaN(min)) min = 1;
+    if (Number.isNaN(max)) max = 10;
+    if (min > max) [min, max] = [max, min];
+
+    return { tables, min, max };
+}
+
+/* ======================================================
+   Génère un résultat incorrect cohérent
+   - NE DOIT PAS appartenir à la table sélectionnée
+   ====================================================== */
+function generateFakeResult(table, min, max, trueResultsSet) {
+    let fake;
+    let attempts = 0;
+
+    while (true) {
+        attempts++;
+
+        // Faux résultat plausible — entre 1 et table*max
+        fake = Math.floor(Math.random() * (table * max + 10)) + 1;
+
+        // Conditions pour éviter les ambiguïtés :
+        if (!trueResultsSet.has(fake)) break;
+        if (attempts > 50) {
+            fake = fake + 1; // fallback extrême
+            break;
+        }
+    }
+
+    return fake;
+}
+
+/* ======================================================
+   PREVIEW — MEMB (aperçu réaliste)
    ====================================================== */
 function generateMembPreview() {
     const container = document.getElementById("memb_preview_content");
@@ -10,225 +60,235 @@ function generateMembPreview() {
 
     const grid = container.querySelector(".preview-grid");
     const hint = container.querySelector(".preview-hint");
-    if (!grid || !hint) return;
+    const title = container.querySelector(".preview-title");
 
+    if (!grid || !hint) return;
     grid.innerHTML = "";
 
-    const nbCorrectSlider   = document.getElementById("memb_nbCorrect");
+    const ctx = getLevelContext();
+
+    // choisir une table aléatoire du niveau
+    const table = ctx.tables[Math.floor(Math.random() * ctx.tables.length)];
+
+    // slider values
+    const nbCorrectSlider = document.getElementById("memb_nbCorrect");
     const nbIncorrectSlider = document.getElementById("memb_nbIncorrect");
-    const switchIncorrect   = document.getElementById("memb_incorrect");
+    const switchIncorrect = document.getElementById("memb_incorrect");
 
-    const nbCorrect   = Math.max(1, parseInt(nbCorrectSlider?.value || "1", 10));
-    const nbIncorrect = Math.max(1, parseInt(nbIncorrectSlider?.value || "1", 10));
-    const total       = nbCorrect + nbIncorrect;
+    const nbCorrect = Math.max(1, parseInt(nbCorrectSlider?.value || "1", 10));
+    const nbIncorrect = Math.max(
+        1,
+        parseInt(nbIncorrectSlider?.value || "1", 10)
+    );
 
+    const total = nbCorrect + nbIncorrect;
     const targetIncorrect = !!switchIncorrect?.checked;
-    const target = targetIncorrect ? "INCORRECT" : "CORRECT";
 
-    for (let i = 0; i < total; i++) {
-        const a = Math.floor(Math.random() * 10) + 1;
-        const b = Math.floor(Math.random() * 10) + 1;
-        const trueRes = a * b;
-
-        let display = `${a} × ${b} = ${trueRes}`;
-        let tagHtml = `<span class="tag-ok">Correct</span>`;
-
-        if (i >= nbCorrect) {
-            const fakeRes = trueRes + (Math.floor(Math.random() * 5) + 1);
-            display = `${a} × ${b} = ${fakeRes}`;
-            tagHtml = `<span class="tag-ko">Faux</span>`;
-        }
-
-        const row = document.createElement("div");
-        row.className = "preview-item";
-        row.innerHTML = `
-            <span>${display}</span>
-            ${tagHtml}
-        `;
-        grid.appendChild(row);
-
-        setTimeout(() => row.classList.add("show"), 80 + i * 90);
+    // texte dépendant du mode
+    if (title) {
+        title.textContent = `Résultats de la table de ${table}`;
     }
 
-    hint.textContent =
-        target === "CORRECT"
-            ? "L’élève doit valider les résultats corrects."
-            : "L’élève doit identifier les résultats incorrects.";
+    const trueResults = [];
+    const trueResultsSet = new Set();
+
+    // Génère la liste complète des résultats corrects sur l’intervalle
+    for (let i = ctx.min; i <= ctx.max; i++) {
+        const r = table * i;
+        trueResults.push(r);
+        trueResultsSet.add(r);
+    }
+
+    // Tirage de nbCorrect résultats corrects
+    const selectedCorrect = [];
+    const correctCopy = [...trueResults];
+
+    for (let i = 0; i < nbCorrect && correctCopy.length > 0; i++) {
+        const pick = Math.floor(Math.random() * correctCopy.length);
+        selectedCorrect.push(correctCopy[pick]);
+        correctCopy.splice(pick, 1);
+    }
+
+    // Tirage de faux résultats sans ambiguïté
+    const selectedFake = [];
+    for (let i = 0; i < nbIncorrect; i++) {
+        selectedFake.push(generateFakeResult(table, ctx.min, ctx.max, trueResultsSet));
+    }
+
+    // Mélange final
+    const tokens = [
+        ...selectedCorrect.map(v => ({ value: v, correct: true })),
+        ...selectedFake.map(v => ({ value: v, correct: false }))
+    ];
+
+    tokens.sort(() => Math.random() - 0.5);
+
+    // Affichage visuel type "potion"
+    tokens.forEach((tok, idx) => {
+        const orb = document.createElement("div");
+        orb.className = "memb-orb";
+
+        orb.innerHTML = `
+            <span class="memb-number">${tok.value}</span>
+            <span class="memb-tag ${tok.correct ? "tag-ok" : "tag-ko"}">
+                ${tok.correct ? "Vrai" : "Faux"}
+            </span>
+        `;
+
+        grid.appendChild(orb);
+
+        setTimeout(() => orb.classList.add("show"), 80 + idx * 60);
+    });
+
+    // texte d’aide
+    if (targetIncorrect) {
+        hint.textContent =
+            "Sélectionne uniquement les résultats incorrects appartenant à cette table.";
+    } else {
+        hint.textContent =
+            "Sélectionne uniquement les résultats corrects appartenant à cette table.";
+    }
 }
 
 /* ======================================================
-   MODALE MEMB — Validation résultats
+   MODALE MEMB
    ====================================================== */
 export function openMembModal(levelId, task, card) {
     const modalEl = document.getElementById("taskModalMEMB");
     if (!modalEl) return;
 
+    // Contexte du niveau
+    window.CURRENT_LEVEL_CONTEXT = {
+        tables: (() => {
+            try {
+                const arr = JSON.parse(card.dataset.tables || "[]");
+                return Array.isArray(arr) ? arr : [];
+            } catch {
+                return [];
+            }
+        })(),
+        intervalMin: parseInt(card.dataset.intervalMin || "1", 10),
+        intervalMax: parseInt(card.dataset.intervalMax || "10", 10)
+    };
+
     const levelInput = document.getElementById("memb_levelId");
     if (levelInput) levelInput.value = levelId;
 
-    const switchCorrect   = document.getElementById("memb_correct");
+    const switchCorrect = document.getElementById("memb_correct");
     const switchIncorrect = document.getElementById("memb_incorrect");
 
-    const nbCorrectSlider   = document.getElementById("memb_nbCorrect");
+    const nbCorrectSlider = document.getElementById("memb_nbCorrect");
     const nbIncorrectSlider = document.getElementById("memb_nbIncorrect");
-    const timeSlider        = document.getElementById("memb_time");
-    const succSlider        = document.getElementById("memb_successes");
+    const timeSlider = document.getElementById("memb_time");
+    const succSlider = document.getElementById("memb_successes");
 
-    const nbCorrectVal   = document.getElementById("memb_nbCorrect_value");
+    const nbCorrectVal = document.getElementById("memb_nbCorrect_value");
     const nbIncorrectVal = document.getElementById("memb_nbIncorrect_value");
-    const timeVal        = document.getElementById("memb_time_value");
-    const succVal        = document.getElementById("memb_successes_value");
+    const timeVal = document.getElementById("memb_time_value");
+    const succVal = document.getElementById("memb_successes_value");
 
-    /* ---------- Pré-remplissage ---------- */
+    /* ---------- Remplissage ---------- */
     if (task) {
         const target = task.target ?? "CORRECT";
 
-        if (switchCorrect && switchIncorrect) {
-            switchCorrect.checked   = target === "CORRECT";
-            switchIncorrect.checked = target === "INCORRECT";
-        }
+        switchCorrect.checked = target === "CORRECT";
+        switchIncorrect.checked = target === "INCORRECT";
 
-        if (nbCorrectSlider && nbCorrectVal) {
-            const v = Math.max(1, Math.min(3, task.nbCorrectChoices ?? 1));
-            nbCorrectSlider.value = String(v);
-            nbCorrectVal.textContent = String(v);
-        }
+        nbCorrectSlider.value = String(task.nbCorrectChoices ?? 1);
+        nbCorrectVal.textContent = nbCorrectSlider.value;
 
-        if (nbIncorrectSlider && nbIncorrectVal) {
-            const v = Math.max(1, Math.min(3, task.nbIncorrectChoices ?? 1));
-            nbIncorrectSlider.value = String(v);
-            nbIncorrectVal.textContent = String(v);
-        }
+        nbIncorrectSlider.value = String(task.nbIncorrectChoices ?? 1);
+        nbIncorrectVal.textContent = nbIncorrectSlider.value;
 
-        if (timeSlider && timeVal) {
-            const v = task.timeMaxSecond ?? 20;
-            timeSlider.value = String(v);
-            timeVal.textContent = String(v);
-        }
+        timeSlider.value = String(task.timeMaxSecond ?? 20);
+        timeVal.textContent = timeSlider.value;
 
-        if (succSlider && succVal) {
-            const v = task.successiveSuccessesToReach ?? 1;
-            succSlider.value = String(v);
-            succVal.textContent = String(v);
-        }
-
+        succSlider.value = String(task.successiveSuccessesToReach ?? 1);
+        succVal.textContent = succSlider.value;
     } else {
-        // NEW TASK → defaults
-        if (switchCorrect && switchIncorrect) {
-            switchCorrect.checked = true;
-            switchIncorrect.checked = false;
-        }
+        // defaults
+        switchCorrect.checked = true;
+        switchIncorrect.checked = false;
 
-        if (nbCorrectSlider && nbCorrectVal) {
-            nbCorrectSlider.value = "1";
-            nbCorrectVal.textContent = "1";
-        }
-        if (nbIncorrectSlider && nbIncorrectVal) {
-            nbIncorrectSlider.value = "1";
-            nbIncorrectVal.textContent = "1";
-        }
+        nbCorrectSlider.value = "1";
+        nbCorrectVal.textContent = "1";
 
-        if (timeSlider && timeVal) {
-            timeSlider.value = "20";
-            timeVal.textContent = "20";
-        }
-        if (succSlider && succVal) {
-            succSlider.value = "1";
-            succVal.textContent = "1";
-        }
+        nbIncorrectSlider.value = "1";
+        nbIncorrectVal.textContent = "1";
+
+        timeSlider.value = "20";
+        timeVal.textContent = "20";
+
+        succSlider.value = "1";
+        succVal.textContent = "1";
     }
 
-    /* ---------- Exclusivité des switches (FIX) ---------- */
-    function enforceExclusive() {
-        if (!switchCorrect || !switchIncorrect) return;
-
-        const clickedCorrect  = event.target === switchCorrect;
-        const clickedIncorrect = event.target === switchIncorrect;
-
-        if (clickedCorrect) {
+    /* ---------- Exclusivité switches ---------- */
+    function enforceExclusive(e) {
+        if (e.target === switchCorrect) {
             switchCorrect.checked = true;
             switchIncorrect.checked = false;
         }
-
-        if (clickedIncorrect) {
+        if (e.target === switchIncorrect) {
             switchIncorrect.checked = true;
             switchCorrect.checked = false;
-        }
-
-        // Sécurité : ne jamais avoir 0 / 0
-        if (!switchCorrect.checked && !switchIncorrect.checked) {
-            switchCorrect.checked = true;
         }
 
         generateMembPreview();
     }
 
-    if (switchCorrect)   switchCorrect.addEventListener("change", enforceExclusive);
-    if (switchIncorrect) switchIncorrect.addEventListener("change", enforceExclusive);
+    switchCorrect.addEventListener("change", enforceExclusive);
+    switchIncorrect.addEventListener("change", enforceExclusive);
 
-    /* ---------- Sliders sync ---------- */
-    if (nbCorrectSlider && nbCorrectVal) {
-        nbCorrectSlider.oninput = () => {
-            if (parseInt(nbCorrectSlider.value, 10) < 1) nbCorrectSlider.value = "1";
-            nbCorrectVal.textContent = nbCorrectSlider.value;
-            generateMembPreview();
-        };
-    }
+    /* ---------- Sliders ---------- */
+    nbCorrectSlider.oninput = () => {
+        nbCorrectVal.textContent = nbCorrectSlider.value;
+        generateMembPreview();
+    };
 
-    if (nbIncorrectSlider && nbIncorrectVal) {
-        nbIncorrectSlider.oninput = () => {
-            if (parseInt(nbIncorrectSlider.value, 10) < 1) nbIncorrectSlider.value = "1";
-            nbIncorrectVal.textContent = nbIncorrectSlider.value;
-            generateMembPreview();
-        };
-    }
+    nbIncorrectSlider.oninput = () => {
+        nbIncorrectVal.textContent = nbIncorrectSlider.value;
+        generateMembPreview();
+    };
 
-    if (timeSlider && timeVal) {
-        timeSlider.oninput = () => {
-            timeVal.textContent = timeSlider.value;
-        };
-    }
+    timeSlider.oninput = () => {
+        timeVal.textContent = timeSlider.value;
+    };
 
-    if (succSlider && succVal) {
-        succSlider.oninput = () => {
-            succVal.textContent = succSlider.value;
-        };
-    }
+    succSlider.oninput = () => {
+        succVal.textContent = succSlider.value;
+    };
 
     /* ---------- Delete ---------- */
     const deleteBtn = document.getElementById("memb_deleteBtn");
-    if (deleteBtn) {
-        if (task && task.id) {
-            deleteBtn.classList.remove("d-none");
-            deleteBtn.onclick = () =>
-                deleteTask(levelId, "MEMB", card, "taskModalMEMB");
-        } else {
-            deleteBtn.classList.add("d-none");
-            deleteBtn.onclick = null;
-        }
+    if (task && task.id) {
+        deleteBtn.classList.remove("d-none");
+        deleteBtn.onclick = () =>
+            deleteTask(levelId, "MEMB", card, "taskModalMEMB");
+    } else {
+        deleteBtn.classList.add("d-none");
+        deleteBtn.onclick = null;
     }
 
     /* ---------- Confirm ---------- */
     const confirmBtn = document.getElementById("memb_confirmBtn");
-    if (confirmBtn) {
-        confirmBtn.onclick = async () => {
-            const target =
-                switchIncorrect && switchIncorrect.checked ? "INCORRECT" : "CORRECT";
+    confirmBtn.onclick = async () => {
+        const target =
+            switchIncorrect.checked ? "INCORRECT" : "CORRECT";
 
-            const payload = {
-                taskType: "MEMB",
-                target,
-                nbCorrectChoices: parseInt(nbCorrectSlider?.value || "1", 10),
-                nbIncorrectChoices: parseInt(nbIncorrectSlider?.value || "1", 10),
-                timeMaxSecond: parseInt(timeSlider?.value || "20", 10),
-                successiveSuccessesToReach: parseInt(succSlider?.value || "1", 10),
-            };
-
-            await saveTask(levelId, payload, card, "MEMB", "taskModalMEMB");
+        const payload = {
+            taskType: "MEMB",
+            target,
+            nbCorrectChoices: parseInt(nbCorrectSlider.value, 10),
+            nbIncorrectChoices: parseInt(nbIncorrectSlider.value, 10),
+            timeMaxSecond: parseInt(timeSlider.value, 10),
+            successiveSuccessesToReach: parseInt(succSlider.value, 10)
         };
-    }
 
-    /* ---------- OUVERTURE ---------- */
+        await saveTask(levelId, payload, card, "MEMB", "taskModalMEMB");
+    };
+
+    /* ---------- Preview + show ---------- */
     const modal = new bootstrap.Modal(modalEl);
     generateMembPreview();
     modal.show();
