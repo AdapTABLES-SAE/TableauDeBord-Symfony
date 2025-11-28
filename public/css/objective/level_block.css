@@ -1,0 +1,257 @@
+/* ============================================================
+   BLOC NIVEAU — STYLE SIMPLE & PROPRE
+   ============================================================ */
+
+.level-card {
+    background: #faf9ff;
+    border-radius: 12px;
+    border: 1px solid #e5ddff;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.2rem;
+}
+
+.level-header {
+    border-bottom: 1px solid #e5ddff;
+    padding-bottom: .6rem;
+    margin-bottom: .6rem;
+}
+
+.level-title {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.level-name-input {
+    max-width: 200px;
+    font-size: .85rem;
+}
+
+.level-facts {
+    background: white;
+    border-radius: 8px;
+    padding: .3rem .7rem;
+    text-align: center;
+    border: 1px solid #e5ddff;
+}
+
+.facts-label {
+    font-size: .7rem;
+    color: #7b75a8;
+}
+.facts-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #4b3bbd;
+}
+
+.toggle-level-details i {
+    transition: .25s;
+}
+.level-card.collapsed .toggle-level-details i {
+    transform: rotate(180deg);
+}
+
+/* Body animation */
+.level-body {
+    transition: max-height .25s ease, opacity .2s ease;
+}
+
+/* ============================================================
+   TÂCHES — 5 cartes en ligne
+============================================================ */
+
+.tasks-row-single {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding-bottom: .4rem;
+}
+
+.task-card {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #dcd7ff;
+    width: 150px;
+    padding: .7rem .6rem;
+    text-align: center;
+    cursor: pointer;
+    transition: .15s;
+}
+
+.task-card:hover {
+    background: #f4f0ff;
+    border-color: #b9a8ff;
+}
+
+.task-card.task-active {
+    background: #7a5af8;
+    color: white;
+    border-color: #7a5af8;
+}
+
+.task-card-icon i {
+    font-size: 1.35rem;
+    color: #7a5af8;
+}
+.task-card.task-active .task-card-icon i {
+    color: white;
+}
+
+.task-card-title {
+    font-weight: 700;
+    font-size: .9rem;
+    margin-top: .25rem;
+}
+.task-card-desc {
+    font-size: .75rem;
+    color: #666;
+}
+.task-card.task-active .task-card-desc {
+    color: white;
+}
+
+/* ============================================================
+   CRITÈRES DE COMPLÉTION
+============================================================ */
+
+.completion-pair {
+    display: flex;
+    gap: 2rem;
+}
+.completion-item {
+    flex: 1;
+}
+
+/* ============================================================
+   BOUTONS POSITION ("=", facteur)
+   ============================================================ */
+
+.btn-group {
+    display: flex;
+    gap: 0.4rem;
+}
+
+.btn-outline-violet {
+    background: #ffffff;
+    border: 1px solid #cfcada;
+    border-radius: 6px;
+    padding: 0.35rem 0.8rem;
+    font-size: 0.85rem;
+    cursor: pointer;
+    color: #3e3a57;
+    transition: all 0.15s ease;
+}
+
+.btn-outline-violet:hover {
+    background: #f3eeff;
+    border-color: #b7a8ff;
+}
+
+.btn-outline-violet.active {
+    background: #7a5af8 !important;
+    border-color: #7a5af8 !important;
+    color: white !important;
+    box-shadow: 0 0 4px rgba(122, 90, 248, 0.35);
+}
+/* ============================================================
+   BOUTONS DE POSITION — Style maquette premium
+   ============================================================ */
+
+.position-group {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.6rem;
+}
+
+.position-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background: #e9ddff;
+    border-radius: 10px;
+    padding: 0.6rem 1rem;
+    min-width: 120px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.position-btn:hover {
+    background: #d8caff;
+}
+
+.position-btn.active {
+    background: #6e4dfb;
+    color: white;
+    border-color: #6e4dfb;
+    box-shadow: 0 3px 8px rgba(90, 60, 220, 0.3);
+}
+
+.position-btn .pos-equation {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.position-btn .pos-label {
+    font-size: 0.75rem;
+    opacity: 0.9;
+}
+
+.position-btn.active .pos-label,
+.position-btn.active .pos-equation {
+    color: white !important;
+}
+
+
+/* ============================================================
+   DOUBLE SLIDER
+============================================================ */
+
+.range-double {
+    position: relative;
+    height: 32px;
+    margin: 10px 0;
+}
+
+.range-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: #e4ddff;
+    border-radius: 3px;
+    transform: translateY(-50%);
+}
+
+.range-range {
+    position: absolute;
+    top: 50%;
+    height: 6px;
+    background: #7a5af8;
+    border-radius: 3px;
+    transform: translateY(-50%);
+}
+
+.range-handle {
+    position: absolute;
+    top: 50%;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    border: 2px solid #7a5af8;
+    transform: translate(-50%, -50%);
+    cursor: grab;
+    z-index: 10;
+}
+
+/* ============================================================
+   DELETE BUTTON
+============================================================ */
+
+.delete-level-btn {
+    border-radius: 8px;
+}

@@ -1,0 +1,162 @@
+/* ============================================================
+   PAGE WRAPPER
+   ============================================================ */
+.page-wrapper {
+    background-color: #f3f0ff;
+    min-height: 100vh;
+}
+
+/* ============================================================
+   SECTIONS & CARD
+   ============================================================ */
+.section-card {
+    background-color: #fff;
+    border-radius: 1rem;
+}
+
+/* ============================================================
+   TITRES
+   ============================================================ */
+.section-title {
+    font-weight: 600;
+    color: #4b3bbd;
+    font-size: 1.1rem;
+    border-left: 4px solid #7a5af8;
+    padding-left: .75rem;
+}
+
+/* ============================================================
+   BOUTONS
+   ============================================================ */
+.btn-violet {
+    background-color: #7a5af8;
+    color: #fff;
+    border: none;
+}
+.btn-violet:hover {
+    background-color: #6748d4;
+    color: #fff;
+}
+
+/* ============================================================
+   PANNEAU GAUCHE
+   ============================================================ */
+.left-panel {
+    border-right: 1px solid #e5ddff;
+    margin-bottom: 1rem;
+}
+@media (max-width: 991.98px) {
+    .left-panel {
+        border-right: none;
+        border-bottom: 1px solid #e5ddff;
+        padding-bottom: 1rem;
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* ============================================================
+   INPUT NOM OBJECTIF
+   ============================================================ */
+.objective-name-group input {
+    border-radius: .75rem 0 0 .75rem;
+}
+.objective-name-group .input-group-text {
+    border-radius: 0 .75rem .75rem 0;
+    background: #f6f3ff;
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+.tables-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: .4rem;
+}
+.table-pill,
+.table-btn {
+    border-radius: .5rem;
+    border: 1px solid #d4ccff;
+    background: #ffffff;
+    padding: .35rem 0;
+    font-weight: 600;
+    font-size: .9rem;
+}
+.table-pill.active,
+.table-btn.selected {
+    background: #7a5af8;
+    color: #fff;
+    border-color: #7a5af8;
+}
+
+/* ============================================================
+   PREREQUIS
+   ============================================================ */
+.prereq-block {
+    background: #f8f6ff;
+    border-radius: .75rem;
+    padding: .75rem .9rem;
+    border: 1px solid #e5ddff;
+}
+.prereq-row span {
+    font-size: .85rem;
+}
+.prereq-row .form-range {
+    margin-top: .25rem;
+}
+
+/* ============================================================
+   PREVIEW LISTE FAITS
+   ============================================================ */
+.preview-card {
+    background: #faf9ff;
+    border-radius: .75rem;
+    border: 1px solid #e5ddff;
+    padding: 1rem;
+}
+
+/* ============================================================
+   LISTE DES NIVEAUX
+   ============================================================ */
+.levels-container {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+    padding-right: .2rem;
+}
+
+/* ============================================================
+   LOADER
+   ============================================================ */
+.save-loader {
+    display: flex;
+    align-items: center;
+    margin-top: 0.75rem;
+    color: #7a5af8;
+}
+.save-loader .spinner-border {
+    width: 1rem;
+    height: 1rem;
+    border-width: .15rem;
+}
+
+.d-none { display: none !important; }
+
+/* ============================================================
+   GLOW WARNING
+   ============================================================ */
+.pulse-warning {
+    position: relative;
+    animation: pulseWarning 1.4s infinite ease-in-out;
+    background-color: #ffb84d !important;
+    border-color: #ffb84d !important;
+    color: #4b3b0a !important;
+}
+.pulse-warning:hover {
+    background-color: #e6a441 !important;
+}
+
+@keyframes pulseWarning {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0.65); }
+    70%  { box-shadow: 0 0 0 12px rgba(255, 160, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0); }
+}

@@ -21,51 +21,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const levelsContainer = document.getElementById("levels-container");
     const addLevelBtn     = document.getElementById("add-level-btn");
     const saveAllBtn      = document.getElementById("save-all-btn");
+    const objectiveNameEl = document.getElementById("objective_name");
 
     let unsavedChanges = false;
     let initialState = null;
 
     /* =========================================================================================
-       COLLECTEUR GLOBAL : objectif + niveaux + tâches
+       COLLECTEUR GLOBAL : objectif + niveaux (seulement ce qui déclenche "save all")
     ========================================================================================= */
 
     function collectAllData() {
         const objective = {
-            name: document.getElementById("objective_name")?.value.trim() || "",
+            name: objectiveNameEl?.value.trim() || "",
             tables: getSelectedTables()
         };
 
         const levels = [];
-        const tasks = [];
 
         document.querySelectorAll(".level-card").forEach(card => {
+
             const levelId = parseInt(card.dataset.levelId, 10);
+
+            let levelTables = [];
+            try {
+                levelTables = JSON.parse(card.dataset.tables || "[]");
+            } catch {
+                levelTables = [];
+            }
+
+            const seenSlider = card.querySelector(".completion-seen");
+            const successSlider = card.querySelector(".completion-success");
 
             levels.push({
                 id: levelId,
-                name: card.querySelector(".level-name-input").value.trim(),
-                tables: JSON.parse(card.dataset.tables || "[]"),
-                intervalMin: parseInt(card.dataset.intervalMin),
-                intervalMax: parseInt(card.dataset.intervalMax),
+                name: card.querySelector(".level-name-input")?.value.trim() || "",
+                tables: levelTables,
                 equalPosition: card.dataset.equalPosition,
-                factorPosition: card.dataset.factorPosition
+                factorPosition: card.dataset.factorPosition,
+                intervalMin: parseInt(card.dataset.intervalMin || "1", 10),
+                intervalMax: parseInt(card.dataset.intervalMax || "10", 10),
+                successCompletionCriteria: seenSlider ? parseInt(seenSlider.value,10) : 80,
+                encounterCompletionCriteria: successSlider ? parseInt(successSlider.value,10) : 100
             });
-
-            const tasksMap = JSON.parse(card.dataset.tasks || "{}");
-
-            for (const type in tasksMap) {
-                tasks.push({
-                    levelId,
-                    ...tasksMap[type]
-                });
-            }
         });
 
-        return { objective, levels, tasks };
+        return { objective, levels };
     }
 
     function captureInitialState() {
         initialState = collectAllData();
+        unsavedChanges = false;
+        if (saveAllBtn) {
+            saveAllBtn.classList.remove("pulse-warning", "loading");
+        }
     }
 
     function isSameState(a, b) {
@@ -73,14 +81,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function refreshDirtyState() {
+        if (!initialState || !saveAllBtn) {
+            return;
+        }
+
         const current = collectAllData();
 
         if (isSameState(initialState, current)) {
             unsavedChanges = false;
-            saveAllBtn?.classList.remove("pulse-warning");
+            saveAllBtn.classList.remove("pulse-warning");
         } else {
             unsavedChanges = true;
-            saveAllBtn?.classList.add("pulse-warning");
+            saveAllBtn.classList.add("pulse-warning");
         }
     }
 
@@ -116,14 +128,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const tables = getSelectedTables();
 
+                // Propagation dans chaque niveau
                 document.querySelectorAll(".level-card").forEach(card => {
                     card.dataset.tables = JSON.stringify(tables);
                     updateFactsCount(card);
                 });
 
                 updatePreview();
-                markDirty();
+                markDirty(); // changement de tables
             });
+        });
+    }
+
+    /* =========================================================================================
+       OBJECTIVE NAME
+    ========================================================================================= */
+
+    if (objectiveNameEl) {
+        objectiveNameEl.addEventListener("input", () => {
+            markDirty(); // changement nom objectif
         });
     }
 
@@ -214,11 +237,11 @@ document.addEventListener("DOMContentLoaded", () => {
             range.style.left = percent(minVal) + "%";
             range.style.right = (100 - percent(maxVal)) + "%";
 
-            minLabel.textContent = minVal;
-            maxLabel.textContent = maxVal;
+            if (minLabel) minLabel.textContent = String(minVal);
+            if (maxLabel) maxLabel.textContent = String(maxVal);
 
-            card.dataset.intervalMin = minVal;
-            card.dataset.intervalMax = maxVal;
+            card.dataset.intervalMin = String(minVal);
+            card.dataset.intervalMax = String(maxVal);
 
             updateFactsCount(card);
             updatePreview();
@@ -242,12 +265,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 updateUI();
             }
-
             function stop() {
                 window.removeEventListener("mousemove", move);
                 window.removeEventListener("mouseup", stop);
             }
-
             window.addEventListener("mousemove", move);
             window.addEventListener("mouseup", stop);
         }
@@ -255,7 +276,6 @@ document.addEventListener("DOMContentLoaded", () => {
         handleMin.addEventListener("mousedown", () => startDrag("min"));
         handleMax.addEventListener("mousedown", () => startDrag("max"));
 
-        /* CLICK SUR LA BARRE */
         wrap.addEventListener("mousedown", (e) => {
             if (e.target.classList.contains("range-handle")) return;
 
@@ -277,6 +297,34 @@ document.addEventListener("DOMContentLoaded", () => {
        INITIALISATION D’UNE CARTE NIVEAU
     ========================================================================================= */
 
+    function initCompletionSliders(card) {
+        const seen = card.querySelector(".completion-seen");
+        const success = card.querySelector(".completion-success");
+        const seenValue = card.querySelector(".completion-seen-value");
+        const successValue = card.querySelector(".completion-success-value");
+
+        if (!seen || !success) return;
+
+        // Initialisation
+        seen.value = card.dataset.successCriteria || 80;
+        success.value = card.dataset.encounterCriteria || 100;
+
+        seenValue.textContent = seen.value + "%";
+        successValue.textContent = success.value + "%";
+
+        seen.addEventListener("input", () => {
+            seenValue.textContent = seen.value + "%";
+            card.dataset.successCriteria = seen.value;
+            markDirty();
+        });
+
+        success.addEventListener("input", () => {
+            successValue.textContent = success.value + "%";
+            card.dataset.encounterCriteria = success.value;
+            markDirty();
+        });
+    }
+
     function initLevelCard(card) {
         if (!card) return;
 
@@ -284,48 +332,58 @@ document.addEventListener("DOMContentLoaded", () => {
         const factorGroup  = card.querySelector(".factor-position-group");
         const deleteBtn    = card.querySelector(".delete-level-btn");
         const toggleBtn    = card.querySelector(".toggle-level-details");
+        const nameInput    = card.querySelector(".level-name-input");
 
         // Collapse
         toggleBtn?.addEventListener("click", () => {
             card.classList.toggle("collapsed");
         });
 
+        // Nom du niveau
+        if (nameInput) {
+            nameInput.addEventListener("input", () => markDirty());
+        }
+
+        // Critères de complétion
+        initCompletionSliders(card);
+
         // Equal position
         const eqCurrent = card.dataset.equalPosition;
-        equalGroup?.querySelectorAll("button").forEach(btn => {
-            if (btn.dataset.value === eqCurrent) btn.classList.add("active");
+        if (equalGroup) {
+            equalGroup.querySelectorAll(".position-btn").forEach(btn => {
+                if (btn.dataset.value === eqCurrent) btn.classList.add("active");
 
-            btn.addEventListener("click", () => {
-                equalGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-
-                card.dataset.equalPosition = btn.dataset.value;
-                updateFactsCount(card);
-                markDirty();
+                btn.addEventListener("click", () => {
+                    equalGroup.querySelectorAll(".position-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    card.dataset.equalPosition = btn.dataset.value;
+                    updateFactsCount(card);
+                    markDirty();
+                });
             });
-        });
+        }
 
         // Factor position
         const facCurrent = card.dataset.factorPosition;
-        factorGroup?.querySelectorAll("button").forEach(btn => {
-            if (btn.dataset.value === facCurrent) btn.classList.add("active");
+        if (factorGroup) {
+            factorGroup.querySelectorAll("button").forEach(btn => {
+                if (btn.dataset.value === facCurrent) btn.classList.add("active");
 
-            btn.addEventListener("click", () => {
-                factorGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
-
-                card.dataset.factorPosition = btn.dataset.value;
-                updateFactsCount(card);
-                markDirty();
+                btn.addEventListener("click", () => {
+                    factorGroup.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    card.dataset.factorPosition = btn.dataset.value;
+                    updateFactsCount(card);
+                    markDirty();
+                });
             });
-        });
+        }
 
-        /* -- Double slider PRO -- */
+        /* -- Double slider -- */
         initDoubleSlider(card);
-
         updateFactsCount(card);
 
-        // Suppression du niveau
+        // Suppression niveau
         if (deleteBtn && config.deleteLevelUrlTemplate) {
             deleteBtn.addEventListener("click", async () => {
                 if (!confirm("Supprimer ce niveau ?")) return;
@@ -342,8 +400,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (!json.success) return showToast(false);
 
                     card.remove();
-                    markDirty();
                     showToast(true);
+
+                    // suppression réalisée → état clean
+                    captureInitialState();
 
                 } catch (err) {
                     console.error(err);
@@ -352,10 +412,10 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // Modales de tâches
-        card.querySelectorAll(".task-pill").forEach(pill => {
-            pill.addEventListener("click", () => {
-                const type = pill.dataset.taskType;
+        // Modales TÂCHES (nouveaux boutons task-card)
+        card.querySelectorAll(".task-card").forEach(cardBtn => {
+            cardBtn.addEventListener("click", () => {
+                const type = cardBtn.dataset.taskType;
                 const tasksMap = getTasksMap(card);
                 const existing = tasksMap[type] || null;
 
@@ -386,7 +446,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (saveAllBtn) {
         saveAllBtn.addEventListener("click", async () => {
 
-            // Vérification : au moins une table doit être sélectionnée
             const selectedTables = getSelectedTables();
             if (!selectedTables.length) {
                 showToast(false, "Sélectionnez au moins une table pour enregistrer.");
@@ -413,11 +472,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     return showToast(false);
                 }
 
-                initialState = collectAllData();
-                unsavedChanges = false;
-                saveAllBtn.classList.remove("pulse-warning");
-                saveAllBtn.classList.remove("loading");
-
+                captureInitialState();
                 showToast(true);
 
             } catch (err) {
@@ -449,8 +504,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 levelsContainer.appendChild(newCard);
                 initLevelCard(newCard);
-                markDirty();
                 showToast(true);
+
+                captureInitialState(); // ajout = déjà persisté
 
             } catch (err) {
                 console.error(err);
@@ -459,7 +515,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Export global pour les modales
     window.saveTask = saveTask;
     window.deleteTask = deleteTask;
 });
