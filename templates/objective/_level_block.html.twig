@@ -1,12 +1,12 @@
 {# ==============================================================
-   BLOC D’UN NIVEAU — version simple & propre
+   BLOC D’UN NIVEAU — Version compacte & premium
    ============================================================== #}
 
 {% set TASKS = [
-    { code: 'C1',   label: '1 élément manquant',         icon: 'bi-1-circle' },
-    { code: 'C2',   label: '2 éléments manquants',       icon: 'bi-2-circle' },
-    { code: 'REC',  label: 'Reconstitution d’un fait',   icon: 'bi-shuffle' },
-    { code: 'ID',   label: 'Validation d’un fait',       icon: 'bi-check2-circle' },
+    { code: 'C1', label: '1 élément manquant', icon: 'bi-1-circle' },
+    { code: 'C2', label: '2 éléments manquants', icon: 'bi-2-circle' },
+    { code: 'REC', label: 'Reconstitution d’un fait', icon: 'bi-shuffle' },
+    { code: 'ID', label: 'Validation d’un fait', icon: 'bi-check2-circle' },
     { code: 'MEMB', label: 'Identification des résultats', icon: 'bi-eye' }
 ] %}
 
@@ -18,25 +18,20 @@
      data-interval-max="{{ niveau.intervalMax }}"
      data-success-criteria="{{ niveau.successCompletionCriteria }}"
      data-encounter-criteria="{{ niveau.encounterCompletionCriteria }}"
-     data-tables="{{ niveau.tables|json_encode }}"
-     data-tasks="{{ niveau.taches|json_encode }}">
+     data-tasks="{{ niveau.taches|json_encode }}"
+     data-tables="{{ niveau.tables|json_encode }}">
 
-    {# ==================================================
-       HEADER DU NIVEAU
-       ================================================== #}
+    {# HEADER #}
     <div class="level-header d-flex justify-content-between align-items-center">
-
         <div class="d-flex align-items-center gap-3">
             <div class="level-title">Niveau {{ index }}</div>
-
             <input type="text"
                    class="form-control form-control-sm level-name-input"
-                   value="{{ niveau.name }}"
-                   placeholder="Nom du niveau">
+                   value="{{ niveau.name }}">
         </div>
 
         <div class="d-flex align-items-center gap-3">
-            <div class="level-facts">
+            <div class="level-facts text-end">
                 <div class="facts-label">FAITS</div>
                 <div class="facts-value" data-facts-count>0</div>
             </div>
@@ -45,30 +40,30 @@
                 <i class="bi bi-chevron-down"></i>
             </button>
         </div>
-
     </div>
 
 
     <div class="level-body">
 
         {# ==================================================
-           TÂCHES EN UNE SEULE LIGNE
+           TACHES — COMPACT SINGLE LINE
            ================================================== #}
         <div class="level-section-title mt-3">Tâches</div>
 
-        <div class="tasks-row-single">
+        <div class="tasks-line">
             {% for task in TASKS %}
-                {% set isActive = niveau.taches|filter(t => t.taskType == task.code)|first %}
+                {% set activeTask = niveau.taches|filter(t => t.taskType == task.code)|first %}
+
                 <button type="button"
-                        class="task-card {{ isActive ? 'task-active' : '' }}"
+                        class="task-card {{ activeTask ? 'task-active' : '' }}"
                         data-task-type="{{ task.code }}">
 
-                    <div class="task-card-icon">
-                        <i class="bi {{ task.icon }}"></i>
+                    <div class="task-icon"><i class="bi {{ task.icon }}"></i></div>
+                    <div class="task-text">
+                        <div class="task-code">{{ task.code }}</div>
+                        <div class="task-label">{{ task.label }}</div>
                     </div>
 
-                    <div class="task-card-title">{{ task.code }}</div>
-                    <div class="task-card-desc">{{ task.label }}</div>
                 </button>
             {% endfor %}
         </div>
@@ -79,27 +74,25 @@
            ================================================== #}
         <div class="level-section-title mt-4">Critère de complétion du niveau</div>
 
-        <div class="completion-pair">
+        <div class="completion-row">
 
-            <div class="completion-item">
-                <label class="form-label small">% Vus</label>
+            <div class="completion-block">
+                <div class="small fw-bold">% Vus</div>
                 <input type="range" min="0" max="100"
-                       class="form-range crit-success-slider"
+                       class="form-range completion-seen"
                        value="{{ niveau.encounterCompletionCriteria }}">
-
-                <div class="criteria-value small">
-                    <span id="crit_seen_val_{{ niveau.id }}">{{ niveau.encounterCompletionCriteria }}%</span>
+                <div class="completion-value completion-seen-value">
+                    {{ niveau.encounterCompletionCriteria }}%
                 </div>
             </div>
 
-            <div class="completion-item">
-                <label class="form-label small">% Succès</label>
+            <div class="completion-block">
+                <div class="small fw-bold">% Succès</div>
                 <input type="range" min="0" max="100"
-                       class="form-range crit-encounter-slider"
+                       class="form-range completion-success"
                        value="{{ niveau.successCompletionCriteria }}">
-
-                <div class="criteria-value small">
-                    <span id="crit_enc_val_{{ niveau.id }}">{{ niveau.successCompletionCriteria }}%</span>
+                <div class="completion-value completion-success-value">
+                    {{ niveau.successCompletionCriteria }}%
                 </div>
             </div>
 
@@ -107,45 +100,56 @@
 
 
         {# ==================================================
-           POSITIONS
+           POSITIONS — 2 COLS
            ================================================== #}
-        <div class="level-section-title mt-4">Position du “=”</div>
+        <div class="positions-row">
 
-        <div class="position-group equal-position-group">
-            <div class="position-btn" data-value="LEFT">
-                <div class="pos-equation">4 × 2 = 8</div>
-                <div class="pos-label">Gauche</div>
+            <div class="position-col">
+                <h6>Position de l’égal</h6>
+
+                <div class="position-box equal-position-group">
+
+                    <div class="position-btn" data-value="LEFT">
+                        <span class="exemple">4 = 2 × 2</span>
+                        <span class="label">Gauche</span>
+                    </div>
+
+                    <div class="position-btn" data-value="MIX">
+                        <span class="exemple">/</span>
+                        <span class="label">Les deux</span>
+                    </div>
+
+                    <div class="position-btn" data-value="RIGHT">
+                        <span class="exemple">2 × 2 = 4</span>
+                        <span class="label">Droite</span>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="position-btn" data-value="MIX">
-                <div class="pos-equation">4 × 2 = 8</div>
-                <div class="pos-label">Les deux</div>
+            <div class="position-col">
+                <h6>Position du facteur</h6>
+
+                <div class="position-box factor-position-group">
+
+                    <div class="position-btn" data-value="OPERAND_TABLE">
+                        <span class="exemple">2 × ? = 4</span>
+                        <span class="label">Gauche</span>
+                    </div>
+
+                    <div class="position-btn" data-value="MIX">
+                        <span class="exemple">/</span>
+                        <span class="label">Les deux</span>
+                    </div>
+
+                    <div class="position-btn" data-value="TABLE_OPERAND">
+                        <span class="exemple">? × 2 = 4</span>
+                        <span class="label">Droite</span>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="position-btn" data-value="RIGHT">
-                <div class="pos-equation">2 × 2 = 4</div>
-                <div class="pos-label">Droite</div>
-            </div>
-        </div>
-
-
-        <div class="level-section-title mt-4">Position du facteur</div>
-
-        <div class="position-group factor-position-group">
-            <div class="position-btn" data-value="OPERAND_TABLE">
-                <div class="pos-equation">2 × ? = 4</div>
-                <div class="pos-label">Gauche</div>
-            </div>
-
-            <div class="position-btn" data-value="MIX">
-                <div class="pos-equation">? × 2 = 4</div>
-                <div class="pos-label">Les deux</div>
-            </div>
-
-            <div class="position-btn" data-value="TABLE_OPERAND">
-                <div class="pos-equation">? × 2 = 4</div>
-                <div class="pos-label">Droite</div>
-            </div>
         </div>
 
 
@@ -155,7 +159,7 @@
            ================================================== #}
         <div class="level-section-title mt-4">Intervalle des facteurs</div>
 
-        <div class="range-double mt-1"
+        <div class="range-double"
              data-min="{{ niveau.intervalMin }}"
              data-max="{{ niveau.intervalMax }}">
 
@@ -172,9 +176,7 @@
         </div>
 
 
-        {# ==================================================
-           DELETE
-           ================================================== #}
+        {# DELETE #}
         <div class="text-end mt-4">
             <button class="btn btn-outline-danger btn-sm delete-level-btn">
                 <i class="bi bi-trash"></i> Supprimer le niveau
@@ -182,5 +184,4 @@
         </div>
 
     </div>
-
 </div>

@@ -38,6 +38,7 @@
     font-size: .7rem;
     color: #7b75a8;
 }
+
 .facts-value {
     font-size: 1.2rem;
     font-weight: 700;
@@ -47,36 +48,42 @@
 .toggle-level-details i {
     transition: .25s;
 }
+
 .level-card.collapsed .toggle-level-details i {
     transform: rotate(180deg);
 }
 
-/* Body animation */
+/* Animation body */
 .level-body {
     transition: max-height .25s ease, opacity .2s ease;
 }
 
+
 /* ============================================================
-   TÂCHES — 5 cartes en ligne
+   TÂCHES — 5 cartes en 1 ligne COMPACTES
 ============================================================ */
 
-.tasks-row-single {
+.tasks-line {
     display: flex;
-    gap: 1rem;
+    gap: .9rem;
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding-bottom: .4rem;
+    padding-bottom: .45rem;
 }
 
 .task-card {
     background: #fff;
     border-radius: 10px;
     border: 1px solid #dcd7ff;
-    width: 150px;
-    padding: .7rem .6rem;
+    width: 140px;
+    padding: .6rem .55rem;
     text-align: center;
     cursor: pointer;
     transition: .15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: .25rem;
 }
 
 .task-card:hover {
@@ -90,119 +97,130 @@
     border-color: #7a5af8;
 }
 
-.task-card-icon i {
-    font-size: 1.35rem;
+.task-icon i {
+    font-size: 1.25rem;
     color: #7a5af8;
 }
-.task-card.task-active .task-card-icon i {
+
+.task-card.task-active .task-icon i {
     color: white;
 }
 
-.task-card-title {
+.task-code {
     font-weight: 700;
     font-size: .9rem;
-    margin-top: .25rem;
 }
-.task-card-desc {
+
+.task-label {
     font-size: .75rem;
     color: #666;
 }
-.task-card.task-active .task-card-desc {
+
+.task-card.task-active .task-label {
     color: white;
 }
+
 
 /* ============================================================
    CRITÈRES DE COMPLÉTION
 ============================================================ */
 
-.completion-pair {
+.completion-row {
     display: flex;
-    gap: 2rem;
+    gap: 2.5rem;
+    margin-top: .6rem;
 }
-.completion-item {
+
+.completion-block {
     flex: 1;
 }
 
-/* ============================================================
-   BOUTONS POSITION ("=", facteur)
-   ============================================================ */
-
-.btn-group {
-    display: flex;
-    gap: 0.4rem;
+.completion-value {
+    margin-top: .2rem;
+    font-size: .75rem;
 }
 
-.btn-outline-violet {
+
+/* ============================================================
+   POSITION = & POSITION FACTEUR — VERSION DEFINITIVE
+   ============================================================ */
+
+.positions-row {
+    display: flex;
+    gap: 2rem;
+    margin: 1.2rem 0;
+}
+
+.position-col {
+    flex: 1;
+}
+
+.position-col h6 {
+    font-weight: 600;
+    font-size: .92rem;
+    margin-bottom: .45rem;
+    color: #3d3960;
+}
+
+/* --- BOÎTE UNIFIÉE --- */
+.position-box {
+    display: flex;
+    width: 100%;
     background: #ffffff;
-    border: 1px solid #cfcada;
-    border-radius: 6px;
-    padding: 0.35rem 0.8rem;
-    font-size: 0.85rem;
-    cursor: pointer;
-    color: #3e3a57;
-    transition: all 0.15s ease;
+    border: 1px solid #d6d2eb;
+    border-radius: 12px;
+    overflow: hidden; /* ESSENTIEL pour éviter les bordures "coupées" */
+    box-shadow: 0 2px 6px rgba(100, 70, 200, 0.08);
 }
 
-.btn-outline-violet:hover {
-    background: #f3eeff;
-    border-color: #b7a8ff;
-}
-
-.btn-outline-violet.active {
-    background: #7a5af8 !important;
-    border-color: #7a5af8 !important;
-    color: white !important;
-    box-shadow: 0 0 4px rgba(122, 90, 248, 0.35);
-}
-/* ============================================================
-   BOUTONS DE POSITION — Style maquette premium
-   ============================================================ */
-
-.position-group {
-    display: flex;
-    gap: 0.6rem;
-    margin-top: 0.6rem;
-}
-
+/* --- BOUTON --- */
 .position-btn {
+    flex: 1;
+    padding: .65rem .4rem;
+    text-align: center;
+    cursor: pointer;
+    background: #ffffff;
+    border-right: 1px solid #dcd7f3;
+    transition: all .18s ease;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    align-items: center;
-    background: #e9ddff;
-    border-radius: 10px;
-    padding: 0.6rem 1rem;
-    min-width: 120px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border: 1px solid transparent;
+}
+
+.position-btn:last-child {
+    border-right: none;
 }
 
 .position-btn:hover {
-    background: #d8caff;
+    background: #f5f1ff;
 }
 
+/* --- STYLE ACTIF --- */
 .position-btn.active {
-    background: #6e4dfb;
-    color: white;
-    border-color: #6e4dfb;
-    box-shadow: 0 3px 8px rgba(90, 60, 220, 0.3);
+    background: #7A5AF8 !important;
+    color: white !important;
+    box-shadow: inset 0 0 8px rgba(255,255,255,0.35);
 }
 
-.position-btn .pos-equation {
+/* --- Texte --- */
+.position-btn .exemple {
+    font-size: .82rem;
     font-weight: 600;
-    font-size: 0.9rem;
+    margin-bottom: .25rem;
+    color: #4b3bbd;
 }
 
-.position-btn .pos-label {
-    font-size: 0.75rem;
-    opacity: 0.9;
+.position-btn .label {
+    font-size: .72rem;
+    opacity: .75;
+    color: #4d486a;
 }
 
-.position-btn.active .pos-label,
-.position-btn.active .pos-equation {
+.position-btn.active .exemple,
+.position-btn.active .label {
     color: white !important;
 }
+
 
 
 /* ============================================================
@@ -248,10 +266,15 @@
     z-index: 10;
 }
 
+.interval-values {
+    font-size: .85rem;
+}
+
+
 /* ============================================================
-   DELETE BUTTON
+   DELETE LEVEL BUTTON
 ============================================================ */
 
 .delete-level-btn {
-    border-radius: 8px;
+    border-radius: 8px !important;
 }
