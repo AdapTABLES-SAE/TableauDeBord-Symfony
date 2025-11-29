@@ -2,15 +2,6 @@
 
 import { showToast } from "../toast/toast.js";
 
-/**
- * Sauvegarde une tâche pour un niveau.
- *
- * @param {number} levelId   - ID du niveau
- * @param {object} payload   - Données de la tâche à sauvegarder
- * @param {HTMLElement} card - La carte du niveau (DOM)
- * @param {string} taskType  - C1, C2, REC, ID, MEMB
- * @param {string} modalId   - ID de la modale à fermer après save
- */
 export async function saveTask(levelId, payload, card, taskType, modalId) {
 
     const config = window.OBJECTIVE_CONFIG || {};
@@ -39,24 +30,20 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
             return;
         }
 
-        // --- Mise à jour du dataset de la carte ---
-        const tasksRaw = card.dataset.tasks || "{}";
         let tasksMap = {};
 
         try {
-            tasksMap = JSON.parse(tasksRaw);
+            tasksMap = JSON.parse(card.dataset.tasks || "{}");
         } catch {
             tasksMap = {};
         }
 
-        tasksMap[taskType] = data.task; // données renvoyées par le contrôleur
+        tasksMap[taskType] = data.task;
         card.dataset.tasks = JSON.stringify(tasksMap);
 
-        // --- Marquer la pill comme active ---
-        const pill = card.querySelector(`.task-pill[data-task-type="${taskType}"]`);
+        const pill = card.querySelector(`.task-card[data-task-type="${taskType}"]`);
         if (pill) pill.classList.add("task-active");
 
-        // --- Fermer la modale ---
         const modalEl = document.getElementById(modalId);
         if (modalEl) {
             const modal = bootstrap.Modal.getInstance(modalEl);
@@ -64,6 +51,7 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
         }
 
         showToast(true);
+        return data;
 
     } catch (err) {
         console.error("Erreur saveTask:", err);
@@ -71,14 +59,6 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
     }
 }
 
-/**
- * Suppression d’une tâche pour un niveau.
- *
- * @param {number} levelId
- * @param {string} taskType
- * @param {HTMLElement} card
- * @param {string} modalId
- */
 export async function deleteTask(levelId, taskType, card, modalId) {
 
     const config = window.OBJECTIVE_CONFIG || {};
@@ -109,8 +89,8 @@ export async function deleteTask(levelId, taskType, card, modalId) {
             return;
         }
 
-        // --- Mise à jour du dataset de la carte ---
         let tasksMap = {};
+
         try {
             tasksMap = JSON.parse(card.dataset.tasks || "{}");
         } catch {
@@ -120,11 +100,9 @@ export async function deleteTask(levelId, taskType, card, modalId) {
         delete tasksMap[taskType];
         card.dataset.tasks = JSON.stringify(tasksMap);
 
-        // --- Désactiver la pill ---
-        const pill = card.querySelector(`.task-pill[data-task-type="${taskType}"]`);
+        const pill = card.querySelector(`.task-card[data-task-type="${taskType}"]`);
         if (pill) pill.classList.remove("task-active");
 
-        // --- Fermer la modale ---
         const modalEl = document.getElementById(modalId);
         if (modalEl) {
             const modal = bootstrap.Modal.getInstance(modalEl);
@@ -132,6 +110,7 @@ export async function deleteTask(levelId, taskType, card, modalId) {
         }
 
         showToast(true);
+        return data;
 
     } catch (err) {
         console.error("Erreur deleteTask:", err);

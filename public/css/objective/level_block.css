@@ -1,6 +1,6 @@
 /* ============================================================
    BLOC NIVEAU — STYLE SIMPLE & PROPRE
-   ============================================================ */
+============================================================ */
 
 .level-card {
     background: #faf9ff;
@@ -53,14 +53,13 @@
     transform: rotate(180deg);
 }
 
-/* Animation body */
 .level-body {
     transition: max-height .25s ease, opacity .2s ease;
 }
 
 
 /* ============================================================
-   TÂCHES — 5 cartes en 1 ligne COMPACTES
+   TÂCHES — 5 cartes compactes
 ============================================================ */
 
 .tasks-line {
@@ -79,7 +78,7 @@
     padding: .6rem .55rem;
     text-align: center;
     cursor: pointer;
-    transition: .15s;
+    transition: .18s;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -91,33 +90,43 @@
     border-color: #b9a8ff;
 }
 
+/* --- ACTIVE (violet) --- */
 .task-card.task-active {
-    background: #7a5af8;
-    color: white;
-    border-color: #7a5af8;
+    background: #7a5af8 !important;
+    border-color: #7a5af8 !important;
+    color: white !important;
+    box-shadow: 0 3px 8px rgba(122, 90, 248, 0.25);
 }
 
+/* Icône */
 .task-icon i {
     font-size: 1.25rem;
     color: #7a5af8;
 }
 
 .task-card.task-active .task-icon i {
-    color: white;
+    color: white !important;
 }
 
+/* CODE (C1, C2, ID...) */
 .task-code {
     font-weight: 700;
     font-size: .9rem;
+    color: #3d3a56;
 }
 
+.task-card.task-active .task-code {
+    color: white !important;
+}
+
+/* Sous-label */
 .task-label {
     font-size: .75rem;
     color: #666;
 }
 
 .task-card.task-active .task-label {
-    color: white;
+    color: white !important;
 }
 
 
@@ -142,8 +151,8 @@
 
 
 /* ============================================================
-   POSITION = & POSITION FACTEUR — VERSION DEFINITIVE
-   ============================================================ */
+   POSITION = & FACTEUR — VERSION DÉFINITIVE
+============================================================ */
 
 .positions-row {
     display: flex;
@@ -162,18 +171,18 @@
     color: #3d3960;
 }
 
-/* --- BOÎTE UNIFIÉE --- */
+/* --- Container des 3 boutons --- */
 .position-box {
     display: flex;
     width: 100%;
     background: #ffffff;
     border: 1px solid #d6d2eb;
     border-radius: 12px;
-    overflow: hidden; /* ESSENTIEL pour éviter les bordures "coupées" */
+    overflow: hidden;
     box-shadow: 0 2px 6px rgba(100, 70, 200, 0.08);
 }
 
-/* --- BOUTON --- */
+/* --- Bouton --- */
 .position-btn {
     flex: 1;
     padding: .65rem .4rem;
@@ -195,14 +204,14 @@
     background: #f5f1ff;
 }
 
-/* --- STYLE ACTIF --- */
+/* --- Active --- */
 .position-btn.active {
     background: #7A5AF8 !important;
     color: white !important;
     box-shadow: inset 0 0 8px rgba(255,255,255,0.35);
 }
 
-/* --- Texte --- */
+/* Texte */
 .position-btn .exemple {
     font-size: .82rem;
     font-weight: 600;
@@ -220,7 +229,6 @@
 .position-btn.active .label {
     color: white !important;
 }
-
 
 
 /* ============================================================

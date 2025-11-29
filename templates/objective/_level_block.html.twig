@@ -1,14 +1,37 @@
 {# ==============================================================
-   BLOC D’UN NIVEAU — Version compacte & premium
+   BLOC D’UN NIVEAU — Version compacte & premium (CORRIGÉ)
    ============================================================== #}
 
 {% set TASKS = [
-    { code: 'C1', label: '1 élément manquant', icon: 'bi-1-circle' },
-    { code: 'C2', label: '2 éléments manquants', icon: 'bi-2-circle' },
-    { code: 'REC', label: 'Reconstitution d’un fait', icon: 'bi-shuffle' },
-    { code: 'ID', label: 'Validation d’un fait', icon: 'bi-check2-circle' },
-    { code: 'MEMB', label: 'Identification des résultats', icon: 'bi-eye' }
+    { code: 'C1',  label: '1 élément manquant',        icon: 'bi-1-circle' },
+    { code: 'C2',  label: '2 éléments manquants',      icon: 'bi-2-circle' },
+    { code: 'REC', label: 'Reconstitution d’un fait',  icon: 'bi-shuffle' },
+    { code: 'ID',  label: 'Validation d’un fait',      icon: 'bi-check2-circle' },
+    { code: 'MEMB',label: 'Identification des résultats', icon: 'bi-eye' }
 ] %}
+
+{# -------------------
+   SERIALISATION TÂCHES — CORRECTION CRITIQUE
+   Doctrine renvoie une ArrayCollection => on convertit proprement
+   -------------------- #}
+
+{% set tasksArray = [] %}
+{% for t in niveau.taches %}
+    {% set tasksArray = tasksArray|merge([{
+        id: t.id,
+        taskType: t.taskType,
+        targets: t.targets,
+        answerModality: t.answerModality,
+        nbIncorrectChoices: t.nbIncorrectChoices,
+        nbCorrectChoices: t.nbCorrectChoices,
+        nbFacts: t.nbFacts,
+        sourceVariation: t.sourceVariation,
+        target: t.target,
+        timeMaxSecond: t.timeMaxSecond,
+        successiveSuccessesToReach: t.successiveSuccessesToReach,
+        repartitionPercent: t.repartitionPercent
+    }]) %}
+{% endfor %}
 
 <div class="level-card"
      data-level-id="{{ niveau.id }}"
@@ -18,15 +41,16 @@
      data-interval-max="{{ niveau.intervalMax }}"
      data-success-criteria="{{ niveau.successCompletionCriteria }}"
      data-encounter-criteria="{{ niveau.encounterCompletionCriteria }}"
-     data-tasks="{{ niveau.taches|json_encode }}"
-     data-tables="{{ niveau.tables|json_encode }}">
+     data-tables='{{ niveau.tables|json_encode }}'
+     data-tasks='{{ tasksArray|json_encode }}'>
 
-    {# HEADER #}
+    {# ============================================================
+       HEADER
+       ============================================================ #}
     <div class="level-header d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-3">
             <div class="level-title">Niveau {{ index }}</div>
-            <input type="text"
-                   class="form-control form-control-sm level-name-input"
+            <input type="text" class="form-control form-control-sm level-name-input"
                    value="{{ niveau.name }}">
         </div>
 
@@ -42,17 +66,16 @@
         </div>
     </div>
 
-
     <div class="level-body">
 
-        {# ==================================================
-           TACHES — COMPACT SINGLE LINE
-           ================================================== #}
+        {# ============================================================
+           TÂCHES
+           ============================================================ #}
         <div class="level-section-title mt-3">Tâches</div>
 
         <div class="tasks-line">
             {% for task in TASKS %}
-                {% set activeTask = niveau.taches|filter(t => t.taskType == task.code)|first %}
+                {% set activeTask = tasksArray|filter(t => t.taskType == task.code)|first %}
 
                 <button type="button"
                         class="task-card {{ activeTask ? 'task-active' : '' }}"
@@ -63,19 +86,16 @@
                         <div class="task-code">{{ task.code }}</div>
                         <div class="task-label">{{ task.label }}</div>
                     </div>
-
                 </button>
             {% endfor %}
         </div>
 
-
-        {# ==================================================
+        {# ============================================================
            CRITÈRES DE COMPLÉTION
-           ================================================== #}
+           ============================================================ #}
         <div class="level-section-title mt-4">Critère de complétion du niveau</div>
 
         <div class="completion-row">
-
             <div class="completion-block">
                 <div class="small fw-bold">% Vus</div>
                 <input type="range" min="0" max="100"
@@ -95,13 +115,11 @@
                     {{ niveau.successCompletionCriteria }}%
                 </div>
             </div>
-
         </div>
 
-
-        {# ==================================================
-           POSITIONS — 2 COLS
-           ================================================== #}
+        {# ============================================================
+           POSITIONS
+           ============================================================ #}
         <div class="positions-row">
 
             <div class="position-col">
@@ -149,14 +167,11 @@
 
                 </div>
             </div>
-
         </div>
 
-
-
-        {# ==================================================
-           INTERVALLE
-           ================================================== #}
+        {# ============================================================
+           INTERVALLE DES FACTEURS
+           ============================================================ #}
         <div class="level-section-title mt-4">Intervalle des facteurs</div>
 
         <div class="range-double"
@@ -175,8 +190,9 @@
             <span data-interval-max>{{ niveau.intervalMax }}</span>
         </div>
 
-
-        {# DELETE #}
+        {# ============================================================
+           DELETE LEVEL
+           ============================================================ #}
         <div class="text-end mt-4">
             <button class="btn btn-outline-danger btn-sm delete-level-btn">
                 <i class="bi bi-trash"></i> Supprimer le niveau

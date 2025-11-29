@@ -10,7 +10,7 @@ import { openIdModal }   from "./modals/modal_id.js";
 import { openMembModal } from "./modals/modal_memb.js";
 
 // Import des actions communes
-import { saveTask, deleteTask } from "./modals/task_actions.js";
+import { saveTask as originalSaveTask, deleteTask as originalDeleteTask } from "./modals/task_actions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const objectiveNameEl = document.getElementById("objective_name");
 
     let unsavedChanges = false;
-    let initialState = null;
+    let initialState   = null;
 
     /* =========================================================================================
        COLLECTEUR GLOBAL : objectif + niveaux
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 levelTables = [];
             }
 
-            const seenSlider = card.querySelector(".completion-seen");
+            const seenSlider    = card.querySelector(".completion-seen");
             const successSlider = card.querySelector(".completion-success");
 
             levels.push({
@@ -171,13 +171,64 @@ document.addEventListener("DOMContentLoaded", () => {
     updatePreview();
 
     /* =========================================================================================
-       UTILITAIRES
+       TACHES - UTILITAIRES
     ========================================================================================= */
 
     function getTasksMap(card) {
-        try { return JSON.parse(card.dataset.tasks || "{}"); }
-        catch { return {}; }
+        let raw;
+        try {
+            raw = JSON.parse(card.dataset.tasks || "{}");
+        } catch {
+            return {};
+        }
+
+        if (Array.isArray(raw)) {
+            const map = {};
+            raw.forEach(item => {
+                if (item && item.taskType) {
+                    map[item.taskType] = item;
+                }
+            });
+            return map;
+        }
+
+        return raw || {};
     }
+
+    function setTasksMap(card, map) {
+        card.dataset.tasks = JSON.stringify(map);
+    }
+
+    function refreshTasksUI(card) {
+        const tasksMap = getTasksMap(card);
+
+        card.querySelectorAll(".task-card").forEach(btn => {
+            const type = btn.dataset.taskType;
+            if (tasksMap[type]) {
+                btn.classList.add("task-active");
+            } else {
+                btn.classList.remove("task-active");
+            }
+        });
+    }
+
+    function updateTaskState(card, taskType, taskData) {
+        const map = getTasksMap(card);
+
+        if (taskData) {
+            map[taskType] = taskData;
+        } else {
+            delete map[taskType];
+        }
+
+        setTasksMap(card, map);
+        refreshTasksUI(card);
+        markDirty();
+    }
+
+    /* =========================================================================================
+       FACTS COUNT
+    ========================================================================================= */
 
     function getTablesForCard(card) {
         try {
@@ -210,7 +261,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const minLabel = card.querySelector("[data-interval-min]");
         const maxLabel = card.querySelector("[data-interval-max]");
 
-        const range = wrap.querySelector(".range-range");
+        const range     = wrap.querySelector(".range-range");
         const handleMin = wrap.querySelector(".range-handle-min");
         const handleMax = wrap.querySelector(".range-handle-max");
 
@@ -228,7 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
             handleMin.style.left = percent(minVal) + "%";
             handleMax.style.left = percent(maxVal) + "%";
 
-            range.style.left = percent(minVal) + "%";
+            range.style.left  = percent(minVal) + "%";
             range.style.right = (100 - percent(maxVal)) + "%";
 
             minLabel.textContent = minVal;
@@ -250,8 +301,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
                 const val = Math.round(MIN + pct * (MAX - MIN));
 
-                if (type === "min") minVal = Math.min(val, maxVal);
-                else maxVal = Math.max(val, minVal);
+                if (type === "min") {
+                    minVal = Math.min(val, maxVal);
+                } else {
+                    maxVal = Math.max(val, minVal);
+                }
 
                 updateUI();
             }
@@ -272,17 +326,17 @@ document.addEventListener("DOMContentLoaded", () => {
     ========================================================================================= */
 
     function initCompletionSliders(card) {
-        const seen = card.querySelector(".completion-seen");
-        const success = card.querySelector(".completion-success");
-        const seenValue = card.querySelector(".completion-seen-value");
-        const successValue = card.querySelector(".completion-success-value");
+        const seen        = card.querySelector(".completion-seen");
+        const success     = card.querySelector(".completion-success");
+        const seenValue   = card.querySelector(".completion-seen-value");
+        const successValue= card.querySelector(".completion-success-value");
 
         if (!seen || !success) return;
 
-        seen.value = card.dataset.encounterCriteria || 80;
-        success.value = card.dataset.successCriteria || 100;
+        seen.value    = card.dataset.encounterCriteria || 80;
+        success.value = card.dataset.successCriteria    || 100;
 
-        seenValue.textContent = seen.value + "%";
+        seenValue.textContent    = seen.value + "%";
         successValue.textContent = success.value + "%";
 
         seen.addEventListener("input", () => {
@@ -299,6 +353,36 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* =========================================================================================
+       COLLAPSE
+    ========================================================================================= */
+
+    function initCollapse(card) {
+        const toggleBtn = card.querySelector(".toggle-level-details");
+        const body      = card.querySelector(".level-body");
+        if (!toggleBtn || !body) return;
+
+        if (card.classList.contains("collapsed")) {
+            body.style.maxHeight = "0px";
+            body.style.opacity   = "0";
+        } else {
+            body.style.maxHeight = body.scrollHeight + "px";
+            body.style.opacity   = "1";
+        }
+
+        toggleBtn.addEventListener("click", () => {
+            const collapsed = card.classList.toggle("collapsed");
+
+            if (collapsed) {
+                body.style.maxHeight = "0px";
+                body.style.opacity   = "0";
+            } else {
+                body.style.maxHeight = body.scrollHeight + "px";
+                body.style.opacity   = "1";
+            }
+        });
+    }
+
+    /* =========================================================================================
        INIT LEVEL CARD
     ========================================================================================= */
 
@@ -308,69 +392,46 @@ document.addEventListener("DOMContentLoaded", () => {
         const equalGroup  = card.querySelector(".equal-position-group");
         const factorGroup = card.querySelector(".factor-position-group");
 
+        initCollapse(card);
         initCompletionSliders(card);
+        initDoubleSlider(card);
 
-        /* -------------------------------------------------------------------
-           POSITION DU “=”
-        ------------------------------------------------------------------- */
+        updateFactsCount(card);
+        refreshTasksUI(card);
+
+        // Equal position
         const eqCurrent = card.dataset.equalPosition;
         if (equalGroup) {
-            const buttons = equalGroup.querySelectorAll(".position-btn");
+            equalGroup.querySelectorAll(".position-btn").forEach(btn => {
+                if (btn.dataset.value === eqCurrent) btn.classList.add("active");
 
-            // État initial
-            buttons.forEach(btn => {
-                if (btn.dataset.value === eqCurrent) {
-                    btn.classList.add("active");
-                }
-            });
-
-            // Clic
-            buttons.forEach(btn => {
                 btn.addEventListener("click", () => {
-                    buttons.forEach(b => b.classList.remove("active"));
+                    equalGroup.querySelectorAll(".position-btn").forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
-
                     card.dataset.equalPosition = btn.dataset.value;
-
-                    updateFactsCount(card);
                     markDirty();
                 });
             });
         }
 
-        /* -------------------------------------------------------------------
-           POSITION DU FACTEUR
-        ------------------------------------------------------------------- */
+        // Factor position
         const facCurrent = card.dataset.factorPosition;
         if (factorGroup) {
-            const buttons = factorGroup.querySelectorAll(".position-btn");
+            factorGroup.querySelectorAll(".position-btn").forEach(btn => {
+                if (btn.dataset.value === facCurrent) btn.classList.add("active");
 
-            buttons.forEach(btn => {
-                if (btn.dataset.value === facCurrent) {
-                    btn.classList.add("active");
-                }
-            });
-
-            buttons.forEach(btn => {
                 btn.addEventListener("click", () => {
-                    buttons.forEach(b => b.classList.remove("active"));
+                    factorGroup.querySelectorAll(".position-btn").forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
-
                     card.dataset.factorPosition = btn.dataset.value;
-
-                    updateFactsCount(card);
                     markDirty();
                 });
             });
         }
-
-        // Double slider
-        initDoubleSlider(card);
-        updateFactsCount(card);
 
         // Delete level
         const deleteBtn = card.querySelector(".delete-level-btn");
-        if (deleteBtn) {
+        if (deleteBtn && config.deleteLevelUrlTemplate) {
             deleteBtn.addEventListener("click", async () => {
                 if (!confirm("Supprimer ce niveau ?")) return;
 
@@ -396,7 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         }
 
-        // Task modals
+        // Modales TACHES
         card.querySelectorAll(".task-card").forEach(taskBtn => {
             taskBtn.addEventListener("click", () => {
                 const type = taskBtn.dataset.taskType;
@@ -499,6 +560,26 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    window.saveTask = saveTask;
-    window.deleteTask = deleteTask;
+    /* =========================================================================================
+       TASK WRAPPERS — LIVE UPDATE
+    ========================================================================================= */
+
+    window.saveTask = async function(levelId, payload, card, taskType, modalId) {
+        const result = await originalSaveTask(levelId, payload, card, taskType, modalId);
+
+        if (result && result.success) {
+            updateTaskState(card, taskType, result.task);
+        }
+        return result;
+    };
+
+    window.deleteTask = async function(levelId, taskType, card, modalId) {
+        const result = await originalDeleteTask(levelId, taskType, card, modalId);
+
+        if (result && result.success) {
+            updateTaskState(card, taskType, null);
+        }
+        return result;
+    };
+
 });
