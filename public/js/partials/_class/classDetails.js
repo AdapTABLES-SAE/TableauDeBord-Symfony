@@ -230,17 +230,26 @@ document.addEventListener("partial:loaded", (e) => {
             // Si on arrive ici → il y a au moins un changement élève
             if (hasStudentDeletion && hasStudentTrainingChanges) {
                 saveWarningText.textContent =
-                    "Attention : des élèves vont être supprimés et certains entraînements modifiés. " +
-                    "Cela entrainera une perte de la progression de jeu liée aux entrainements. " +
+                    "Attention, un ou plusieurs élèves vont :" +
+                    "\n - Être supprimé" +
+                    "\n - Avoir un entraînement modifié." +
+                    "\n" +
+                    "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
                     "\n" +
                     "\nVoulez-vous continuer ?";
+                console.log("aa");
             } else if (hasStudentDeletion) {
                 saveWarningText.textContent =
-                    "Attention : certains élèves vont être supprimés. Voulez-vous continuer ?";
+                    "Attention, un ou plusieurs élèves vont :" +
+                    "\n - Être supprimé"
+                    "\n" +
+                    "\nVoulez-vous continuer ?";
             } else if (hasStudentTrainingChanges) {
                 saveWarningText.textContent =
-                    "Attention : certains élèves vont voir leur entraînement modifié. " +
-                    "Cela entrainera une perte de la progression de jeu liée aux entrainements. " +
+                    "Attention, un ou plusieurs élèves vont :" +
+                    "\n - Avoir un entraînement modifié." +
+                    "\n" +
+                    "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
                     "\n" +
                     "\nVoulez-vous continuer ?";
             }
