@@ -58,9 +58,13 @@
                     <button type="submit" id="saveButton" class="btn btn-violet px-4" disabled>
                         <i class="bi bi-save2 me-1"></i> Enregistrer
                     </button>
-                    <button type="button" class="btn btn-danger ms-2">
+                    <button type="button"
+                         class="btn btn-danger ms-2"
+                         data-bs-toggle="modal"
+                         data-bs-target="#deleteStudentModal">
                         <i class="bi bi-trash me-1"></i> Supprimer l'élève
                     </button>
+
                 </div>
             </form>
 
@@ -450,7 +454,7 @@
 
 
                         </div>
-
+                    </div>
                 </div>
             </div>
         </div>
@@ -602,6 +606,34 @@
         </div>
     </div>
 
+    <!-- MODAL DELETE ELEVE -->
+    <div class="modal fade" id="deleteStudentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+
+                <div class="modal-header bg-light-subtle">
+                    <h5 class="modal-title text-danger fw-bold">Supprimer l'élève</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    Voulez-vous vraiment supprimer cet élève ?<br>
+                    <strong>Cette action est irréversible.</strong>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button data-delete-endpoint="{{ path("delete_student", {'id': eleve.id}) }}"
+                            data-redirect="{{ path("class_dashboard") }}"
+                            id="confirmDeleteStudentBtn" class="btn btn-danger px-4">
+                        Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     {# Toast notification avec variables personnalisables #}
     {% include 'components/toast.html.twig' with {

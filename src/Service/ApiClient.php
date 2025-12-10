@@ -249,7 +249,7 @@ class ApiClient
 
         $response = $this->client->request('DELETE', $url);
 
-        return $response->getStatusCode() === 200;
+        return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
 
     public function addStudent(string $classId, string $studentId, string $nomEleve, string $prenomEleve): bool

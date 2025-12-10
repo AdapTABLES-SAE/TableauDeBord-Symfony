@@ -218,12 +218,14 @@ class TeacherDashboardController extends AbstractController
             if (!$student) continue;
 
             if (isset($data['delete']) && $data['delete'] === "1") {
-                $apiClient->deleteStudent(
-                    (string)$student->getClasse()->getEnseignant()->getId(),
-                    (string)$student->getClasse()->getId(),
+                $ok = $apiClient->deleteStudent(
+                    (string)$student->getClasse()->getEnseignant()->getIdProf(),
+                    (string)$student->getClasse()->getIdClasse(),
                     (string)$student->getLearnerId()
                 );
-                $em->remove($student);
+                if($ok) $em->remove($student);
+                else return new JsonResponse(['success' => false]);
+
                 continue;
             }
 
