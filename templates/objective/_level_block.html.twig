@@ -47,20 +47,24 @@
     {# ============================================================
        HEADER
        ============================================================ #}
-    <div class="level-header d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-3">
+    <div class="level-header">
+
+        <div class="level-title-group">
             <div class="level-title">Niveau {{ index }}</div>
-            <input type="text" class="form-control form-control-sm level-name-input"
+            <input type="text"
+                   class="form-control form-control-sm level-name-input"
+                   placeholder="Nom du niveau"
                    value="{{ niveau.name }}">
         </div>
 
-        <div class="d-flex align-items-center gap-3">
-            <div class="level-facts text-end">
-                <div class="facts-label">FAITS</div>
-                <div class="facts-value" data-facts-count>0</div>
+        <div class="level-actions">
+
+            <div class="level-facts-badge" title="Nombre total de faits générés">
+                <span>FAITS</span>
+                <strong data-facts-count>0</strong>
             </div>
 
-            <button type="button" class="btn btn-sm toggle-level-details">
+            <button type="button" class="toggle-level-details">
                 <i class="bi bi-chevron-down"></i>
             </button>
         </div>
@@ -71,7 +75,7 @@
         {# ============================================================
            TÂCHES
            ============================================================ #}
-        <div class="level-section-title mt-3">Tâches</div>
+        <div class="level-section-title mt-0">Tâches</div>
 
         <div class="tasks-line">
             {% for task in TASKS %}
@@ -185,17 +189,20 @@
             <div class="range-handle range-handle-max"></div>
         </div>
 
-        <div class="interval-values mt-1">
-            <span data-interval-min>{{ niveau.intervalMin }}</span> –
-            <span data-interval-max>{{ niveau.intervalMax }}</span>
+        <div class="interval-container">
+            <div class="interval-values">
+                <span data-interval-min>{{ niveau.intervalMin }}</span>
+                <span class="mx-1 text-muted">–</span>
+                <span data-interval-max>{{ niveau.intervalMax }}</span>
+            </div>
         </div>
 
         {# ============================================================
-           DELETE LEVEL
+           DELETE LEVEL (Footer structuré)
            ============================================================ #}
-        <div class="text-end mt-4">
+        <div class="level-footer">
             <button class="btn btn-outline-danger btn-sm delete-level-btn">
-                <i class="bi bi-trash"></i> Supprimer le niveau
+                <i class="bi bi-trash me-1"></i> Supprimer le niveau
             </button>
         </div>
 

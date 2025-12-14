@@ -357,29 +357,47 @@ document.addEventListener("DOMContentLoaded", () => {
     ========================================================================================= */
 
     function initCollapse(card) {
+        // On cible le bouton ET le header pour permettre de cliquer n'importe où (optionnel)
         const toggleBtn = card.querySelector(".toggle-level-details");
+        const header    = card.querySelector(".level-header");
         const body      = card.querySelector(".level-body");
+
         if (!toggleBtn || !body) return;
 
-        if (card.classList.contains("collapsed")) {
-            body.style.maxHeight = "0px";
-            body.style.opacity   = "0";
-        } else {
-            body.style.maxHeight = body.scrollHeight + "px";
-            body.style.opacity   = "1";
-        }
+        // Fonction de bascule
+        const toggle = (e) => {
+            // Évite de déclencher si on clique sur l'input du nom
+            if (e.target.closest('.level-name-input')) return;
 
-        toggleBtn.addEventListener("click", () => {
-            const collapsed = card.classList.toggle("collapsed");
+            const isCollapsed = card.classList.toggle("collapsed");
 
-            if (collapsed) {
+            if (isCollapsed) {
                 body.style.maxHeight = "0px";
                 body.style.opacity   = "0";
             } else {
+                // On calcule la hauteur réelle du contenu interne
                 body.style.maxHeight = body.scrollHeight + "px";
                 body.style.opacity   = "1";
             }
+        };
+
+        // Clic sur le bouton chevron
+        toggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation(); // Évite double déclenchement si on ajoute l'event sur le header aussi
+            toggle(e);
         });
+
+        // (Optionnel) Clic sur tout le header pour ouvrir/fermer
+        // header.addEventListener("click", toggle);
+
+        // Initialisation état par défaut (ouvert)
+        if (!card.classList.contains("collapsed")) {
+            body.style.maxHeight = body.scrollHeight + "px";
+            body.style.opacity   = "1";
+        } else {
+            body.style.maxHeight = "0px";
+            body.style.opacity   = "0";
+        }
     }
 
     /* =========================================================================================
@@ -388,6 +406,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function initLevelCard(card) {
         if (!card) return;
+
+        // Détecte chaque frappe (lettre, espace...) dans le nom du niveau
+        const nameInput = card.querySelector(".level-name-input");
+        if (nameInput) {
+            nameInput.addEventListener("input", () => {
+                markDirty();
+            });
+        }
 
         const equalGroup  = card.querySelector(".equal-position-group");
         const factorGroup = card.querySelector(".factor-position-group");
