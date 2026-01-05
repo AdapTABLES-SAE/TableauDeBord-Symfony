@@ -24,7 +24,7 @@ function initializeCarousel(track) {
     if (track.dataset.carouselInit === "1") return;
     track.dataset.carouselInit = "1";
 
-    console.log("INIT CAROUSEL !!!");
+    // console.log("INIT CAROUSEL !!!");
 
     const leftBtn = document.querySelector(".arrow-left");
     const rightBtn = document.querySelector(".arrow-right");

@@ -237,11 +237,11 @@ document.addEventListener("partial:loaded", (e) => {
                     "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
                     "\n" +
                     "\nVoulez-vous continuer ?";
-                console.log("aa");
+                // console.log("aa");
             } else if (hasStudentDeletion) {
                 saveWarningText.textContent =
                     "Attention, un ou plusieurs élèves vont :" +
-                    "\n - Être supprimé"
+                    "\n - Être supprimé" +
                     "\n" +
                     "\nVoulez-vous continuer ?";
             } else if (hasStudentTrainingChanges) {

@@ -1,20 +1,14 @@
 .carousel {
-    position: relative;
+    /*position: relative;*/
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: row !important;
-    height: 280px;
+    flex-direction: row;
+    /*height: 280px;*/
     gap: 10px;
-    width: 20% !important;
-    margin: 0 auto;
+    /*width: 20% !important;*/
+    /*margin: 0 auto;*/
 }
-
-body .carousel-viewport {
-    min-width: 730px !important;
-    overflow: hidden !important;
-}
-
 .carousel-track {
     justify-content: center !important;
     display: flex;
@@ -37,9 +31,6 @@ body .carousel-viewport {
     max-width: 260px;
     margin: 0 5px;
 }
-
-
-
 
 .objective-card .card-body {
     padding: 1rem 1rem;
