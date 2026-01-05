@@ -6,7 +6,7 @@
     height: 15%;
 }
 
-.section-students-area {
+.section-objectives-area {
     height: 65%;
     display: flex;
     flex-direction: column;
@@ -35,44 +35,50 @@
 }
 
 /* -------------------------------------------- */
-/* Objectives grid (FIXED columns)              */
+/* Objectives grid                              */
 /* -------------------------------------------- */
 
 .objectives-grid {
     display: grid;
-
-    /* ✅ FIX: consistent tile width */
-    grid-template-columns: repeat(auto-fit, 240px);
-
-    gap: 1.5rem;
-    justify-content: center; /* center grid as a whole */
+    grid-template-columns: repeat(auto-fit, 210px);
+    gap: 1.25rem;
+    justify-content: center;
 }
 
 /* -------------------------------------------- */
-/* Objective cards (IDENTICAL SIZE)             */
+/* Objective cards (WHITE)                      */
 /* -------------------------------------------- */
 
 .objective-card {
-    width: 240px;
-    height: 280px;
-
-    border-radius: 1rem;
+    width: 210px;
+    height: 250px;
+    border-radius: 1.25rem;
     cursor: pointer;
 
+    background-color: #ffffff;
+    color: #212529;
+
     transition:
-        transform 0.15s ease,
-        box-shadow 0.15s ease,
-        background-color 0.15s ease;
+        transform 0.18s ease,
+        box-shadow 0.18s ease,
+        background-color 0.18s ease;
 }
 
 .objective-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
-    background-color: #f6f3ff;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
+    background-color: #f8f9fa;
 }
 
 .objective-card:active {
     transform: scale(0.98);
+}
+
+.objective-card:focus-visible {
+    outline: none;
+    box-shadow:
+        0 0 0 3px rgba(108, 117, 125, 0.35),
+        0 10px 22px rgba(0, 0, 0, 0.12);
 }
 
 /* -------------------------------------------- */
@@ -81,35 +87,63 @@
 
 .objective-card .card-body {
     height: 100%;
+    padding: 1.1rem;
 }
 
 /* -------------------------------------------- */
-/* Multiline truncation                         */
+/* Icons & chevron                              */
+/* -------------------------------------------- */
+
+.objective-card i {
+    color: #6c757d;
+}
+
+.tile-chevron {
+    opacity: 0.4;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.objective-card:hover .tile-chevron {
+    transform: translateX(4px);
+    opacity: 0.7;
+}
+
+/* -------------------------------------------- */
+/* Bottom label                                 */
+/* -------------------------------------------- */
+
+.tile-hint {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* -------------------------------------------- */
+/* Truncated text                               */
 /* -------------------------------------------- */
 
 .text-truncate-multiline {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
-
     overflow: hidden;
     text-overflow: ellipsis;
-
-    line-height: 1.2rem;
-    max-height: 3.6rem;
+    line-height: 1.25rem;
+    max-height: 3.75rem;
 }
 
 /* -------------------------------------------- */
-/* Text sizes                                   */
+/* Text styling                                 */
 /* -------------------------------------------- */
 
 .objective-title {
     font-size: 0.95rem;
     font-weight: 600;
+    text-align: center;
 }
 
 .objective-info {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    color: #495057;
 }
 
 /* -------------------------------------------- */
@@ -118,11 +152,11 @@
 
 @media (max-width: 768px) {
     .objectives-grid {
-        grid-template-columns: repeat(auto-fit, 200px);
+        grid-template-columns: repeat(auto-fit, 180px);
     }
 
     .objective-card {
-        width: 200px;
-        height: 260px;
+        width: 180px;
+        height: 230px;
     }
 }

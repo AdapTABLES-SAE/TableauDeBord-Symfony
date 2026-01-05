@@ -3,10 +3,7 @@
     {# ================= TITLE AREA ================= #}
     <div class="section-title-area mb-1 text-center position-relative">
 
-        <div
-            class="position-absolute top-0 d-flex flex-column align-items-start gap-2"
-            style="left: 20px;"
-        >
+        <div class="position-absolute top-0" style="left: 20px;">
             <button
                 id="deleteTrainingBtn"
                 class="btn btn-outline-danger"
@@ -14,12 +11,6 @@
             >
                 <i class="bi bi-trash"></i>
             </button>
-
-            <div>
-                <p class="mb-0 text-center border-dark-subtle">
-                    ID entraînement : <b>{{ training.id }}</b>
-                </p>
-            </div>
         </div>
 
         <h2 class="fw-bold mb-3">
@@ -38,39 +29,50 @@
     </div>
 
     {# ================= OBJECTIVES GRID ================= #}
-    <div class="section-students-area mb-4 px-5 rounded-bottom-5">
+    <div class="section-objectives-area mb-4 px-5 rounded-bottom-5">
 
         <div class="objectives-scroll">
 
-            <div class="objectives-grid">
+            <div class="objectives-grid pt-1 pb-1">
 
                 {% for objectif in objectifs %}
                     <div
-                        class="objective-card card border-0 shadow-sm text-center clickable-tile"
+                        class="objective-card card border-0 shadow-sm clickable-tile"
                         data-id="{{ objectif.id }}"
-                        role="button"
+                        role="link"
                         tabindex="0"
+                        aria-label="Voir le détail de l’objectif {{ objectif.name }}"
                     >
-                        <div class="card-body d-flex flex-column align-items-center">
 
-                            <div class="mb-2">
-                                <i class="bi bi-bullseye text-violet fs-3"></i>
+                        <div class="card-body d-flex flex-column">
+
+                            {# Top row #}
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <i class="bi bi-bullseye fs-3"></i>
+                                <i class="bi bi-chevron-right tile-chevron"></i>
                             </div>
 
-                            <h6 class="fw-semibold text-violet mb-1">
-                                Nom de l’objectif
-                            </h6>
-
-                            <div class="objective-title text-truncate-multiline mb-2">
+                            {# Title #}
+                            <div class="objective-title text-truncate-multiline mb-3">
                                 {{ objectif.name }}
                             </div>
 
-                            <div class="objective-info mt-auto">
-                                <i class="bi bi-layers text-violet me-1"></i>
-                                {{ objectif.niveaux|length }} niveau(x)
+                            {# Spacer pushes bottom content down #}
+                            <div class="mt-auto text-center">
+
+                                <div class="tile-hint mb-1">
+                                    Accéder au détail de l’objectif
+                                </div>
+
+                                <div class="objective-info">
+                                    <i class="bi bi-layers me-1"></i>
+                                    {{ objectif.niveaux|length }} niveau(x)
+                                </div>
+
                             </div>
 
                         </div>
+
                     </div>
                 {% endfor %}
 
