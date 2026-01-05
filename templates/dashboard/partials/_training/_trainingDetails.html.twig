@@ -1,70 +1,151 @@
-<div class="training-container" id="trainingContainer">
-    <div class="training-header">
-        <div class="training-title">Nom de l’entraînement :</div>
+<div id="includedDetailsPartial" class="w-100 h-100 py-3">
 
-        <div class="training-name-input">
-            <input type="text" value=" {{ training.LearningPathID }}">
+    {# ================= TITLE AREA ================= #}
+    <div class="section-title-area mb-1 text-center position-relative">
 
-            <div class="btn-save" id="saveTrainingName">
-                <i class="bi bi-check2 me-1"></i>
-            </div>
-
-            <div class="btn-cancel" id="cancelTrainingName">
-                <i class="bi bi-x-lg me-1"></i>
-            </div>
+        {# DELETE TRAINING (top-left) #}
+        <div
+            class="position-absolute top-0 d-flex flex-column align-items-start gap-2"
+            style="left: 20px;"
+        >
+            <button
+                id="deleteTrainingBtn"
+                class="btn btn-outline-danger"
+                data-training-id="{{ training.id }}"
+            >
+                <i class="bi bi-trash"></i>
+            </button>
         </div>
+
+        <h2 class="fw-bold mb-3">
+            Détails de l’entraînement
+        </h2>
+
+        <div class="input-group justify-content-center w-auto mx-auto">
+            <input
+                id="trainingTitle"
+                type="text"
+                class="save-able-field form-control text-center fw-semibold border-dark-subtle"
+                value="{{ training.LearningPathID }}"
+            >
+        </div>
+
     </div>
 
+    {# ================= MAIN CONTENT ================= #}
+    <div class="section-students-area mb-4 pb-2 px-5 rounded-bottom-5 d-flex flex-column">
 
-    <div class="carousel">
-        <button class="carousel-arrow arrow-left">❮</button>
+        <div class="d-flex justify-content-between align-items-end mb-3">
+            <h4 class="fw-bold mb-0">
+                Objectifs de l’entraînement
+            </h4>
+        </div>
 
-        <div class="carousel-viewport" style="max-width: 730px !important; overflow: hidden !important;">
-            <div class="carousel-track" id="carouselTrack">
-                {% for objectif in objectifs %}
-                    <div class="objective-card card border-0 shadow-sm text-center hover-card" data-id="{{ objectif.id }}">
-                        <div class="card-body py-4">
-                            <div class="mb-2">
-                                <i class="bi bi-bullseye text-violet fs-3"></i>
+        <div class="flex-grow-1 d-flex justify-content-center align-items-center">
+
+            <div class="d-flex justify-content-center align-items-center gap-2 w-100">
+                <button class="carousel-arrow arrow-left" type="button">
+                    ❮
+                </button>
+
+                <div class="carousel-viewport overflow-hidden">
+                    <div
+                        id="carouselTrack"
+                        class="carousel-track d-flex gap-4 py-3 justify-content-center"
+                    >
+                        {% for objectif in objectifs %}
+                            <div
+                                class="objective-card card border-0 shadow-sm text-center"
+                                data-id="{{ objectif.id }}"
+                            >
+                                <div class="card-body py-4">
+
+                                    <div class="mb-2">
+                                        <i class="bi bi-bullseye text-violet fs-3"></i>
+                                    </div>
+
+                                    <h6 class="fw-semibold text-violet mb-1">
+                                        Nom de l’objectif :
+                                    </h6>
+
+                                    <div class="objective-title mb-2">
+                                        {{ objectif.name }}
+                                    </div>
+
+                                    <div class="objective-info">
+                                        <i class="bi bi-layers text-violet me-1"></i>
+                                        {{ objectif.niveaux|length }} niveau(x)
+                                    </div>
+                                </div>
+
+                                <div class="card-footer bg-transparent border-0">
+                                    <button
+                                        type="button"
+                                        class="btn btn-violet fw-semibold w-100"
+                                    >
+                                        <i class="bi bi-pencil-square me-1"></i>
+                                        Modifier l’objectif
+                                    </button>
+                                </div>
                             </div>
-
-                            <h6 class="card-subtitle fw-semibold text-violet mb-1">
-                                Nom de l’objectif :
-                            </h6>
-                            <div class="objective-title mb-2">
-                                {{ objectif.name }}
-                            </div>
-
-                            {# Nombre de niveaux #}
-                            <div class="objective-info">
-                                <i class="bi bi-layers text-violet me-1"></i>
-                                <span>
-                                    {{ objectif.niveaux|length }} niveau(x)
-                                </span>
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-0">
-                            <button type="button"
-                                    class="btn btn-violet w-100 fw-semibold">
-                                <i class="bi bi-pencil-square me-1"></i>
-                                Modifier l’objectif
-                            </button>
-                        </div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
+                </div>
+
+                <button class="carousel-arrow arrow-right" type="button">
+                    ❯
+                </button>
+
             </div>
+
         </div>
 
-        <button class="carousel-arrow arrow-right">❯</button>
-    </div>
-    <div id="carouselIndicator" class="carousel-indicator">
-        Objectif 1 / {{ objectifs|length }}
+        <div
+            id="carouselIndicator"
+            class="carousel-indicator text-center fw-semibold mt-2"
+        >
+            Objectif 1 / {{ objectifs|length }}
+        </div>
+
     </div>
 
-    <div style="text-align:center;">
-            <button class="btn btn-dark w-25 mt-2">
+    {# ================= ACTION BAR ================= #}
+    <div class="section-buttons-area d-flex justify-content-between align-items-center px-4">
+
+        {# CANCEL #}
+        <div class="d-flex gap-2">
+            <button
+                id="input_cancel_button"
+                class="btn btn-outline-secondary disabled"
+            >
+                Annuler les modifications
+            </button>
+        </div>
+
+        {# SAVE / ADD #}
+        <div class="d-flex gap-2">
+
+            <form
+                id="save_form"
+                action="{{ path('training_update', {'id': training.id }) }}"
+                method="POST"
+            >
+                <button
+                    type="submit"
+                    id="input_save_button"
+                    class="btn btn-outline-success disabled"
+                >
+                    Enregistrer
+                </button>
+            </form>
+
+            <button class="btn btn-dark">
+                <i class="bi bi-plus-circle me-1"></i>
                 Ajouter un objectif
-            <i class="ms-1 bi bi-plus-circle"></i>
-        </button>
+            </button>
+
+        </div>
+
     </div>
+
 </div>

@@ -1,0 +1,135 @@
+/* -------------------------------------------- */
+/* Section layout (aligned with classDetails)   */
+/* -------------------------------------------- */
+
+.section-title-area {
+    height: 15%;
+}
+
+.section-students-area {
+    height: 65%;
+}
+
+.section-buttons-area {
+    height: 20%;
+}
+
+/* -------------------------------------------- */
+/* Training title input                         */
+/* -------------------------------------------- */
+
+#trainingTitle {
+    max-width: 250px;
+}
+
+/* -------------------------------------------- */
+/* Carousel viewport                            */
+/* -------------------------------------------- */
+
+.carousel-viewport {
+    flex: 1 1 auto;
+    min-width: 0;          /* critical for flex overflow */
+    overflow: hidden;
+    max-width: min(100%, 960px);
+}
+
+/* -------------------------------------------- */
+/* Carousel track                               */
+/* -------------------------------------------- */
+
+.carousel-track {
+    display: flex;
+    flex-wrap: nowrap;
+    transition: transform 0.3s ease;
+}
+
+/* -------------------------------------------- */
+/* Carousel arrows                              */
+/* -------------------------------------------- */
+
+.carousel-arrow {
+    font-size: 32px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #4f3bc8;
+}
+
+.carousel-arrow:disabled {
+    opacity: 0.2;
+    cursor: default;
+}
+
+/* -------------------------------------------- */
+/* Objective cards                              */
+/* -------------------------------------------- */
+
+.objective-card {
+    flex: 0 0 auto;
+    width: 240px;
+    border-radius: 1rem;
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        filter 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.objective-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+    background-color: #f6f3ff;
+}
+
+.objective-card.active {
+    transform: scale(1.1);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+    background-color: #fff;
+}
+
+.objective-card:not(.active) {
+    filter: brightness(0.95);
+}
+
+/* -------------------------------------------- */
+/* Text                                        */
+/* -------------------------------------------- */
+
+.objective-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    line-height: 1.2rem;
+}
+
+.objective-info {
+    font-size: 0.85rem;
+}
+
+/* -------------------------------------------- */
+/* Violet action button                         */
+/* -------------------------------------------- */
+
+.btn-violet {
+    background-color: #7a5af8;
+    color: #fff;
+    border-radius: 6px;
+}
+
+.btn-violet:hover,
+.btn-violet.btn-activated {
+    background-color: #6748d4;
+}
+
+/* -------------------------------------------- */
+/* Responsive adjustments                       */
+/* -------------------------------------------- */
+
+@media (max-width: 768px) {
+    .objective-card {
+        width: 200px;
+    }
+
+    .carousel-arrow {
+        font-size: 26px;
+    }
+}
