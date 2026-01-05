@@ -1,5 +1,5 @@
 /* -------------------------------------------- */
-/* Section layout (aligned with classDetails)   */
+/* Section layout                               */
 /* -------------------------------------------- */
 
 .section-title-area {
@@ -8,6 +8,8 @@
 
 .section-students-area {
     height: 65%;
+    display: flex;
+    flex-direction: column;
 }
 
 .section-buttons-area {
@@ -15,7 +17,7 @@
 }
 
 /* -------------------------------------------- */
-/* Training title input                         */
+/* Training title                               */
 /* -------------------------------------------- */
 
 #trainingTitle {
@@ -23,82 +25,87 @@
 }
 
 /* -------------------------------------------- */
-/* Carousel viewport                            */
+/* Scroll container                             */
 /* -------------------------------------------- */
 
-.carousel-viewport {
+.objectives-scroll {
     flex: 1 1 auto;
-    min-width: 0;          /* critical for flex overflow */
-    overflow: hidden;
-    max-width: min(100%, 960px);
+    overflow-y: auto;
+    padding-right: 0.5rem;
 }
 
 /* -------------------------------------------- */
-/* Carousel track                               */
+/* Objectives grid (FIXED columns)              */
 /* -------------------------------------------- */
 
-.carousel-track {
-    display: flex;
-    flex-wrap: nowrap;
-    transition: transform 0.3s ease;
+.objectives-grid {
+    display: grid;
+
+    /* ✅ FIX: consistent tile width */
+    grid-template-columns: repeat(auto-fit, 240px);
+
+    gap: 1.5rem;
+    justify-content: center; /* center grid as a whole */
 }
 
 /* -------------------------------------------- */
-/* Carousel arrows                              */
-/* -------------------------------------------- */
-
-.carousel-arrow {
-    font-size: 32px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    color: #4f3bc8;
-}
-
-.carousel-arrow:disabled {
-    opacity: 0.2;
-    cursor: default;
-}
-
-/* -------------------------------------------- */
-/* Objective cards                              */
+/* Objective cards (IDENTICAL SIZE)             */
 /* -------------------------------------------- */
 
 .objective-card {
-    flex: 0 0 auto;
     width: 240px;
+    height: 280px;
+
     border-radius: 1rem;
+    cursor: pointer;
+
     transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        filter 0.2s ease,
-        background-color 0.2s ease;
+        transform 0.15s ease,
+        box-shadow 0.15s ease,
+        background-color 0.15s ease;
 }
 
 .objective-card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-2px);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
     background-color: #f6f3ff;
 }
 
-.objective-card.active {
-    transform: scale(1.1);
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
-    background-color: #fff;
-}
-
-.objective-card:not(.active) {
-    filter: brightness(0.95);
+.objective-card:active {
+    transform: scale(0.98);
 }
 
 /* -------------------------------------------- */
-/* Text                                        */
+/* Card content                                 */
+/* -------------------------------------------- */
+
+.objective-card .card-body {
+    height: 100%;
+}
+
+/* -------------------------------------------- */
+/* Multiline truncation                         */
+/* -------------------------------------------- */
+
+.text-truncate-multiline {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    line-height: 1.2rem;
+    max-height: 3.6rem;
+}
+
+/* -------------------------------------------- */
+/* Text sizes                                   */
 /* -------------------------------------------- */
 
 .objective-title {
     font-size: 0.95rem;
     font-weight: 600;
-    line-height: 1.2rem;
 }
 
 .objective-info {
@@ -106,30 +113,16 @@
 }
 
 /* -------------------------------------------- */
-/* Violet action button                         */
-/* -------------------------------------------- */
-
-.btn-violet {
-    background-color: #7a5af8;
-    color: #fff;
-    border-radius: 6px;
-}
-
-.btn-violet:hover,
-.btn-violet.btn-activated {
-    background-color: #6748d4;
-}
-
-/* -------------------------------------------- */
-/* Responsive adjustments                       */
+/* Responsive                                   */
 /* -------------------------------------------- */
 
 @media (max-width: 768px) {
-    .objective-card {
-        width: 200px;
+    .objectives-grid {
+        grid-template-columns: repeat(auto-fit, 200px);
     }
 
-    .carousel-arrow {
-        font-size: 26px;
+    .objective-card {
+        width: 200px;
+        height: 260px;
     }
 }
