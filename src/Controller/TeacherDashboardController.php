@@ -284,7 +284,7 @@ class TeacherDashboardController extends AbstractController
 
         $objectifs = $training->getObjectifs();
 
-        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
+        return $this->render('/dashboard/partials/_training/_trainingDetails.html.twig', [
             'training' => $training,
             'objectifs' => $objectifs
         ]);
@@ -296,7 +296,6 @@ class TeacherDashboardController extends AbstractController
 //            'trainingPaths' => $trainingPaths,   // <-- REQUIRED
 //        ]);
     }
-
 
     #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
     public function trainingUpdate(
