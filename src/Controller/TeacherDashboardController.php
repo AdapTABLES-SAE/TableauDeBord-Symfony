@@ -76,30 +76,26 @@ class TeacherDashboardController extends AbstractController
         $teacher = $em->getRepository(Enseignant::class)->find($teacherID);
 
         $name = $request->request->get('className');
-        if (empty($name)) return new JsonResponse(['success' => false]);
+        $id = $request->request->get('classID');
 
-        $generatedID = $name . $count;
+        if (empty($name) || empty($id)) return new JsonResponse(['success' => false]);
 
-        //cant really do better cause parsing from a request sorted by name would not be foolproof
-        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
-        while (!$isNewId){
-            $generatedID = $name . ++$count;
-            $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
+        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $id]));
+        if($isNewId){
+            $ok = $apiClient->addClassroom($teacher->getIdProf(), $id, $name);
+            if ($ok) {
+                $classe = new Classe();
+                $classe->setEnseignant($teacher);
+                $classe->setIdClasse($id);
+                $classe->setName($name);
+
+                $em->persist($classe);
+                $em->flush();
+            }
+            return new JsonResponse(['success' => $ok, 'fatal' => !$ok]);
+        }else {
+            return new JsonResponse(['success' => false, 'fatal' => false]);
         }
-
-        $ok = $apiClient->addClassroom($teacher->getIdProf(), $generatedID, $name);
-
-        if ($ok) {
-            $classe = new Classe();
-            $classe->setEnseignant($teacher);
-            $classe->setIdClasse($generatedID);
-            $classe->setName($name);
-
-            $em->persist($classe);
-            $em->flush();
-        }
-
-        return new JsonResponse(['success' => $ok]);
     }
 
     #[Route('/dashboard/classroom/delete/{id}', name: 'delete_classroom', methods: ['DELETE'])]
@@ -172,7 +168,7 @@ class TeacherDashboardController extends AbstractController
         string $id,
         Request $request,
         ApiClient $apiClient,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
     ): JsonResponse
     {
         $nom     = $request->request->get('lname');
@@ -182,9 +178,8 @@ class TeacherDashboardController extends AbstractController
         $classe = $em->getRepository(Classe::class)->find($id);
         if (!$classe) return new JsonResponse(['success' => false, 'fatal' => true]);
 
-
-        $canCreateStudent = empty($em->getRepository(Eleve::class)->find($studentId));
-        if($canCreateStudent){
+        $canCreateStudent = $em->getRepository(Eleve::class)->findOneBy(["learnerId"=>$studentId]);
+        if(!$canCreateStudent){
             $ok = $apiClient->addStudent($classe->getIdClasse(), $studentId, $nom, $prenom);
 
             if ($ok) {
@@ -223,12 +218,14 @@ class TeacherDashboardController extends AbstractController
             if (!$student) continue;
 
             if (isset($data['delete']) && $data['delete'] === "1") {
-                $apiClient->deleteStudent(
-                    (string)$student->getClasse()->getEnseignant()->getId(),
-                    (string)$student->getClasse()->getId(),
+                $ok = $apiClient->deleteStudent(
+                    (string)$student->getClasse()->getEnseignant()->getIdProf(),
+                    (string)$student->getClasse()->getIdClasse(),
                     (string)$student->getLearnerId()
                 );
-                $em->remove($student);
+                if($ok) $em->remove($student);
+                else return new JsonResponse(['success' => false]);
+
                 continue;
             }
 

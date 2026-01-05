@@ -2,6 +2,51 @@ import { showToast } from './toast/toast.js';
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    /*  ============================
+        SUPRESSION ÉLÈVE
+        ============================ */
+
+    const delStudentBtn = document.getElementById('confirmDeleteStudentBtn');
+
+    delStudentBtn.addEventListener('click', async () => {
+        const path = delStudentBtn.dataset.deleteEndpoint;
+        const redirect = delStudentBtn.dataset.redirect;
+        if (path && redirect) {
+            try {
+                const response = await fetch(path, {
+                    method: "DELETE"
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+
+                if (!result.success) {
+                    showToast(
+                        false,
+                        "Erreur",
+                        "L'élève n'a pas pu être supprimé."
+                    );
+                }
+
+                window.location.href = redirect;
+            } catch (err) {
+                console.error("Erreur suppression élève:", err);
+                showToast(
+                    false,
+                    "Erreur",
+                    "Erreur réseau lors de la suppression."
+                );
+            }
+        } else {
+            showToast(
+                false,
+                "Erreur",
+                "Suppression impossible : route introuvable."
+            );
+        }
+    });
+
+
     /* ============================
        FORMULAIRE ÉLÈVE
        ============================ */

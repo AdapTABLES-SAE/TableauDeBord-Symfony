@@ -18,7 +18,7 @@ final class ApiEndpoints
     public const GET_STUDENTS_2 = "classroom/";
     public const ADD_STUDENT = "data/student";
     public const MODIF_STUDENT = "data/student";
-    public const DELETE_STUDENT_1 = "data/teachers/";
+    public const DELETE_STUDENT_1 = "data/teacher/";
     public const DELETE_STUDENT_2 = "classroom/";
     public const DELETE_STUDENT_3 = "learner/";
     public const ADD_PROF = "data/teacher/";

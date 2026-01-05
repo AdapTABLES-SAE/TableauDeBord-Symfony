@@ -139,66 +139,132 @@ document.addEventListener("partial:loaded", (e) => {
         });
     }
 
-    // ========================================================================
-    // 7. SAVE FORM (POST updates)
-    // ========================================================================
+// ========================================================================
+// 7. SAVE FORM (POST updates) — avec modale conditionnelle
+// ========================================================================
     if (form && saveBtn) {
+        const saveWarningModalEl = document.querySelector("#saveWarningModal");
+        const saveWarningText = document.querySelector("#saveWarningText");
+        const confirmSaveBtn = document.querySelector("#confirmSaveBtn");
+        const saveWarningModal = new bootstrap.Modal(saveWarningModalEl);
+
+        let pendingSubmitData = null; // on garde la FormData avant confirmation
+
+        // Le vrai traitement de sauvegarde
+        async function performSave(data) {
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: data
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showToast(true, "Succès", "Modifications enregistrées !");
+                    setTimeout(() => window.reloadDashboardPair("classes"), 200);
+                } else {
+                    showToast(false, "Erreur", "Une erreur est survenue lors de la sauvegarde.");
+                }
+
+                resetButtons(saveBtn, cancelBtn);
+
+            } catch (err) {
+                console.error("POST error:", err);
+                showToast(false, "Erreur", "Erreur réseau lors de la sauvegarde.");
+            }
+        }
+
+        // Lorsqu'on clique sur le bouton "Enregistrer"
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
 
             const editedRows = [...qAll('[data-row-edited="true"]')];
             const classTitle = q("#classTitle");
 
+            // -----------------------
+            // Construire la FormData
+            // -----------------------
             const data = new FormData();
 
             if (classTitle && classTitle.value !== classTitle.defaultValue) {
                 data.append(`class[title]`, classTitle.value);
             }
 
+            let hasStudentTrainingChanges = false;
+            let hasStudentDeletion = false;
+
             editedRows.forEach(row => {
                 const dbId = row.dataset.dbId;
                 const select = row.querySelector("td select");
 
                 if (row.dataset.rowDeleted === "true") {
+                    hasStudentDeletion = true;
                     data.append(`students[${dbId}][delete]`, "1");
                     return;
                 }
 
                 if (select) {
+                    // Si un select change → modification d'entraînement
+                    hasStudentTrainingChanges = true;
                     data.append(`students[${dbId}][trainingPathId]`, select.value);
                 }
             });
 
-            try {
-                const response = await fetch(form.action, { method: "POST", body: data });
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            // -----------------------
+            // Déterminer si on doit afficher la modale
+            // -----------------------
+            const onlyClassNameChanged =
+                !hasStudentDeletion &&
+                !hasStudentTrainingChanges &&
+                classTitle &&
+                classTitle.value !== classTitle.defaultValue;
 
-                const result = await response.json();
+            if (onlyClassNameChanged) {
+                // Aucun impact élève → sauvegarde directe
+                return performSave(data);
+            }
 
-                if (result.success) {
-                    showToast(
-                        true,
-                        "Succès",
-                        "Modifications enregistrées !"
-                    );
-                    setTimeout(() => window.reloadDashboardPair("classes"), 200);
-                } else {
-                    showToast(
-                        false,
-                        "Erreur",
-                        "Une erreur est survenue lors de la sauvegarde."
-                    );
-                }
+            // Si on arrive ici → il y a au moins un changement élève
+            if (hasStudentDeletion && hasStudentTrainingChanges) {
+                saveWarningText.textContent =
+                    "Attention, un ou plusieurs élèves vont :" +
+                    "\n - Être supprimé" +
+                    "\n - Avoir un entraînement modifié." +
+                    "\n" +
+                    "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
+                    "\n" +
+                    "\nVoulez-vous continuer ?";
+                console.log("aa");
+            } else if (hasStudentDeletion) {
+                saveWarningText.textContent =
+                    "Attention, un ou plusieurs élèves vont :" +
+                    "\n - Être supprimé"
+                    "\n" +
+                    "\nVoulez-vous continuer ?";
+            } else if (hasStudentTrainingChanges) {
+                saveWarningText.textContent =
+                    "Attention, un ou plusieurs élèves vont :" +
+                    "\n - Avoir un entraînement modifié." +
+                    "\n" +
+                    "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
+                    "\n" +
+                    "\nVoulez-vous continuer ?";
+            }
 
-                resetButtons(saveBtn, cancelBtn);
+            pendingSubmitData = data;
+            saveWarningModal.show();
+        });
 
-            } catch (error) {
-                console.error("POST error:", error);
-                showToast(
-                    false,
-                    "Erreur de communication avec le serveur.",
-                    ""
-                );
+        // ---------------------------------------
+        // CONFIRMATION PAR LA MODALE
+        // ---------------------------------------
+        confirmSaveBtn.addEventListener("click", () => {
+            saveWarningModal.hide();
+            if (pendingSubmitData) {
+                performSave(pendingSubmitData);
             }
         });
     }
@@ -375,15 +441,15 @@ document.addEventListener("partial:loaded", (e) => {
                 console.error("Erreur ajout élève:", err);
                 showToast(
                     false,
-                    "Erreur réseau lors de l'ajout de l'élève.",
-                    "."
+                    "Erreur",
+                    "Erreur réseau lors de l'ajout de l'élève."
                 );
             }
         });
     }
     // ========================================================================
-// 10. DELETE CLASS
-// ========================================================================
+    // 10. DELETE CLASS
+    // ========================================================================
 
     const deleteBtn = q("#deleteClassBtn");
     const deleteModalEl = q("#deleteClassModal");

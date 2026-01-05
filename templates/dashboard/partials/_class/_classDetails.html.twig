@@ -8,12 +8,22 @@
     <div class="section-title-area mb-1 text-center position-relative">
         <h2 class="fw-bold mb-3">Détails de ma classe</h2>
 
-        <button class="btn btn-outline-danger position-absolute top-0"
-                style="left: 20px"
-                id="deleteClassBtn"
-                data-class-id="{{ class.id }}">
-            <i class="bi bi-trash"></i>
-        </button>
+        <div class="position-absolute top-0 d-flex flex-column align-items-start gap-2" style="left: 20px;">
+            <button class="btn btn-outline-danger"
+                    style="left: 20px"
+                    id="deleteClassBtn"
+                    data-class-id="{{ class.id }}">
+                <i class="bi bi-trash"></i>
+            </button>
+            <div>
+                <p id="classID"
+                    type="text"
+                    class="text-center border-dark-subtle">
+                    ID de classe : <b>{{ class.idClasse }}</b>
+                </p>
+            </div>
+        </div>
+
 
         <div class="input-group justify-content-center w-auto mx-auto">
             <label>
@@ -258,6 +268,33 @@
             </div>
         </div>
     </div>
+
+    <!-- MODAL WARNING SAVE -->
+    <div class="modal modal fade" id="saveWarningModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-danger-subtle">
+                    <h5 class="modal-title text-danger fw-bold">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Attention
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    <p id="saveWarningText" class="mb-0">
+                        Certaines modifications impactent les élèves. Voulez-vous continuer ?
+                    </p>
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button class="btn btn-danger" id="confirmSaveBtn">Continuer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 

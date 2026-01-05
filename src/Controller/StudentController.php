@@ -21,7 +21,7 @@ class StudentController extends AbstractController
         private EntityManagerInterface $em,
     ) {}
 
-    #[Route('/enseignant/classes/{learnerId}', name: 'teacher_student_view')]
+    #[Route('/enseignant/classes/student/{learnerId}', name: 'teacher_student_view')]
     public function view(string $learnerId, Request $request): Response
     {
         $eleve = $this->em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
@@ -151,7 +151,7 @@ class StudentController extends AbstractController
         ]);
     }
 
-    #[Route('/enseignant/classes/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
+    #[Route('/enseignant/classes/student/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
     public function updateTrainingAjax(string $learnerId, Request $request): JsonResponse
     {
         $data = json_decode($request->getContent(), true) ?? [];
@@ -221,7 +221,7 @@ class StudentController extends AbstractController
         ]);
     }
 
-    #[Route('/enseignant/classes/{learnerId}/store', name: 'student_update_equipment', methods: ['POST'])]
+    #[Route('/enseignant/classes/student/{learnerId}/store', name: 'student_update_equipment', methods: ['POST'])]
     public function updateEquipment(
         string $learnerId,
         Request $request,
@@ -246,4 +246,28 @@ class StudentController extends AbstractController
         ], 500);
     }
 
+    #[Route('/enseignant/classes/student/{id}/delete', name: 'delete_student', methods: ['DELETE'])]
+    public function deleteStudent(
+        int $id,
+        EntityManagerInterface $em,
+        ApiClient $apiClient
+    ): JsonResponse {
+
+        $student = $em->getRepository(Eleve::class)->find($id);
+
+        $ok = $apiClient->deleteStudent(
+            (string)$student->getClasse()->getEnseignant()->getIdProf(),
+            (string)$student->getClasse()->getIdClasse(),
+            (string)$student->getLearnerId()
+        );
+
+        if ($ok){
+            $em->remove($student);
+            $em->flush();
+        }
+
+        return new JsonResponse([
+            'success' => $ok], ($ok ? 200:500)
+        );
+    }
 }
