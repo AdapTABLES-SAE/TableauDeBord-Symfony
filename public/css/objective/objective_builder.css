@@ -106,12 +106,92 @@
 }
 
 /* ============================================================
-   PREVIEW LISTE FAITS
-   ============================================================ */
-.preview-card {
-    background: #faf9ff;
-    border-radius: .75rem;
+   PREVIEW GLOBAL (Colonne Gauche)
+============================================================ */
+
+.preview-container {
+    background: #f8f7fc;
+    border: 1px dashed #dcd7f3;
+    border-radius: 12px;
+    padding: 1rem;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* En-tête du preview */
+.preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #7b75a8;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-refresh-preview {
+    background: white;
     border: 1px solid #e5ddff;
+    color: #7a5af8;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-refresh-preview:hover {
+    background: #7a5af8;
+    color: white;
+    transform: rotate(180deg);
+}
+
+/* Grille des équations */
+.preview-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    justify-content: center;
+}
+
+/* Style d'une équation (Badge) */
+.op-badge {
+    background: white;
+    border: 1px solid #e0dbf5;
+    border-radius: 8px;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #3d3a56;
+    box-shadow: 0 2px 4px rgba(100, 80, 200, 0.03);
+    transition: transform 0.15s;
+    cursor: default;
+}
+
+.op-badge:hover {
+    transform: translateY(-2px);
+    border-color: #b9a8ff;
+    color: #4b3bbd;
+    box-shadow: 0 4px 8px rgba(122, 90, 248, 0.1);
+}
+
+/* Mise en valeur du résultat */
+.op-badge strong {
+    color: #7a5af8;
+}
+
+/* État vide */
+.preview-empty {
+    text-align: center;
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 0.85rem;
     padding: 1rem;
 }
 

@@ -41,8 +41,8 @@
      data-interval-max="{{ niveau.intervalMax }}"
      data-success-criteria="{{ niveau.successCompletionCriteria }}"
      data-encounter-criteria="{{ niveau.encounterCompletionCriteria }}"
-     data-tables='{{ niveau.tables|json_encode }}'
-     data-tasks='{{ tasksArray|json_encode }}'>
+     data-tables="{{ niveau.tables|json_encode|e('html_attr') }}"
+     data-tasks='{{ tasksArray|json_encode|e('html_attr') }}'>
 
     {# ============================================================
        HEADER

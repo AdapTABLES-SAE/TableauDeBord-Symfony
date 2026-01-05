@@ -150,24 +150,143 @@ document.addEventListener("DOMContentLoaded", () => {
     ========================================================================================= */
 
     function updatePreview() {
+        const previewBox = document.getElementById("preview-box");
+        const infoLine   = document.getElementById("preview-info-line");
+
         if (!previewBox) return;
 
+        // 1. Récupérer les tables globales
         const tables = getSelectedTables();
+
+        // --- CALCUL DU TOTAL GLOBAL DES FAITS ---
+        // On parcourt toutes les cartes et on utilise la fonction computeFactsCount
+        // (qu'on a corrigée à l'étape précédente pour inclure les positions MIX/Left/Right)
+        let totalGlobalFacts = 0;
+        const levelCards = document.querySelectorAll(".level-card");
+
+        levelCards.forEach(card => {
+            totalGlobalFacts += computeFactsCount(card);
+        });
+
+        // Mise à jour du texte d'information
+        if (infoLine) {
+            if (levelCards.length === 0 || totalGlobalFacts === 0) {
+                infoLine.innerHTML = "Aucun fait généré pour l'instant.";
+            } else {
+                // "Voici 8 exemples de faits sur X faits au total"
+                infoLine.innerHTML = `Voici <strong>8</strong> exemples de faits sur <strong>${totalGlobalFacts}</strong> faits au total.`;
+            }
+        }
+
+        // --- GESTION DE L'AFFICHAGE DES BADGES (Reste similaire) ---
+
         if (!tables.length) {
-            previewBox.innerHTML = "Aucune table sélectionnée.";
+            previewBox.innerHTML = `
+                <div class="preview-empty">
+                    <i class="bi bi-grid-3x3 mb-2 d-block" style="font-size: 1.5rem;"></i>
+                    Aucune table sélectionnée
+                </div>`;
+            return;
+        }
+
+        if (levelCards.length === 0) {
+            previewBox.innerHTML = `
+                <div class="preview-empty">
+                    <i class="bi bi-plus-circle-dotted mb-2 d-block" style="font-size: 1.5rem;"></i>
+                    Ajoutez un niveau pour voir l'aperçu.
+                </div>`;
             return;
         }
 
         const list = [];
-        for (let i = 0; i < 8; i++) {
-            const t = tables[i % tables.length];
-            const x = Math.floor(Math.random() * 10) + 1;
-            list.push(`${t} × ${x} = ${t * x}`);
+        const count = 8;
+
+        for (let i = 0; i < count; i++) {
+            // A. PIOCHER UN NIVEAU ALÉATOIRE
+            const randomIndex = Math.floor(Math.random() * levelCards.length);
+            const card = levelCards[randomIndex];
+
+            // B. Lire les paramètres de CE niveau
+            const min = parseInt(card.dataset.intervalMin || "1", 10);
+            const max = parseInt(card.dataset.intervalMax || "10", 10);
+            const eqPos = card.dataset.equalPosition || "RIGHT";
+            const facPos = card.dataset.factorPosition || "OPERAND_TABLE";
+
+            // C. Choisir table et opérande
+            const t = parseInt(tables[i % tables.length], 10);
+            const operand = Math.floor(Math.random() * (max - min + 1)) + min;
+            const result  = t * operand;
+
+            // D. Position du Facteur
+            let currentFacPos = facPos;
+            if (currentFacPos === "MIX") {
+                currentFacPos = Math.random() < 0.5 ? "OPERAND_TABLE" : "TABLE_OPERAND";
+            }
+
+            let leftFactor, rightFactor;
+            if (currentFacPos === "OPERAND_TABLE") {
+                leftFactor = operand;
+                rightFactor = t;
+            } else {
+                leftFactor = t;
+                rightFactor = operand;
+            }
+
+            // E. Position de l'Égal
+            let currentEqPos = eqPos;
+            if (currentEqPos === "MIX") {
+                currentEqPos = Math.random() < 0.5 ? "LEFT" : "RIGHT";
+            }
+
+            let equationHTML = "";
+            if (currentEqPos === "LEFT") {
+                equationHTML = `<strong>${result}</strong> = ${leftFactor} × ${rightFactor}`;
+            } else {
+                equationHTML = `${leftFactor} × ${rightFactor} = <strong>${result}</strong>`;
+            }
+
+            list.push(`
+                <div class="op-badge" title="Tiré du Niveau ${randomIndex + 1}">
+                    ${equationHTML}
+                </div>
+            `);
         }
 
-        previewBox.innerHTML = list.map(v => `<div>${v}</div>`).join("");
+        previewBox.innerHTML = list.join("");
     }
 
+    // Appel initial
+    updatePreview();
+
+    /* =========================================================================================
+       GESTION DU BOUTON REFRESH
+    ========================================================================================= */
+
+    const refreshPreviewBtn = document.getElementById("refresh-preview-btn");
+
+    if (refreshPreviewBtn) {
+        refreshPreviewBtn.addEventListener("click", () => {
+
+            // 1. Animation de rotation pour le fun (UX)
+            const icon = refreshPreviewBtn.querySelector("i");
+            if (icon) {
+                // On applique la rotation
+                icon.style.transition = "transform 0.4s ease";
+                icon.style.transform = "rotate(360deg)";
+
+                // On réinitialise après l'animation pour pouvoir le refaire au prochain clic
+                setTimeout(() => {
+                    icon.style.transition = "none";
+                    icon.style.transform = "rotate(0deg)";
+                }, 400);
+            }
+
+            // 2. Appel de la fonction de mise à jour
+            updatePreview();
+        });
+    }
+
+    // Appel initial au chargement de la page
     updatePreview();
 
     /* =========================================================================================
@@ -239,10 +358,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function computeFactsCount(card) {
+        // 1. Base : (Nombre de tables) x (Taille de l'intervalle)
         const tables = getTablesForCard(card);
         const min = parseInt(card.dataset.intervalMin || "1", 10);
         const max = parseInt(card.dataset.intervalMax || "10", 10);
-        return tables.length * Math.max(0, max - min + 1);
+        let count = tables.length * Math.max(0, max - min + 1);
+
+        // 2. Position du signe Égal
+        // Si "MIX" (Les deux), on double car "a = b" et "b = a" sont deux items distincts
+        const eqPos = card.dataset.equalPosition || "RIGHT";
+        if (eqPos === "MIX") {
+            count *= 2;
+        }
+
+        // 3. Position des Facteurs
+        // Si "MIX" (Les deux), on double car "a x b" et "b x a" sont deux items distincts
+        const facPos = card.dataset.factorPosition || "OPERAND_TABLE";
+        if (facPos === "MIX") {
+            count *= 2;
+        }
+
+        return count;
     }
 
     function updateFactsCount(card) {
@@ -435,6 +571,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     equalGroup.querySelectorAll(".position-btn").forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
                     card.dataset.equalPosition = btn.dataset.value;
+                    updateFactsCount(card);
+                    updatePreview();
                     markDirty();
                 });
             });
@@ -450,6 +588,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     factorGroup.querySelectorAll(".position-btn").forEach(b => b.classList.remove("active"));
                     btn.classList.add("active");
                     card.dataset.factorPosition = btn.dataset.value;
+                    updateFactsCount(card);
+                    updatePreview();
                     markDirty();
                 });
             });
@@ -474,6 +614,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     card.remove();
                     showToast(true);
+
+                    updatePreview();
+
                     captureInitialState();
 
                 } catch (err) {
@@ -569,14 +712,29 @@ document.addEventListener("DOMContentLoaded", () => {
                 const json = await resp.json();
                 if (!json.success || !json.html) return showToast(false);
 
+                // 1. Création du DOM
                 const temp = document.createElement("div");
                 temp.innerHTML = json.html.trim();
                 const newCard = temp.firstElementChild;
 
+                // 2. Injection dans le conteneur
                 levelsContainer.appendChild(newCard);
-                initLevelCard(newCard);
-                showToast(true);
 
+                // 3. SYNCHRONISATION IMMÉDIATE DES TABLES GLOBALES
+                // On récupère les tables actuellement sélectionnées à gauche
+                const currentTables = getSelectedTables();
+                // On les injecte dans le dataset du nouveau niveau
+                newCard.dataset.tables = JSON.stringify(currentTables);
+
+                // 4. Initialisation du niveau (Sliders, Listeners, etc.)
+                initLevelCard(newCard);
+
+                // 5. Forcer la mise à jour visuelle du badge "Faits"
+                updateFactsCount(newCard);
+
+                // 6. Mise à jour de l'aperçu et sauvegarde état
+                updatePreview();
+                showToast(true);
                 captureInitialState();
 
             } catch (err) {
