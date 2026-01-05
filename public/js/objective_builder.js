@@ -146,8 +146,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* =========================================================================================
-       PREVIEW MULTIPLICATIONS
+       PREVIEW CIBLÉ
     ========================================================================================= */
+
+    const refreshPreviewBtn = document.getElementById("refresh-preview-btn");
 
     function updatePreview() {
         const previewBox = document.getElementById("preview-box");
@@ -158,27 +160,29 @@ document.addEventListener("DOMContentLoaded", () => {
         // 1. Récupérer les tables globales
         const tables = getSelectedTables();
 
-        // --- CALCUL DU TOTAL GLOBAL DES FAITS ---
-        // On parcourt toutes les cartes et on utilise la fonction computeFactsCount
-        // (qu'on a corrigée à l'étape précédente pour inclure les positions MIX/Left/Right)
-        let totalGlobalFacts = 0;
-        const levelCards = document.querySelectorAll(".level-card");
+        // 2. Trouver le niveau OUVERT (celui qui n'a pas la classe .collapsed)
+        const openCard = document.querySelector(".level-card:not(.collapsed)");
 
-        levelCards.forEach(card => {
-            totalGlobalFacts += computeFactsCount(card);
-        });
+        // Cas : Aucun niveau ou aucun niveau ouvert
+        if (!openCard) {
+            if (infoLine) infoLine.textContent = "";
+            previewBox.innerHTML = `
+                <div class="preview-empty">
+                    <i class="bi bi-eye-slash mb-2 d-block" style="font-size: 1.5rem;"></i>
+                    Ouvrez un niveau pour voir l'aperçu associé.
+                </div>`;
+            return;
+        }
+
+        // 3. Calcul du total pour CE niveau uniquement
+        const totalFacts = computeFactsCount(openCard);
 
         // Mise à jour du texte d'information
         if (infoLine) {
-            if (levelCards.length === 0 || totalGlobalFacts === 0) {
-                infoLine.innerHTML = "Aucun fait généré pour l'instant.";
-            } else {
-                // "Voici 8 exemples de faits sur X faits au total"
-                infoLine.innerHTML = `Voici <strong>8</strong> exemples de faits sur <strong>${totalGlobalFacts}</strong> faits au total.`;
-            }
+            // Récupère le titre (ex: "Niveau 2")
+            const levelTitle = openCard.querySelector(".level-title")?.textContent.trim() || "Niveau actuel";
+            infoLine.innerHTML = `Aperçu basé sur <strong>${levelTitle}</strong> (${totalFacts} faits possibles)`;
         }
-
-        // --- GESTION DE L'AFFICHAGE DES BADGES (Reste similaire) ---
 
         if (!tables.length) {
             previewBox.innerHTML = `
@@ -189,35 +193,22 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (levelCards.length === 0) {
-            previewBox.innerHTML = `
-                <div class="preview-empty">
-                    <i class="bi bi-plus-circle-dotted mb-2 d-block" style="font-size: 1.5rem;"></i>
-                    Ajoutez un niveau pour voir l'aperçu.
-                </div>`;
-            return;
-        }
-
+        // 4. Génération des exemples
         const list = [];
         const count = 8;
 
+        // Lire les paramètres du niveau ouvert
+        const min = parseInt(openCard.dataset.intervalMin || "1", 10);
+        const max = parseInt(openCard.dataset.intervalMax || "10", 10);
+        const eqPos = openCard.dataset.equalPosition || "RIGHT";
+        const facPos = openCard.dataset.factorPosition || "OPERAND_TABLE";
+
         for (let i = 0; i < count; i++) {
-            // A. PIOCHER UN NIVEAU ALÉATOIRE
-            const randomIndex = Math.floor(Math.random() * levelCards.length);
-            const card = levelCards[randomIndex];
-
-            // B. Lire les paramètres de CE niveau
-            const min = parseInt(card.dataset.intervalMin || "1", 10);
-            const max = parseInt(card.dataset.intervalMax || "10", 10);
-            const eqPos = card.dataset.equalPosition || "RIGHT";
-            const facPos = card.dataset.factorPosition || "OPERAND_TABLE";
-
-            // C. Choisir table et opérande
             const t = parseInt(tables[i % tables.length], 10);
             const operand = Math.floor(Math.random() * (max - min + 1)) + min;
             const result  = t * operand;
 
-            // D. Position du Facteur
+            // Position Facteur
             let currentFacPos = facPos;
             if (currentFacPos === "MIX") {
                 currentFacPos = Math.random() < 0.5 ? "OPERAND_TABLE" : "TABLE_OPERAND";
@@ -232,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 rightFactor = operand;
             }
 
-            // E. Position de l'Égal
+            // Position Égal
             let currentEqPos = eqPos;
             if (currentEqPos === "MIX") {
                 currentEqPos = Math.random() < 0.5 ? "LEFT" : "RIGHT";
@@ -246,7 +237,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             list.push(`
-                <div class="op-badge" title="Tiré du Niveau ${randomIndex + 1}">
+                <div class="op-badge">
                     ${equationHTML}
                 </div>
             `);
@@ -255,14 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
         previewBox.innerHTML = list.join("");
     }
 
-    // Appel initial
-    updatePreview();
-
     /* =========================================================================================
        GESTION DU BOUTON REFRESH
     ========================================================================================= */
-
-    const refreshPreviewBtn = document.getElementById("refresh-preview-btn");
 
     if (refreshPreviewBtn) {
         refreshPreviewBtn.addEventListener("click", () => {
@@ -493,47 +479,64 @@ document.addEventListener("DOMContentLoaded", () => {
     ========================================================================================= */
 
     function initCollapse(card) {
-        // On cible le bouton ET le header pour permettre de cliquer n'importe où (optionnel)
         const toggleBtn = card.querySelector(".toggle-level-details");
-        const header    = card.querySelector(".level-header");
         const body      = card.querySelector(".level-body");
 
         if (!toggleBtn || !body) return;
 
-        // Fonction de bascule
-        const toggle = (e) => {
-            // Évite de déclencher si on clique sur l'input du nom
-            if (e.target.closest('.level-name-input')) return;
-
-            const isCollapsed = card.classList.toggle("collapsed");
-
-            if (isCollapsed) {
-                body.style.maxHeight = "0px";
-                body.style.opacity   = "0";
-            } else {
-                // On calcule la hauteur réelle du contenu interne
-                body.style.maxHeight = body.scrollHeight + "px";
-                body.style.opacity   = "1";
+        // Fonction helper pour fermer une carte
+        const closeCard = (c) => {
+            c.classList.add("collapsed");
+            const b = c.querySelector(".level-body");
+            if (b) {
+                b.style.maxHeight = "0px";
+                b.style.opacity   = "0";
             }
         };
 
-        // Clic sur le bouton chevron
-        toggleBtn.addEventListener("click", (e) => {
-            e.stopPropagation(); // Évite double déclenchement si on ajoute l'event sur le header aussi
-            toggle(e);
-        });
+        // Fonction helper pour ouvrir une carte
+        const openCard = (c) => {
+            c.classList.remove("collapsed");
+            const b = c.querySelector(".level-body");
+            if (b) {
+                b.style.maxHeight = b.scrollHeight + "px";
+                b.style.opacity   = "1";
+            }
+        };
 
-        // (Optionnel) Clic sur tout le header pour ouvrir/fermer
-        // header.addEventListener("click", toggle);
-
-        // Initialisation état par défaut (ouvert)
-        if (!card.classList.contains("collapsed")) {
-            body.style.maxHeight = body.scrollHeight + "px";
-            body.style.opacity   = "1";
+        // État initial (Si la carte est déjà marquée collapsed dans le HTML)
+        if (card.classList.contains("collapsed")) {
+            closeCard(card);
         } else {
-            body.style.maxHeight = "0px";
-            body.style.opacity   = "0";
+            openCard(card);
         }
+
+        // Clic sur le bouton
+        toggleBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            const isCurrentlyOpen = !card.classList.contains("collapsed");
+
+            if (isCurrentlyOpen) {
+                // Si c'est ouvert, on ferme simplement
+                closeCard(card);
+                // Optionnel : On vide l'aperçu car rien n'est sélectionné
+                updatePreview();
+            } else {
+                // Si c'est fermé, ON FERME TOUS LES AUTRES d'abord
+                document.querySelectorAll(".level-card").forEach(otherCard => {
+                    if (otherCard !== card) {
+                        closeCard(otherCard);
+                    }
+                });
+
+                // Puis on ouvre celui-ci
+                openCard(card);
+
+                // Et on met à jour l'aperçu immédiatement
+                updatePreview();
+            }
+        });
     }
 
     /* =========================================================================================
@@ -717,23 +720,41 @@ document.addEventListener("DOMContentLoaded", () => {
                 temp.innerHTML = json.html.trim();
                 const newCard = temp.firstElementChild;
 
-                // 2. Injection dans le conteneur
+                // 2. Suppression du bandeau "Aucun niveau" s'il existe
+                const alertBanner = document.getElementById("no-levels-alert");
+                if (alertBanner) {
+                    alertBanner.remove();
+                }
+
+                // 3. FERMETURE DE TOUS LES NIVEAUX EXISTANTS (Mode Accordéon)
+                // On ferme visuellement tout ce qui est déjà là pour que le focus soit sur le nouveau
+                document.querySelectorAll(".level-card").forEach(c => {
+                    c.classList.add("collapsed");
+                    const b = c.querySelector(".level-body");
+                    if (b) {
+                        b.style.maxHeight = "0px";
+                        b.style.opacity   = "0";
+                    }
+                });
+
+                // 4. Injection du nouveau niveau dans le conteneur
                 levelsContainer.appendChild(newCard);
 
-                // 3. SYNCHRONISATION IMMÉDIATE DES TABLES GLOBALES
-                // On récupère les tables actuellement sélectionnées à gauche
+                // 5. Sync des tables globales vers le nouveau niveau
                 const currentTables = getSelectedTables();
-                // On les injecte dans le dataset du nouveau niveau
                 newCard.dataset.tables = JSON.stringify(currentTables);
 
-                // 4. Initialisation du niveau (Sliders, Listeners, etc.)
+                // 6. Initialisation (Events, Sliders...)
+                // Note : Le HTML renvoyé par le serveur pour un "nouveau" niveau ne doit pas avoir la classe "collapsed",
+                // donc initCollapse va le laisser ouvert par défaut.
                 initLevelCard(newCard);
 
-                // 5. Forcer la mise à jour visuelle du badge "Faits"
+                // 7. Mise à jour des compteurs et de l'aperçu
                 updateFactsCount(newCard);
 
-                // 6. Mise à jour de l'aperçu et sauvegarde état
+                // updatePreview() va chercher le seul niveau ouvert (le nouveau) pour générer les exemples
                 updatePreview();
+
                 showToast(true);
                 captureInitialState();
 

@@ -196,12 +196,66 @@
 }
 
 /* ============================================================
-   LISTE DES NIVEAUX
-   ============================================================ */
+   COLONNE DE DROITE (Structure Flexbox)
+============================================================ */
+
+.right-panel {
+    /* 1. On fixe la hauteur de TOUTE la colonne de droite par rapport à l'écran */
+    /* 130px correspond environ à la hauteur du Header bleu + Breadcrumb + Marges */
+    height: calc(100vh - 130px);
+
+    /* 2. On active Flexbox vertical */
+    display: flex;
+    flex-direction: column;
+
+    /* Optionnel : permet à la colonne de rester fixe si la gauche scrolle */
+    position: sticky;
+    top: 20px;
+}
+
+/* ============================================================
+   LISTE DES NIVEAUX (Enfant Flexbox)
+============================================================ */
+
 .levels-container {
-    max-height: calc(100vh - 220px);
+    /* 1. Prend tout l'espace disponible restant dans .right-panel */
+    flex: 1;
+
+    /* 2. Scroll uniquement sur cette zone */
     overflow-y: auto;
-    padding-right: .2rem;
+    overflow-x: hidden;
+
+    /* 3. Ajustement pour Firefox/Flexbox */
+    min-height: 0;
+
+    /* 4. Esthétique (Espace pour la scrollbar et le bas) */
+    padding-right: 12px;
+    padding-bottom: 150px; /* Grand espace vide en bas */
+    padding-top: 5px;
+
+    /* Scrollbar stylisée */
+    scrollbar-width: thin;
+    scrollbar-color: #dcd7f3 #f4f0ff;
+}
+
+/* Style Webkit (Chrome, Edge, Safari) */
+.levels-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.levels-container::-webkit-scrollbar-track {
+    background: #f4f0ff;
+    border-radius: 4px;
+}
+
+.levels-container::-webkit-scrollbar-thumb {
+    background-color: #dcd7f3;
+    border-radius: 4px;
+    border: 2px solid #f4f0ff;
+}
+
+.levels-container::-webkit-scrollbar-thumb:hover {
+    background-color: #b9a8ff;
 }
 
 /* ============================================================
