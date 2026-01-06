@@ -242,3 +242,32 @@
     transform: scale(1.4);
     background-color: #495057;
 }
+
+/* -------------------------------------------- */
+/* Edited input state (same logic as class)     */
+/* -------------------------------------------- */
+
+#trainingTitle.is-edited {
+    background-color: #fff3cd; /* light yellow, same visual cue */
+}
+
+
+/* -------------------------------------------- */
+/* Training title — stable centering            */
+/* -------------------------------------------- */
+#trainingTitle {
+    text-align: center;
+    line-height: 1.5;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+/* Edited state (same color, no layout shift) */
+#trainingTitle.is-edited {
+    background-color: #dcdca7;
+}
+
+/* Prevent Bootstrap focus jump */
+#trainingTitle:focus {
+    box-shadow: none;
+}
