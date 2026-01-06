@@ -534,14 +534,16 @@ class ObjectiveController extends AbstractController
         foreach ($currentObjectif->getPrerequis() as $existing) {
             // Si c'est un AUTRE prérequis (id différent) mais qui pointe vers le MÊME objectif
             if ($existing->getId() !== $prerequis->getId() && $existing->getRequiredObjective() === $targetObjStringID) {
+                // Pour l'affichage de l'erreur
+                $conflictName = $targetObj->getName() ?: $targetObjStringID;
                 return new JsonResponse([
                     'success' => false,
-                    'message' => "Un prérequis pour cet objectif existe déjà."
+                    'message' => "Un prérequis pour l'objectif \"$conflictName\" existe déjà."
                 ], 400);
             }
         }
 
-        // 4. Mise à jour
+        // 4. Mise à jour de l'entité
         $prerequis->setRequiredObjective($targetObjStringID);
         $prerequis->setRequiredLevel($targetLvl->getLevelID());
         $prerequis->setEncountersPercent($views);
@@ -549,20 +551,28 @@ class ObjectiveController extends AbstractController
 
         $this->em->flush();
 
-        // 5. Rendu du nouveau HTML pour le badge
+        // 5. Préparation des variables pour la vue (Gestion des noms vides)
         $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
         $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
 
+        // 6. Rendu du badge HTML
+        // C'EST ICI QUE L'ERREUR SE PRODUISAIT : Il manquait les DbId
         $html = $this->renderView('objective/_prereq_badge.html.twig', [
             'p' => $prerequis,
+
+            // Pour l'affichage texte
             'targetObjName' => $targetObjName,
-            'targetLvlName' => $targetLvlName
+            'targetLvlName' => $targetLvlName,
+
+            // INDISPENSABLES pour le JS (bouton édition)
+            'targetObjDbId' => $targetObj->getId(),
+            'targetLvlDbId' => $targetLvl->getId()
         ]);
 
         return new JsonResponse([
             'success' => true,
             'html' => $html,
-            'id' => $prerequis->getId() // On renvoie l'ID pour savoir quoi remplacer en JS
+            'id' => $prerequis->getId()
         ]);
     }
 }
