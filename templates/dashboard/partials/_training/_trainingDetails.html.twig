@@ -28,59 +28,83 @@
 
     </div>
 
-    {# ================= OBJECTIVES GRID ================= #}
+    {# ================= OBJECTIVES CAROUSEL ================= #}
     <div class="section-objectives-area mb-4 px-5 rounded-bottom-5">
 
-        <div class="objectives-scroll">
+        <div class="objectives-carousel" tabindex="0">
 
-            <div class="objectives-grid pt-1 pb-1">
+            <button
+                class="carousel-arrow carousel-arrow-left"
+                aria-label="Objectif précédent"
+                type="button"
+            >
+                ‹
+            </button>
 
-                {% for objectif in objectifs %}
-                    <div
-                        class="objective-card card border-0 shadow-sm clickable-tile"
-                        data-id="{{ objectif.id }}"
-                        role="link"
-                        tabindex="0"
-                        aria-label="Voir le détail de l’objectif {{ objectif.name }}"
-                    >
+            <div class="carousel-viewport">
+                <div class="carousel-track mt-2 mb-2">
 
-                        <div class="card-body d-flex flex-column">
+                    {% for objectif in objectifs %}
+                        <article
+                            class="carousel-slide objective-card"
+                            data-id="{{ objectif.id }}"
+                            tabindex="-1"
+                            role="group"
+                            aria-label="Objectif {{ objectif.name }}"
+                        >
 
-                            {# Top row #}
-                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                <i class="bi bi-bullseye fs-3"></i>
-                                <i class="bi bi-chevron-right tile-chevron"></i>
-                            </div>
+                            <div class="card-body d-flex flex-column">
 
-                            {# Title #}
-                            <div class="objective-title text-truncate-multiline mb-3">
-                                {{ objectif.name }}
-                            </div>
-
-                            {# Spacer pushes bottom content down #}
-                            <div class="mt-auto text-center">
-
-                                <div class="tile-hint mb-1">
-                                    Accéder au détail de l’objectif
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <i class="bi bi-bullseye fs-3"></i>
+                                    <i class="bi bi-chevron-right tile-chevron"></i>
                                 </div>
 
-                                <div class="objective-info">
-                                    <i class="bi bi-layers me-1"></i>
-                                    {{ objectif.niveaux|length }} niveau(x)
+                                <div class="objective-title text-truncate-multiline mb-3">
+                                    {{ objectif.name }}
+                                </div>
+
+                                <div class="mt-auto text-center">
+                                    <div class="tile-hint mb-1">
+                                        Accéder au détail de l’objectif
+                                    </div>
+
+                                    <div class="objective-info">
+                                        <i class="bi bi-layers me-1"></i>
+                                        {{ objectif.niveaux|length }} niveau(x)
+                                    </div>
                                 </div>
 
                             </div>
 
-                        </div>
+                        </article>
+                    {% endfor %}
 
-                    </div>
-                {% endfor %}
-
+                </div>
             </div>
 
+            <button
+                class="carousel-arrow carousel-arrow-right"
+                aria-label="Objectif suivant"
+                type="button"
+            >
+                ›
+            </button>
+
+            <div class="carousel-indicators" aria-hidden="true">
+                {% for objectif in objectifs %}
+                    <button
+                        class="carousel-indicator"
+                        type="button"
+                        tabindex="-1"
+                    ></button>
+                {% endfor %}
+            </div>
         </div>
 
+
     </div>
+
 
     {# ================= ACTION BAR ================= #}
     <div class="section-buttons-area d-flex justify-content-between align-items-center px-4">

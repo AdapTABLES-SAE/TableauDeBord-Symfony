@@ -1,6 +1,6 @@
-/* -------------------------------------------- */
-/* Section layout                               */
-/* -------------------------------------------- */
+/* ============================================ */
+/* SECTION LAYOUT                               */
+/* ============================================ */
 
 .section-title-area {
     height: 15%;
@@ -16,42 +16,60 @@
     height: 20%;
 }
 
-/* -------------------------------------------- */
-/* Training title                               */
-/* -------------------------------------------- */
+/* ============================================ */
+/* TRAINING TITLE                               */
+/* ============================================ */
 
 #trainingTitle {
     max-width: 250px;
 }
 
-/* -------------------------------------------- */
-/* Scroll container                             */
-/* -------------------------------------------- */
+/* ============================================ */
+/* OBJECTIVES CAROUSEL (NEW CORE)                */
+/* ============================================ */
 
-.objectives-scroll {
+.objectives-carousel {
+    position: relative;
     flex: 1 1 auto;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-}
 
-/* -------------------------------------------- */
-/* Objectives grid                              */
-/* -------------------------------------------- */
-
-.objectives-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, 210px);
-    gap: 1.25rem;
+    display: flex;
+    align-items: center;
     justify-content: center;
+
+    outline: none;
 }
 
 /* -------------------------------------------- */
-/* Objective cards (WHITE)                      */
+/* Viewport (limits to 3 slides max)             */
 /* -------------------------------------------- */
 
-.objective-card {
-    width: 210px;
-    height: 250px;
+.carousel-viewport {
+    overflow: hidden;
+    width: 100%;
+    max-width: 820px; /* 3 × 260px + gaps */
+}
+
+/* -------------------------------------------- */
+/* Track                                        */
+/* -------------------------------------------- */
+
+.carousel-track {
+    display: flex;
+    align-items: stretch;
+    gap: 1.25rem;
+
+    transition: transform 0.35s ease;
+    will-change: transform;
+}
+
+/* -------------------------------------------- */
+/* Slides (cards)                               */
+/* -------------------------------------------- */
+
+.carousel-slide {
+    flex: 0 0 260px;
+    height: 260px;
+
     border-radius: 1.25rem;
     cursor: pointer;
 
@@ -59,42 +77,39 @@
     color: #212529;
 
     transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        background-color 0.18s ease;
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        opacity 0.25s ease;
 }
 
-.objective-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.12);
-    background-color: #f8f9fa;
+/* Center (focused) slide */
+.carousel-slide.is-center {
+    transform: scale(1.08);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+    z-index: 2;
 }
 
-.objective-card:active {
-    transform: scale(0.98);
-}
-
-.objective-card:focus-visible {
-    outline: none;
-    box-shadow:
-        0 0 0 3px rgba(108, 117, 125, 0.35),
-        0 10px 22px rgba(0, 0, 0, 0.12);
+/* Side slides */
+.carousel-slide.is-side {
+    opacity: 0.65;
 }
 
 /* -------------------------------------------- */
 /* Card content                                 */
 /* -------------------------------------------- */
 
-.objective-card .card-body {
+.carousel-slide .card-body {
     height: 100%;
     padding: 1.1rem;
+    display: flex;
+    flex-direction: column;
 }
 
 /* -------------------------------------------- */
 /* Icons & chevron                              */
 /* -------------------------------------------- */
 
-.objective-card i {
+.carousel-slide i {
     color: #6c757d;
 }
 
@@ -103,7 +118,7 @@
     transition: transform 0.18s ease, opacity 0.18s ease;
 }
 
-.objective-card:hover .tile-chevron {
+.carousel-slide:hover .tile-chevron {
     transform: translateX(4px);
     opacity: 0.7;
 }
@@ -118,7 +133,7 @@
 }
 
 /* -------------------------------------------- */
-/* Truncated text                               */
+/* Text truncation                              */
 /* -------------------------------------------- */
 
 .text-truncate-multiline {
@@ -127,6 +142,7 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
+
     line-height: 1.25rem;
     max-height: 3.75rem;
 }
@@ -146,17 +162,83 @@
     color: #495057;
 }
 
-/* -------------------------------------------- */
-/* Responsive                                   */
-/* -------------------------------------------- */
+/* ============================================ */
+/* CAROUSEL ARROWS                              */
+/* ============================================ */
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+
+    background: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.carousel-arrow-left {
+    left: 0;
+}
+
+.carousel-arrow-right {
+    right: 0;
+}
+
+.carousel-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* ============================================ */
+/* RESPONSIVE                                   */
+/* ============================================ */
 
 @media (max-width: 768px) {
-    .objectives-grid {
-        grid-template-columns: repeat(auto-fit, 180px);
-    }
-
-    .objective-card {
-        width: 180px;
+    .carousel-slide {
+        flex: 0 0 200px;
         height: 230px;
     }
+
+    .carousel-viewport {
+        max-width: 640px;
+    }
+}
+
+/* ============================================ */
+/* CAROUSEL INDICATORS                          */
+/* ============================================ */
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.carousel-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+
+    border: none;
+    background-color: #adb5bd;
+    opacity: 0.5;
+
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.carousel-indicator.is-active {
+    opacity: 1;
+    transform: scale(1.4);
+    background-color: #495057;
 }
