@@ -8,6 +8,7 @@ import { openC2Modal }   from "./modals/modal_c2.js";
 import { openRecModal }  from "./modals/modal_rec.js";
 import { openIdModal }   from "./modals/modal_id.js";
 import { openMembModal } from "./modals/modal_memb.js";
+import { initPrereqModal } from './modals/modal_prereq.js';
 
 // Import des actions communes
 import { saveTask as originalSaveTask, deleteTask as originalDeleteTask } from "./modals/task_actions.js";
@@ -25,6 +26,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let unsavedChanges = false;
     let initialState   = null;
+
+    // Initialisation de la modale prérequis
+    initPrereqModal();
 
     /* =========================================================================================
        COLLECTEUR GLOBAL : objectif + niveaux

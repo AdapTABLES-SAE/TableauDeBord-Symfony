@@ -90,19 +90,39 @@
 }
 
 /* ============================================================
-   PREREQUIS
-   ============================================================ */
-.prereq-block {
-    background: #f8f6ff;
-    border-radius: .75rem;
-    padding: .75rem .9rem;
-    border: 1px solid #e5ddff;
+   LISTE DES PRÉREQUIS (SCROLLABLE)
+============================================================ */
+
+#prerequisites-list {
+    /* Hauteur max correspondant à environ 3 badges */
+    max-height: 180px;
+
+    /* Active le scroll si ça dépasse */
+    overflow-y: auto;
+    overflow-x: hidden;
+
+    padding-right: 5px;
+    padding-bottom: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: #dcd7f3 transparent;
 }
-.prereq-row span {
-    font-size: .85rem;
+
+/* Style Webkit (Chrome, Edge, Safari) */
+#prerequisites-list::-webkit-scrollbar {
+    width: 6px;
 }
-.prereq-row .form-range {
-    margin-top: .25rem;
+
+#prerequisites-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+#prerequisites-list::-webkit-scrollbar-thumb {
+    background-color: #dcd7f3;
+    border-radius: 3px;
+}
+
+#prerequisites-list::-webkit-scrollbar-thumb:hover {
+    background-color: #b9a8ff;
 }
 
 /* ============================================================
@@ -200,15 +220,13 @@
 ============================================================ */
 
 .right-panel {
-    /* 1. On fixe la hauteur de TOUTE la colonne de droite par rapport à l'écran */
+    /* On fixe la hauteur de TOUTE la colonne de droite par rapport à l'écran */
     /* 130px correspond environ à la hauteur du Header bleu + Breadcrumb + Marges */
     height: calc(100vh - 130px);
 
-    /* 2. On active Flexbox vertical */
     display: flex;
     flex-direction: column;
 
-    /* Optionnel : permet à la colonne de rester fixe si la gauche scrolle */
     position: sticky;
     top: 20px;
 }
@@ -218,22 +236,17 @@
 ============================================================ */
 
 .levels-container {
-    /* 1. Prend tout l'espace disponible restant dans .right-panel */
+    /* Prend tout l'espace disponible restant dans .right-panel */
     flex: 1;
 
-    /* 2. Scroll uniquement sur cette zone */
     overflow-y: auto;
     overflow-x: hidden;
-
-    /* 3. Ajustement pour Firefox/Flexbox */
     min-height: 0;
 
-    /* 4. Esthétique (Espace pour la scrollbar et le bas) */
     padding-right: 12px;
-    padding-bottom: 150px; /* Grand espace vide en bas */
+    padding-bottom: 150px;
     padding-top: 5px;
 
-    /* Scrollbar stylisée */
     scrollbar-width: thin;
     scrollbar-color: #dcd7f3 #f4f0ff;
 }
@@ -294,5 +307,3 @@
     70%  { box-shadow: 0 0 0 12px rgba(255, 160, 0, 0); }
     100% { box-shadow: 0 0 0 0 rgba(255, 160, 0, 0); }
 }
-
-

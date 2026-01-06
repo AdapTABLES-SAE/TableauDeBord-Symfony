@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/task/rectask_preview.css') }}">
     <link rel="stylesheet" href="{{ asset('css/task/idtask_preview.css') }}">
     <link rel="stylesheet" href="{{ asset('css/task/membtask_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/objective/prereq_modal.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -72,34 +73,29 @@
                             <i class="bi bi-flag me-2"></i> Prérequis
                         </div>
 
-                        <div class="prereq-block mb-4">
-                            <div class="prereq-row mb-3">
-                                <div class="d-flex justify-content-between">
-                                    <span>Vus</span>
-                                    <span id="prereq_seen_value">{{ prereq_seen }}%</span>
-                                </div>
-                                <input type="range"
-                                       class="form-range"
-                                       min="0"
-                                       max="100"
-                                       value="{{ prereq_seen }}"
-                                       name="prereq_seen"
-                                       id="prereq_seen_slider">
-                            </div>
+                        <button type="button" id="btn-open-prereq-modal" class="btn-add-prereq mb-4">
+                            <i class="bi bi-plus-circle me-2"></i> Ajouter un prérequis
+                        </button>
 
-                            <div class="prereq-row">
-                                <div class="d-flex justify-content-between">
-                                    <span>Complétés</span>
-                                    <span id="prereq_completed_value">{{ prereq_done }}%</span>
-                                </div>
-                                <input type="range"
-                                       class="form-range"
-                                       min="0"
-                                       max="100"
-                                       value="{{ prereq_done }}"
-                                       name="prereq_completed"
-                                       id="prereq_completed_slider">
-                            </div>
+                        <div id="prerequisites-list" class="d-flex flex-column gap-2 mb-2">
+                            {% for p in objectif.prerequis %}
+                            {# 1. Récupération des entités #}
+                            {% set targetObj = find_objective_entity(p.requiredObjective, entrainement) %}
+                            {% set targetLvl = find_level_entity(p.requiredLevel, entrainement) %}
+
+                            {# 2. Vérification (Twig utilise 'and', pas '&&') #}
+                            {% if targetObj and targetLvl %}
+                            {% include 'objective/_prereq_badge.html.twig' with {
+                            'p': p,
+
+                            'targetObjName': targetObj.name|default(targetObj.objID),
+                            'targetLvlName': targetLvl.name|default(targetLvl.levelID),
+
+                            'targetObjDbId': targetObj.id,
+                            'targetLvlDbId': targetLvl.id
+                            } %}
+                            {% endif %}
+                            {% endfor %}
                         </div>
 
                         <!-- Preview params -->
@@ -185,6 +181,9 @@
     {% include 'objective/_modal_task_id.html.twig' %}
     {% include 'objective/_modal_task_memb.html.twig' %}
 
+    {# MODALE PREREQUIS #}
+    {% include 'objective/_modal_prereq.html.twig' %}
+
     {# Toasts génériques pour showToast() #}
     {% include 'components/toast.html.twig' with {
         toast_success_title: "Modifications enregistrées",
@@ -201,7 +200,11 @@
             deleteLevelUrlTemplate: '{{ path('objective_delete_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
             saveTaskUrlTemplate: '{{ path('objective_save_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
             deleteTaskUrlTemplate: '{{ path('objective_delete_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
-            saveAllUrl: '{{ path('objective_save_all', {id: objectif.id}) }}'
+            saveAllUrl: '{{ path('objective_save_all', {id: objectif.id}) }}',
+            apiDataUrl: '{{ path('objective_api_data', {entrainement: entrainement.id}) }}?exclude_id={{ objectif.id }}',
+            addPrerequisUrl: '{{ path('objective_add_prerequis', {id: objectif.id}) }}',
+            deletePrerequisUrlTemplate: '{{ path('objective_delete_prerequis', {id: 999999})|replace({'999999':'__ID__'}) }}',
+            editPrerequisUrlTemplate: '{{ path('objective_edit_prerequis', {id: 999999})|replace({'999999':'__ID__'}) }}'
         };
     </script>
     <script type="module" src="{{ asset('js/objective_builder.js') }}"></script>

@@ -7,6 +7,7 @@ use App\Entity\Entrainement;
 use App\Entity\Objectif;
 use App\Entity\Niveau;
 use App\Entity\Tache;
+use App\Entity\Prerequis;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -374,5 +375,194 @@ class ObjectiveController extends AbstractController
         }
 
         return new JsonResponse(['success' => true]);
+    }
+
+
+    /**
+     * API pour récupérer les objectifs et niveaux d'un entraînement (pour la modale prérequis).
+     * On exclut l'objectif actuel pour éviter les boucles infinies.
+     */
+    #[Route('/{entrainement}/api/data', name: 'api_data', methods: ['GET'])]
+    public function getTrainingData(Entrainement $entrainement, Request $request): JsonResponse
+    {
+        $currentObjId = (int) $request->query->get('exclude_id');
+        $data = [];
+
+        foreach ($entrainement->getObjectifs() as $obj) {
+            // On ne propose pas l'objectif qu'on est en train d'éditer comme prérequis de lui-même
+            if ($obj->getId() === $currentObjId) {
+                continue;
+            }
+
+            $levels = [];
+            foreach ($obj->getNiveaux() as $lvl) {
+                $levels[] = [
+                    'id' => $lvl->getId(),
+                    'name' => $lvl->getName()
+                ];
+            }
+
+            $data[] = [
+                'id' => $obj->getId(),
+                'name' => $obj->getName(),
+                'levels' => $levels
+            ];
+        }
+
+        return new JsonResponse($data);
+    }
+
+    /**
+     * Ajout d'un prérequis en base de données.
+     */
+    #[Route('/objectif/{id}/prerequis/add', name: 'add_prerequis', methods: ['POST'])]
+    public function addPrerequis(Objectif $objectif, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        // --- 1. Validation des pourcentages (Règle : Au moins un critère > 0) ---
+        $views   = (float)($data['views'] ?? 0);
+        $success = (float)($data['success'] ?? 0);
+
+        // On vérifie strictement si les deux sont à 0 (ou négatifs)
+        if ($views <= 0 && $success <= 0) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Vous devez définir au moins 1% de vues ou de succès.'
+            ], 400);
+        }
+
+        // --- 2. Récupération des cibles ---
+        $targetObjId = $data['targetObjectiveId'] ?? null;
+        $targetLvlId = $data['targetLevelId'] ?? null;
+
+        $targetObj = $this->em->getRepository(Objectif::class)->find($targetObjId);
+        $targetLvl = $this->em->getRepository(Niveau::class)->find($targetLvlId);
+
+        if (!$targetObj || !$targetLvl) {
+            return new JsonResponse(['success' => false, 'message' => 'Cible introuvable'], 404);
+        }
+
+        $targetObjStringID = $targetObj->getObjID();
+
+        // --- 3. Validation d'unicité (Règle : Pas de doublon d'objectif) ---
+        // On parcourt les prérequis existants de l'objectif en cours d'édition
+        foreach ($objectif->getPrerequis() as $existingPrereq) {
+            // Si on a déjà un prérequis qui pointe vers le même Objectif Cible (peu importe le niveau)
+            if ($existingPrereq->getRequiredObjective() === $targetObjStringID) {
+                // On récupère le nom pour un message d'erreur clair
+                $name = $targetObj->getName() ?: 'cet objectif';
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => "Un prérequis pour l'objectif \"$name\" existe déjà. Supprimez l'ancien pour changer de niveau."
+                ], 400);
+            }
+        }
+
+        // --- 4. Création et Enregistrement ---
+        $prerequis = new Prerequis();
+        $prerequis->setObjectif($objectif);
+
+        $prerequis->setRequiredObjective($targetObjStringID);
+        $prerequis->setRequiredLevel($targetLvl->getLevelID());
+
+        $prerequis->setEncountersPercent($views);
+        $prerequis->setSuccessPercent($success);
+
+        $this->em->persist($prerequis);
+        $this->em->flush();
+
+        // --- 5. Rendu ---
+        $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
+        $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
+
+        $html = $this->renderView('objective/_prereq_badge.html.twig', [
+            'p' => $prerequis,
+            'targetObjName' => $targetObjName,
+            'targetLvlName' => $targetLvlName
+        ]);
+
+        return new JsonResponse([
+            'success' => true,
+            'html' => $html
+        ]);
+    }
+
+    /**
+     * Suppression d'un prérequis.
+     */
+    #[Route('/prerequis/{id}/delete', name: 'delete_prerequis', methods: ['DELETE'])]
+    public function deletePrerequis(Prerequis $prerequis): JsonResponse
+    {
+        $this->em->remove($prerequis);
+        $this->em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    /**
+     * Modification d'un prérequis existant.
+     */
+    #[Route('/prerequis/{id}/edit', name: 'edit_prerequis', methods: ['POST'])]
+    public function editPrerequis(Prerequis $prerequis, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        // 1. Validation basique (Sliders)
+        $views   = (float)($data['views'] ?? 0);
+        $success = (float)($data['success'] ?? 0);
+
+        if ($views <= 0 && $success <= 0) {
+            return new JsonResponse(['success' => false, 'message' => 'Au moins 1% requis.'], 400);
+        }
+
+        // 2. Récupération des cibles
+        $targetObjId = $data['targetObjectiveId'] ?? null;
+        $targetLvlId = $data['targetLevelId'] ?? null;
+
+        $targetObj = $this->em->getRepository(Objectif::class)->find($targetObjId);
+        $targetLvl = $this->em->getRepository(Niveau::class)->find($targetLvlId);
+
+        if (!$targetObj || !$targetLvl) {
+            return new JsonResponse(['success' => false, 'message' => 'Cible introuvable'], 404);
+        }
+
+        // 3. Validation Unicité (On exclut le prérequis actuel de la vérification)
+        $targetObjStringID = $targetObj->getObjID();
+        $currentObjectif = $prerequis->getObjectif();
+
+        foreach ($currentObjectif->getPrerequis() as $existing) {
+            // Si c'est un AUTRE prérequis (id différent) mais qui pointe vers le MÊME objectif
+            if ($existing->getId() !== $prerequis->getId() && $existing->getRequiredObjective() === $targetObjStringID) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => "Un prérequis pour cet objectif existe déjà."
+                ], 400);
+            }
+        }
+
+        // 4. Mise à jour
+        $prerequis->setRequiredObjective($targetObjStringID);
+        $prerequis->setRequiredLevel($targetLvl->getLevelID());
+        $prerequis->setEncountersPercent($views);
+        $prerequis->setSuccessPercent($success);
+
+        $this->em->flush();
+
+        // 5. Rendu du nouveau HTML pour le badge
+        $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
+        $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
+
+        $html = $this->renderView('objective/_prereq_badge.html.twig', [
+            'p' => $prerequis,
+            'targetObjName' => $targetObjName,
+            'targetLvlName' => $targetLvlName
+        ]);
+
+        return new JsonResponse([
+            'success' => true,
+            'html' => $html,
+            'id' => $prerequis->getId() // On renvoie l'ID pour savoir quoi remplacer en JS
+        ]);
     }
 }
