@@ -55,7 +55,7 @@ class TeacherDashboardController extends AbstractController
             "dashboard_js" => [
                 $assets->getUrl('js/partials/_class/classDetails.js'),
                 $assets->getUrl('js/partials/_class/classList.js'),
-                $assets->getUrl('js/partials/_training/carousel.js'),
+                $assets->getUrl('js/partials/_training/trainingDetails.js'),
             ],
 
             'breadcrumbItems' => $breadcrumbItems,
