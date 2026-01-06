@@ -1,159 +1,157 @@
-document.addEventListener("partial:loaded", () => {
-    waitForCarouselToBeReady();
-});
+// ============================================================================
+//  OBJECTIVES CAROUSEL — Activated when partial:loaded fires
+// ============================================================================
 
-function waitForCarouselToBeReady() {
-    const track = document.getElementById("carouselTrack");
-    if (!track) {
-        requestAnimationFrame(waitForCarouselToBeReady);
-        return;
+document.addEventListener("partial:loaded", (e) => {
+    const { pair, container } = e.detail || {};
+
+    if (pair !== "trainings") return;
+    if (!container) return;
+
+    const q = (sel) => container.querySelector(sel);
+    const qAll = (sel) => container.querySelectorAll(sel);
+
+    const carousel = q(".objectives-carousel");
+    if (!carousel) return;
+
+    const viewport   = q(".carousel-viewport");
+    const track      = q(".carousel-track");
+    const slides     = [...qAll(".carousel-slide")];
+    const btnPrev    = q(".carousel-arrow-left");
+    const btnNext    = q(".carousel-arrow-right");
+    const indicators = [...qAll(".carousel-indicator")];
+
+    if (!viewport || !track || slides.length === 0) return;
+
+    let currentIndex = 0;
+    let slideWidth = 0;
+    let gap = 0;
+
+    function measure() {
+        slideWidth = slides[0].offsetWidth;
+        const styles = getComputedStyle(track);
+        gap = parseInt(styles.gap || 20, 10);
     }
 
-    const cards = track.querySelectorAll(".objective-card");
-    if (cards.length === 0) {
-        requestAnimationFrame(waitForCarouselToBeReady);
-        return;
+    function translateTo(index, animate = true) {
+        const viewportWidth = viewport.clientWidth;
+        const offset =
+            index * (slideWidth + gap) -
+            (viewportWidth / 2 - slideWidth / 2);
+
+        track.style.transition = animate ? "transform 0.35s ease" : "none";
+        track.style.transform = `translateX(${-offset}px)`;
     }
 
-    initializeCarousel(track);
-}
+    function updateClasses() {
+        slides.forEach((slide, i) => {
+            slide.classList.toggle("is-center", i === currentIndex);
+            slide.classList.toggle("is-side", Math.abs(i - currentIndex) === 1);
+        });
 
-function initializeCarousel(track) {
+        indicators.forEach((dot, i) => {
+            dot.classList.toggle("is-active", i === currentIndex);
+        });
 
-    // Empêche double initialisation
-    if (track.dataset.carouselInit === "1") return;
-    track.dataset.carouselInit = "1";
-
-    // console.log("INIT CAROUSEL !!!");
-
-    const leftBtn = document.querySelector(".arrow-left");
-    const rightBtn = document.querySelector(".arrow-right");
-    const indicator = document.getElementById("carouselIndicator");
-
-    if (!leftBtn || !rightBtn || !indicator) {
-        console.warn("Carousel: composants manquants.");
-        return;
+        btnPrev && (btnPrev.disabled = currentIndex === 0);
+        btnNext && (btnNext.disabled = currentIndex === slides.length - 1);
     }
 
-    const getCards = () => Array.from(track.querySelectorAll(".objective-card"));
-    const total = getCards().length;
-
-    let currentIndex = 1; // On commence toujours à 1 / total
-
-    function getCenterCard() {
-        const cards = getCards();
-        const viewport = track.closest(".carousel-viewport");
-        const viewportRect = viewport.getBoundingClientRect();
-        const centerX = viewportRect.left + viewportRect.width / 2;
-
-        let closest = null;
-        let diffMin = Infinity;
-
-        for (let card of cards) {
-            const rect = card.getBoundingClientRect();
-            const cardCenter = rect.left + rect.width / 2;
-            const diff = Math.abs(cardCenter - centerX);
-
-            if (diff < diffMin) {
-                diffMin = diff;
-                closest = card;
-            }
-        }
-        return closest;
+    function goTo(index) {
+        currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+        translateTo(currentIndex, true);
+        updateClasses();
     }
 
-    function updateActiveCard() {
-        const cards = getCards();
-        cards.forEach(c => c.classList.remove("active"));
+    // ------------------------------------------------------------------------
+    // ARROWS / INDICATORS
+    // ------------------------------------------------------------------------
+    btnPrev?.addEventListener("click", () => goTo(currentIndex - 1));
+    btnNext?.addEventListener("click", () => goTo(currentIndex + 1));
+    indicators.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
 
-        const center = getCenterCard();
-        if (center) center.classList.add("active");
+    // ------------------------------------------------------------------------
+    // SWIPE / TAP HANDLING (BUTTON-GUARDED)
+    // ------------------------------------------------------------------------
+    let isDragging = false;
+    let startX = 0;
+    let startTranslate = 0;
+    let activeSlide = null;
+
+    function getTranslateX() {
+        const match = track.style.transform.match(/-?\d+(\.\d+)?/);
+        return match ? parseFloat(match[0]) : 0;
     }
 
-    function updateIndicator() {
-        indicator.textContent = `Objectif ${currentIndex} / ${total}`;
+    function indexFromTranslate(x) {
+        const viewportCenter = viewport.clientWidth / 2;
+        const slideSpan = slideWidth + gap;
+        const trackOffset = -x + viewportCenter - slideWidth / 2;
+        return Math.round(trackOffset / slideSpan);
     }
 
-    let isAnimating = false;
+    viewport.addEventListener("pointerdown", (e) => {
+        // Only react to primary button / touch
+        if (e.button !== 0) return;
 
-    function computeCardWidth() {
-        const first = getCards()[0];
-        const style = window.getComputedStyle(first);
-        return first.offsetWidth +
-            parseFloat(style.marginLeft) +
-            parseFloat(style.marginRight);
-    }
-
-    const cardWidth = computeCardWidth();
-
-    function slide(direction) {
-        if (isAnimating) return;
-        isAnimating = true;
+        isDragging = false;
+        startX = e.clientX;
+        startTranslate = getTranslateX();
+        activeSlide = e.target.closest(".carousel-slide") || null;
 
         track.style.transition = "none";
-        track.style.transform = "translateX(0)";
-        track.offsetHeight; // force reflow
+        viewport.setPointerCapture(e.pointerId);
+    });
 
-        track.style.transition = "transform 0.3s ease";
+    viewport.addEventListener("pointermove", (e) => {
+        // 🚫 Do nothing unless primary button is pressed
+        if (e.buttons !== 1) return;
 
-        const offset = direction === "right" ? -cardWidth : cardWidth;
-        track.style.transform = `translateX(${offset}px)`;
+        const delta = e.clientX - startX;
 
-        function onEnd(e) {
-            if (e.target !== track) return;
-
-            track.removeEventListener("transitionend", onEnd);
-            track.style.transition = "none";
-
-            // Réorganisation DOM
-            if (direction === "right") {
-                const first = track.firstElementChild;
-                track.appendChild(first);
-            } else {
-                const last = track.lastElementChild;
-                track.insertBefore(last, track.firstElementChild);
-            }
-
-            // Reset visuel
-            track.style.transform = "translateX(0)";
-
-            // Ajustement de l'index logique
-            if (direction === "right") {
-                currentIndex++;
-                if (currentIndex > total) currentIndex = 1;
-            } else {
-                currentIndex--;
-                if (currentIndex < 1) currentIndex = total;
-            }
-
-            updateActiveCard();
-            updateIndicator();
-
-            isAnimating = false;
+        if (Math.abs(delta) > 6) {
+            isDragging = true;
         }
 
-        track.addEventListener("transitionend", onEnd);
-    }
+        if (isDragging) {
+            track.style.transform = `translateX(${startTranslate + delta}px)`;
+        }
+    });
 
-    function slideRight() {
-        slide("right");
-    }
+    viewport.addEventListener("pointerup", () => {
+        if (isDragging) {
+            goTo(indexFromTranslate(getTranslateX()));
+        } else if (activeSlide) {
+            const url = activeSlide.dataset.editUrl;
+            if (url) window.location.href = url;
+        }
 
-    function slideLeft() {
-        slide("left");
-    }
+        isDragging = false;
+        activeSlide = null;
+    });
 
-    rightBtn.addEventListener("click", slideRight);
-    leftBtn.addEventListener("click", slideLeft);
+    viewport.addEventListener("pointercancel", () => {
+        isDragging = false;
+        activeSlide = null;
+        goTo(currentIndex);
+    });
 
-    if (!window.carouselKeyboardBound) {
-        document.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowRight") slideRight();
-            if (e.key === "ArrowLeft") slideLeft();
-        });
-        window.carouselKeyboardBound = true;
-    }
+    viewport.addEventListener("pointerleave", () => {
+        if (isDragging) {
+            isDragging = false;
+            activeSlide = null;
+            goTo(currentIndex);
+        }
+    });
 
-    updateActiveCard();
-    updateIndicator();
-}
+    // ------------------------------------------------------------------------
+    // INIT
+    // ------------------------------------------------------------------------
+    measure();
+    goTo(0);
+
+    window.addEventListener("resize", () => {
+        measure();
+        translateTo(currentIndex, false);
+    });
+});

@@ -6,6 +6,7 @@ use App\Entity\Classe;
 use App\Entity\Eleve;
 use App\Entity\Enseignant;
 use App\Entity\Entrainement;
+use App\Entity\Objectif;
 use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
 use App\Service\TrainingSyncService;
@@ -56,6 +57,7 @@ class TeacherDashboardController extends AbstractController
                 $assets->getUrl('js/partials/_class/classDetails.js'),
                 $assets->getUrl('js/partials/_class/classList.js'),
                 $assets->getUrl('js/partials/_training/trainingDetails.js'),
+                $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
             'breadcrumbItems' => $breadcrumbItems,
@@ -317,4 +319,46 @@ class TeacherDashboardController extends AbstractController
 
         return new JsonResponse(['success' => true]);
     }
+
+    #[Route('/dashboard/training/{id}/objective/add', name: 'training_objective_add', methods: ['POST'])]
+    public function addObjective(
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        SessionInterface $session
+    ): JsonResponse {
+        $training = $em->getRepository(Entrainement::class)->find($id);
+        if (!$training) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $teacherId = $session->get('teacher_id');
+        if (!$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $name = trim((string) ($data['name'] ?? ''));
+
+        if ($name === '') {
+            return new JsonResponse(['success' => false, 'fatal' => false]);
+        }
+
+        $objectif = new Objectif();
+        $objectif->setName($name);
+        $objectif->setEntrainement($training);
+        $objectif->setObjID(uniqid('obj_', true));
+
+        $em->persist($objectif);
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'objective' => [
+                'id' => $objectif->getId(),
+                'name' => $objectif->getName(),
+            ],
+        ]);
+    }
+
 }
