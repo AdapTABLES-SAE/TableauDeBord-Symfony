@@ -1,6 +1,4 @@
-// public/js/modals/modal_id.js
-
-import { saveTask, deleteTask } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal } from "./task_actions.js";
 
 /* ======================================================
    OUTIL : contexte du niveau (comme pour C2 / REC)
@@ -234,13 +232,22 @@ export function openIdModal(levelId, task, card) {
 
     /* ------------------ DELETE ------------------ */
     const deleteBtn = document.getElementById("id_deleteBtn");
-    if (task && task.id) {
-        deleteBtn.classList.remove("d-none");
-        deleteBtn.onclick = () =>
-            deleteTask(levelId, "ID", card, "taskModalID");
-    } else {
-        deleteBtn.classList.add("d-none");
-        deleteBtn.onclick = null;
+    if (deleteBtn) {
+        if (task && task.id) {
+            deleteBtn.classList.remove("d-none");
+            deleteBtn.onclick = () => {
+                openTaskDeleteModal(
+                    levelId,
+                    "ID",
+                    card,
+                    "taskModalID",
+                    "Tâche Identification (ID)"
+                );
+            };
+        } else {
+            deleteBtn.classList.add("d-none");
+            deleteBtn.onclick = null;
+        }
     }
 
     /* ------------------ CONFIRM ------------------ */

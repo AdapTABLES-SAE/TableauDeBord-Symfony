@@ -1,0 +1,36 @@
+<div id="delete-task-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content danger-modal-content animate-pop-in">
+
+        <div class="modal-header bg-danger">
+            <h5 class="modal-title fw-bold text-white">
+                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                Supprimer la tâche
+            </h5>
+            <button type="button" class="btn-close-custom text-white" id="btn-close-delete-task">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="modal-body p-4">
+            <p class="fs-5 mb-3">Êtes-vous sûr de vouloir supprimer cette tâche ?</p>
+
+            <div class="d-flex align-items-start gap-2 text-danger fw-bold">
+                <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                <span>Cette action est irréversible.</span>
+            </div>
+
+            <div class="mt-3 text-muted">
+                Tâche concernée : <span id="delete-task-name-target" class="fw-bold text-dark">...</span>
+            </div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0 pb-4 px-4 justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary px-4 fw-500" id="btn-cancel-delete-task">
+                Annuler
+            </button>
+            <button type="button" class="btn btn-danger px-4 fw-500" id="btn-confirm-delete-task">
+                <i class="bi bi-trash me-2"></i> Supprimer
+            </button>
+        </div>
+    </div>
+</div>

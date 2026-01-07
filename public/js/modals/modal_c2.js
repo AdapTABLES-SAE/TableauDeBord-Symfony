@@ -1,6 +1,4 @@
-// public/js/modals/modal_c2.js
-
-import { saveTask, deleteTask } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal } from "./task_actions.js";
 
 /* ======================================================
    OUTIL : récupération du contexte du niveau
@@ -348,12 +346,27 @@ export function openC2Modal(levelId, task, card) {
 
     /* SUPPRESSION */
     const deleteBtn = document.getElementById("c2_deleteBtn");
-    if (task && task.id) {
-        deleteBtn.classList.remove("d-none");
-        deleteBtn.onclick = () => deleteTask(levelId, "C2", card, "taskModalC2");
-    } else {
-        deleteBtn.classList.add("d-none");
-        deleteBtn.onclick = null;
+
+    if (deleteBtn) {
+        if (task && task.id) {
+            // Si la tâche existe, on affiche le bouton
+            deleteBtn.classList.remove("d-none");
+
+            deleteBtn.onclick = () => {
+                openTaskDeleteModal(
+                    levelId,
+                    "C2",
+                    card,
+                    "taskModalC2",
+                    "Tâche 2 éléments manquants (C2)"
+                );
+            };
+
+        } else {
+            // Si c'est une création, pas de bouton supprimer
+            deleteBtn.classList.add("d-none");
+            deleteBtn.onclick = null;
+        }
     }
 
     /* ENREGISTREMENT */

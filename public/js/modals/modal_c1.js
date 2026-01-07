@@ -1,6 +1,4 @@
-// public/js/modals/modal_c1.js
-
-import { saveTask, deleteTask } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal } from "./task_actions.js";
 
 /* ======================================================
    FONCTIONS UTILITAIRES
@@ -348,8 +346,18 @@ export function openC1Modal(levelId, task, card) {
     if (deleteBtn) {
         if (task && task.id) {
             deleteBtn.classList.remove("d-none");
-            deleteBtn.onclick = () =>
-                deleteTask(levelId, "C1", card, "taskModalC1");
+
+            // MODIFICATION DU ONCLICK
+            deleteBtn.onclick = () => {
+                openTaskDeleteModal(
+                    levelId,
+                    "C1",
+                    card,
+                    "taskModalC1",
+                    "Tâche 1 élément manquant (C1)"
+                );
+            };
+
         } else {
             deleteBtn.classList.add("d-none");
             deleteBtn.onclick = null;

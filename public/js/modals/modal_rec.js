@@ -1,6 +1,4 @@
-// public/js/modals/modal_rec.js
-
-import { saveTask, deleteTask } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal } from "./task_actions.js";
 
 /* ======================================================================
    CONTEXTE DU NIVEAU (même principe que pour C2)
@@ -250,15 +248,30 @@ export function openRecModal(levelId, task, card) {
         generateRecPreview();
     };
 
+    // Suppression
     const deleteBtn = document.getElementById("rec_deleteBtn");
-    if (task && task.id) {
-        deleteBtn.classList.remove("d-none");
-        deleteBtn.onclick = () => deleteTask(levelId,"REC",card,"taskModalREC");
-    } else {
-        deleteBtn.classList.add("d-none");
-        deleteBtn.onclick = null;
+
+    if (deleteBtn) {
+        if (task && task.id) {
+            deleteBtn.classList.remove("d-none");
+
+            deleteBtn.onclick = () => {
+                openTaskDeleteModal(
+                    levelId,
+                    "REC",
+                    card,
+                    "taskModalREC",
+                    "Tâche Récupération (REC)"
+                );
+            };
+
+        } else {
+            deleteBtn.classList.add("d-none");
+            deleteBtn.onclick = null;
+        }
     }
 
+    // Confirmation
     const confirmBtn = document.getElementById("rec_confirmBtn");
     confirmBtn.onclick = async () => {
         const payload = {

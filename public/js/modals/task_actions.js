@@ -1,6 +1,60 @@
-// public/js/modals/task_actions.js
-
 import { showToast } from "../toast/toast.js";
+
+/* ============================================================
+   VARIABLES GLOBALES (Pour la modale de suppression)
+============================================================ */
+let pendingDeletePayload = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    initTaskDeleteListeners();
+});
+
+function initTaskDeleteListeners() {
+    // On cible l'ID défini dans _modal_delete_c1.html.twig
+    const modal = document.getElementById("delete-task-modal");
+    const confirmBtn = document.getElementById("btn-confirm-delete-task");
+    const cancelBtn = document.getElementById("btn-cancel-delete-task");
+    const closeBtn = document.getElementById("btn-close-delete-task");
+
+    const closeModal = () => {
+        if (modal) modal.style.display = "none";
+        pendingDeletePayload = null;
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = '<i class="bi bi-trash me-2"></i> Supprimer';
+        }
+    };
+
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+
+    // --- ACTION : CLIC SUR "OUI, SUPPRIMER" ---
+    if (confirmBtn) {
+        confirmBtn.addEventListener("click", async () => {
+            if (!pendingDeletePayload) return;
+
+            const { levelId, taskType, card, parentModalId } = pendingDeletePayload;
+
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Suppression...';
+
+            const success = await executeDeleteTask(levelId, taskType, card, parentModalId);
+
+            if (success) {
+                closeModal();
+            } else {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bi bi-trash me-2"></i> Réessayer';
+            }
+        });
+    }
+}
+
 
 export async function saveTask(levelId, payload, card, taskType, modalId) {
 
@@ -59,61 +113,66 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
     }
 }
 
-export async function deleteTask(levelId, taskType, card, modalId) {
+/* ============================================================
+   OUVERTURE DE LA MODALE DE SUPPRESSION
+============================================================ */
+export function openTaskDeleteModal(levelId, taskType, card, parentModalId, taskName = "cette tâche") {
+    const modal = document.getElementById("delete-task-modal");
+    const nameSpan = document.getElementById("delete-task-name-target");
 
-    const config = window.OBJECTIVE_CONFIG || {};
-
-    if (!config.deleteTaskUrlTemplate) {
-        console.error("deleteTaskUrlTemplate missing in OBJECTIVE_CONFIG");
-        return;
+    if (modal) {
+        pendingDeletePayload = { levelId, taskType, card, parentModalId };
+        if (nameSpan) nameSpan.textContent = taskName;
+        modal.style.display = "flex";
+    } else {
+        console.error("Modale introuvable : #delete-task-modal (Vérifiez l'include Twig)");
     }
+}
 
-    if (!confirm("Supprimer cette tâche ?")) return;
+/* ============================================================
+   EXÉCUTION RÉELLE (Interne)
+============================================================ */
+async function executeDeleteTask(levelId, taskType, card, parentModalId) {
+    const config = window.OBJECTIVE_CONFIG || {};
+    if (!config.deleteTaskUrlTemplate) return false;
 
     const url = config.deleteTaskUrlTemplate.replace("__LEVEL_ID__", levelId);
 
     try {
         const resp = await fetch(url, {
             method: "DELETE",
-            headers: {
-                "Content-Type": "application/json",
-                "X-Requested-With": "XMLHttpRequest"
-            },
+            headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
             body: JSON.stringify({ taskType })
         });
 
         const data = await resp.json();
 
         if (!resp.ok || !data.success) {
-            showToast(false);
-            return;
+            showToast(false, data.message || "Erreur suppression");
+            return false;
         }
 
+        // Mise à jour dataset et UI
         let tasksMap = {};
-
-        try {
-            tasksMap = JSON.parse(card.dataset.tasks || "{}");
-        } catch {
-            tasksMap = {};
-        }
-
+        try { tasksMap = JSON.parse(card.dataset.tasks || "{}"); } catch {}
         delete tasksMap[taskType];
         card.dataset.tasks = JSON.stringify(tasksMap);
 
         const pill = card.querySelector(`.task-card[data-task-type="${taskType}"]`);
         if (pill) pill.classList.remove("task-active");
 
-        const modalEl = document.getElementById(modalId);
+        const modalEl = document.getElementById(parentModalId);
         if (modalEl) {
             const modal = bootstrap.Modal.getInstance(modalEl);
             if (modal) modal.hide();
         }
 
-        showToast(true);
-        return data;
+        showToast(true, "Tâche supprimée");
+        return true;
 
     } catch (err) {
-        console.error("Erreur deleteTask:", err);
-        showToast(false);
+        console.error(err);
+        showToast(false, "Erreur serveur");
+        return false;
     }
 }

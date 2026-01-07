@@ -1,5 +1,4 @@
-// public/js/modals/modal_memb.js
-import { saveTask, deleteTask } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal } from "./task_actions.js";
 
 /* ======================================================
    OUTIL : contexte du niveau (table + intervalle)
@@ -123,7 +122,7 @@ function generateMembPreview() {
 
     tokens.sort(() => Math.random() - 0.5);
 
-    // Affichage visuel type "potion"
+    // Affichage visuel
     tokens.forEach((tok, idx) => {
         const orb = document.createElement("div");
         orb.className = "memb-orb";
@@ -259,18 +258,30 @@ export function openMembModal(levelId, task, card) {
         succVal.textContent = succSlider.value;
     };
 
-    /* ---------- Delete ---------- */
+    /* ---------- Suppression ---------- */
     const deleteBtn = document.getElementById("memb_deleteBtn");
-    if (task && task.id) {
-        deleteBtn.classList.remove("d-none");
-        deleteBtn.onclick = () =>
-            deleteTask(levelId, "MEMB", card, "taskModalMEMB");
-    } else {
-        deleteBtn.classList.add("d-none");
-        deleteBtn.onclick = null;
+
+    if (deleteBtn) {
+        if (task && task.id) {
+            deleteBtn.classList.remove("d-none");
+
+            deleteBtn.onclick = () => {
+                openTaskDeleteModal(
+                    levelId,
+                    "MEMB",
+                    card,
+                    "taskModalMEMB",
+                    "Tâche Appartenance (MEMB)"
+                );
+            };
+
+        } else {
+            deleteBtn.classList.add("d-none");
+            deleteBtn.onclick = null;
+        }
     }
 
-    /* ---------- Confirm ---------- */
+    /* ---------- Confirmation ---------- */
     const confirmBtn = document.getElementById("memb_confirmBtn");
     confirmBtn.onclick = async () => {
         const target =
@@ -288,7 +299,7 @@ export function openMembModal(levelId, task, card) {
         await saveTask(levelId, payload, card, "MEMB", "taskModalMEMB");
     };
 
-    /* ---------- Preview + show ---------- */
+    /* ---------- Preview + afficher ---------- */
     const modal = new bootstrap.Modal(modalEl);
     generateMembPreview();
     modal.show();
