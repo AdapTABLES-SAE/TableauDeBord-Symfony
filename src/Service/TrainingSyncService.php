@@ -38,7 +38,9 @@ class TrainingSyncService
         $learningPathID = $data['learningPathID'];
 
         // ignore si entrainement par défaut
-        $isDefaultTraining = $learningPathID === ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId());
+        $isDefaultTraining =
+              ($learningPathID === ApiEndpoints::DEFAULT_LEARNING_PATH_ID)
+            ||($learningPathID === ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId()));
         if($isDefaultTraining){
             return;
         }
@@ -167,11 +169,11 @@ class TrainingSyncService
             "objectives" => [
                 [
                     "prerequisites" => [],
-                    "name" => "Objectif 1",
+                    "name" => "DEFAULT_OBJECTIVE",
                     "levels" => [
                         [
                             "level" => "L1_" . ApiEndpoints::DEFAULT_LEARNING_PATH_ID,
-                            "name" => "Niveau 1",
+                            "name" => "DEFAULT_LEVEL",
                             "setupParameters" => [
                                 "achievementParameters" => [
                                     "successCompletionCriteria" => 80.0,
@@ -182,7 +184,7 @@ class TrainingSyncService
                                     "resultLocation" => "RIGHT",
                                     "leftOperand" => "TABLE_OPERAND",
                                     "intervalMin" => 1,
-                                    "intervalMax" => 10
+                                    "intervalMax" => 1
                                 ],
                                 "tasksParameters" => [
                                     [

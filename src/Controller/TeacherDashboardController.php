@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Constant\ApiEndpoints;
 use App\Entity\Classe;
 use App\Entity\Eleve;
 use App\Entity\Enseignant;
@@ -57,6 +58,7 @@ class TeacherDashboardController extends AbstractController
                 $assets->getUrl('js/partials/_class/classDetails.js'),
                 $assets->getUrl('js/partials/_class/classList.js'),
                 $assets->getUrl('js/partials/_training/trainingDetails.js'),
+                $assets->getUrl('js/partials/_training/trainingList.js'),
                 $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
@@ -344,21 +346,137 @@ class TeacherDashboardController extends AbstractController
             return new JsonResponse(['success' => false, 'fatal' => false]);
         }
 
-        $objectif = new Objectif();
-        $objectif->setName($name);
-        $objectif->setEntrainement($training);
-        $objectif->setObjID(uniqid('obj_', true));
+        $sourceTraining = $em->getRepository(Entrainement::class)->findOneBy([
+            'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID,
+        ]);
 
-        $em->persist($objectif);
+        if (!$sourceTraining) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $sourceObjectif = $sourceTraining->getObjectifs()->first();
+        if (!$sourceObjectif) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $objectifCopy = clone $sourceObjectif;
+        $objectifCopy->setName($name);
+        $objectifCopy->setEntrainement($training);
+
+        foreach ($sourceObjectif->getNiveaux() as $niveau) {
+            $niveauCopy = clone $niveau;
+            $niveauCopy->setObjectif($objectifCopy);
+            $objectifCopy->addNiveau($niveauCopy);
+        }
+
+        foreach ($sourceObjectif->getPrerequis() as $prerequis) {
+            $prerequisCopy = clone $prerequis;
+            $prerequisCopy->setObjectif($objectifCopy);
+            $objectifCopy->addPrerequis($prerequisCopy);
+        }
+
+        $em->persist($objectifCopy);
         $em->flush();
 
         return new JsonResponse([
             'success' => true,
             'objective' => [
-                'id' => $objectif->getId(),
-                'name' => $objectif->getName(),
+                'id' => $objectifCopy->getId(),
+                'name' => $objectifCopy->getName(),
             ],
         ]);
     }
 
+    #[Route('/dashboard/training/delete/{id}', name: 'training_delete', methods: ['DELETE'])]
+    public function deleteTraining(
+        int $id,
+        EntityManagerInterface $em,
+        SessionInterface $session,
+        TrainingAssignmentService $trainingAssignmentService
+    ): JsonResponse {
+        $training = $em->getRepository(Entrainement::class)->find($id);
+        if (!$training) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $teacherId = $session->get('teacher_id');
+        if (!$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        //Reassign students to DEFAULT training
+        $students = $em->getRepository(Eleve::class)->findBy([
+            'entrainement' => $training
+        ]);
+
+        foreach ($students as $student) {
+            $trainingAssignmentService->assignDefaultTraining($student);
+        }
+        $em->remove($training);
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    #[Route('/dashboard/training/add', name: 'training_add', methods: ['POST'])]
+    public function addTraining(
+        Request $request,
+        EntityManagerInterface $em,
+        SessionInterface $session
+    ): JsonResponse {
+        $teacherId = $session->get('teacher_id');
+        if (!$teacherId) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
+        if (!$teacher) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $name = trim((string) ($data['name'] ?? ''));
+
+        if ($name === '') {
+            return new JsonResponse(['success' => false, 'fatal' => false]);
+        }
+
+
+        $sourceTraining = $em->getRepository(Entrainement::class)->findOneBy([
+            'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID,
+        ]);
+
+        if (!$sourceTraining) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $trainingCopy = clone $sourceTraining;
+        $trainingCopy->setLearningPathID(uniqid('TRAIN_'));
+        $trainingCopy->setName($name);
+        $trainingCopy->setEnseignant($teacher);
+
+        foreach ($sourceTraining->getObjectifs() as $sourceObjectif) {
+
+            $objectifCopy = clone $sourceObjectif;
+            $objectifCopy->setEntrainement($trainingCopy);
+            $trainingCopy->addObjectif($objectifCopy);
+
+            foreach ($sourceObjectif->getNiveaux() as $niveau) {
+                $niveauCopy = clone $niveau;
+                $niveauCopy->setObjectif($objectifCopy);
+                $objectifCopy->addNiveau($niveauCopy);
+            }
+        }
+
+        $em->persist($trainingCopy);
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'training' => [
+                'id'   => $trainingCopy->getId(),
+                'name' => $trainingCopy->getName(),
+            ],
+        ]);
+    }
 }

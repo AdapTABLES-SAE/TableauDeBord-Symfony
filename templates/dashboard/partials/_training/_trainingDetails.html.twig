@@ -7,7 +7,7 @@
             <button
                 id="deleteTrainingBtn"
                 class="btn btn-outline-danger"
-                data-training-id="{{ training.id }}"
+                data-action="{{ path("training_delete", {"id": training.id}) }}"
             >
                 <i class="bi bi-trash"></i>
             </button>

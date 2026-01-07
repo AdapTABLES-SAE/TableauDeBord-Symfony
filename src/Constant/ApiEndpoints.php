@@ -37,5 +37,4 @@ final class ApiEndpoints
     {
         return "PATH_MATH" . $learnerId;
     }
-
 }
