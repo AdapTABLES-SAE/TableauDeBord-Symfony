@@ -170,6 +170,7 @@
                 <div class="modal-body">
                     <label for="trainingApplySelect" class="form-label">Choisissez l'entraînement :</label>
                     <select id="trainingApplySelect" class="form-select">
+                        <option value=""></option>
                         {% for training in trainingPaths %}
                             <option value="{{ training.id }}">{{ training.name }}</option>
                         {% endfor %}
@@ -269,32 +270,82 @@
         </div>
     </div>
 
-    <!-- MODAL WARNING SAVE -->
-    <div class="modal modal fade" id="saveWarningModal" tabindex="-1">
+    {# ================= CONFIRM TRAINING ASSIGN MODAL ================= #}
+    <div class="modal fade" id="confirmAssignTrainingModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-danger-subtle">
-                    <h5 class="modal-title text-danger fw-bold">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="fw-bold mb-0">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        Attention
+                        Confirmer l’attribution
                     </h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button"
+                            class="btn-close btn-close-white"
+                            data-bs-dismiss="modal"
+                            aria-label="Fermer"></button>
                 </div>
 
-                <div class="modal-body">
-                    <p id="saveWarningText" class="mb-0">
-                        Certaines modifications impactent les élèves. Voulez-vous continuer ?
+                <div class="modal-body text-start">
+                    <p class="mb-2">
+                        Vous êtes sur le point d’attribuer un nouvel entraînement à un ou plusieurs élèves.
+                    </p>
+
+                    <p class="fw-bold text-danger mb-2">
+                        ⚠ Cette action réinitialisera
+                        <u>toutes les progressions de jeu</u>
+                        associées à l’entraînement actuel.
                     </p>
                 </div>
 
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                    <button class="btn btn-danger" id="confirmSaveBtn">Continuer</button>
+                <div class="modal-footer border-0">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                    <button class="btn btn-danger" id="confirm-assign-btn">
+                        Confirmer
+                    </button>
                 </div>
+
             </div>
         </div>
     </div>
 
+    {# ================= DELETE STUDENT MODAL ================= #}
+    <div class="modal fade" id="deleteStudentModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+
+                <div class="modal-header bg-light-subtle">
+                    <h5 class="modal-title text-danger fw-bold">
+                        Supprimer des élèves
+                    </h5>
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"></button>
+                </div>
+
+                <div class="modal-body">
+                    Vous êtes sur le point de supprimer un ou plusieurs élèves.<br>
+                    <strong>Cette action est irréversible.</strong>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+
+                    <button id="confirmDeleteStudentBtn"
+                            type="button"
+                            class="btn btn-danger px-4">
+                        Confirmer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 
