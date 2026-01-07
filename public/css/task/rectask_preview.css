@@ -1,0 +1,99 @@
+/* ============================================================
+   REC PREVIEW — Style identique à C2 (deux rangées, orbes, anims)
+   ============================================================ */
+
+.rec-preview {
+    background: #f8f5ff;
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid #e5dcff;
+    box-shadow: inset 0 0 12px rgba(150, 99, 255, 0.08);
+    text-align: center;
+    transition: all .3s ease;
+}
+
+/* Équation */
+.rec-preview .preview-equation {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #6b4cf6;
+    margin-bottom: 20px;
+    transition: opacity .25s ease, transform .25s ease;
+}
+
+.rec-preview .preview-equation.updated {
+    opacity: 0.3;
+    transform: translateY(-6px);
+}
+
+/* Élément "?" */
+.rec-preview .preview-hidden {
+    color: white;
+    background: #8b66ff;
+    padding: 6px 14px;
+    border-radius: 12px;
+    font-weight: 700;
+    box-shadow: 0 3px 8px rgba(120, 77, 255, 0.3);
+}
+
+/* ============================================================
+   Orbes numériques (propositions)
+   ============================================================ */
+
+.rec-orb-row {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    width: 100%;
+    margin-top: 12px;
+}
+
+.rec-orb-row-top {
+    margin-bottom: 10px;
+}
+
+/* Style de l’orbe */
+.rec-orb {
+    min-width: 55px;
+    height: 55px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    background: #ffffff;
+    border: 1px solid #d6ccff;
+    border-radius: 50%;
+
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #5a4bcc;
+
+    opacity: 0;
+    transform: translateY(6px);
+    transition: opacity .25s ease, transform .25s ease, background .2s ease;
+}
+
+/* Animation d’apparition */
+.rec-orb.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Hover */
+.rec-orb:hover {
+    background: #f0eaff;
+    border-color: #b9a8ff;
+    cursor: pointer;
+}
+
+/* ============================================================
+   Hint text
+   ============================================================ */
+
+.rec-preview .preview-hint {
+    margin-top: 16px;
+    color: #8a7ccf;
+    font-style: italic;
+    opacity: 0.85;
+    transition: opacity .2s ease;
+}

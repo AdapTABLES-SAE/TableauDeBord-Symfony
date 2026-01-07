@@ -1,142 +1,207 @@
-{# ----------------------------------------------
-   Mapping JSON des tâches existantes
-   ---------------------------------------------- #}
-{% set tasksMap = {} %}
+{# ==============================================================
+   BLOC D’UN NIVEAU
+   ============================================================== #}
+
+{% set TASKS = [
+    { code: 'C1',  label: '1 élément manquant',        icon: 'bi-1-circle' },
+    { code: 'C2',  label: '2 éléments manquants',      icon: 'bi-2-circle' },
+    { code: 'REC', label: 'Reconstitution d’un fait',  icon: 'bi-shuffle' },
+    { code: 'ID',  label: 'Validation d’un fait',      icon: 'bi-check2-circle' },
+    { code: 'MEMB',label: 'Identification des résultats', icon: 'bi-eye' }
+] %}
+
+{% set tasksArray = [] %}
 {% for t in niveau.taches %}
-    {% set tasksMap = tasksMap|merge({
-        (t.taskType): {
-            'id': t.id,
-            'taskType': t.taskType,
-            'targets': t.targets,
-            'answerModality': t.answerModality,
-            'nbIncorrectChoices': t.nbIncorrectChoices,
-            'nbCorrectChoices': t.nbCorrectChoices,
-            'nbFacts': t.nbFacts,
-            'sourceVariation': t.sourceVariation,
-            'target': t.target,
-            'timeMaxSecond': t.timeMaxSecond,
-            'successiveSuccessesToReach': t.successiveSuccessesToReach,
-            'repartitionPercent': t.repartitionPercent
-        }
-    }) %}
+    {% set tasksArray = tasksArray|merge([{
+        id: t.id,
+        taskType: t.taskType,
+        targets: t.targets,
+        answerModality: t.answerModality,
+        nbIncorrectChoices: t.nbIncorrectChoices,
+        nbCorrectChoices: t.nbCorrectChoices,
+        nbFacts: t.nbFacts,
+        sourceVariation: t.sourceVariation,
+        target: t.target,
+        timeMaxSecond: t.timeMaxSecond,
+        successiveSuccessesToReach: t.successiveSuccessesToReach,
+        repartitionPercent: t.repartitionPercent
+    }]) %}
 {% endfor %}
 
-{% set activeClass = active ? 'level-active' : '' %}
-{% set dataTables = niveau.tables is iterable ? niveau.tables : [] %}
+{# On vérifie si la variable 'active' est vraie. Sinon, on met 'collapsed' #}
+{% set cardClass = (active is defined and active) ? 'level-card' : 'level-card collapsed' %}
+{% set bodyStyle = (active is defined and active) ? '' : 'max-height: 0px; opacity: 0;' %}
 
-<div class="level-card {{ activeClass }} mb-3"
+<div class="{{ cardClass }}"
      data-level-id="{{ niveau.id }}"
-     data-level-index="{{ index }}"
-     data-equal-position="{{ niveau.resultLocation|default('RIGHT') }}"
-     data-factor-position="{{ niveau.leftOperand|default('OPERAND_TABLE') }}"
-     data-interval-min="{{ niveau.intervalMin|default(1) }}"
-     data-interval-max="{{ niveau.intervalMax|default(10) }}"
-     data-tables="{{ dataTables|json_encode }}"
-     data-tasks="{{ tasksMap|json_encode }}">
+     data-equal-position="{{ niveau.resultLocation }}"
+     data-factor-position="{{ niveau.leftOperand }}"
+     data-interval-min="{{ niveau.intervalMin }}"
+     data-interval-max="{{ niveau.intervalMax }}"
+     data-success-criteria="{{ niveau.successCompletionCriteria }}"
+     data-encounter-criteria="{{ niveau.encounterCompletionCriteria }}"
+     data-tables="{{ niveau.tables|json_encode|e('html_attr') }}"
+     data-tasks='{{ tasksArray|json_encode|e('html_attr') }}'>
 
-    {# ----------------------------------------------
-       HEADER DU NIVEAU
-       ---------------------------------------------- #}
-    <div class="level-header d-flex justify-content-between align-items-center">
-        <div>
-            <div class="level-title">Niveau {{ index }} :</div>
+    {# ============================================================
+       HEADER
+       ============================================================ #}
+    <div class="level-header">
+
+        <div class="level-title-group">
+            <div class="level-title">Niveau {{ index }}</div>
             <input type="text"
                    class="form-control form-control-sm level-name-input"
-                   value="{{ niveau.name ?? ('Niveau ' ~ index) }}">
+                   placeholder="Nom du niveau"
+                   value="{{ niveau.name }}">
         </div>
 
-        <div class="level-facts text-end">
-            <div class="facts-label">Nombre de faits</div>
-            <div class="facts-value" data-facts-count>0</div>
-        </div>
+        <div class="level-actions">
 
-        <button type="button"
-                class="btn btn-link btn-sm ms-3 toggle-level-details">
-            <i class="bi bi-chevron-down"></i>
-        </button>
+            <div class="level-facts-badge" title="Nombre total de faits générés">
+                <span>FAITS</span>
+                <strong data-facts-count>0</strong>
+            </div>
+
+            <button type="button" class="toggle-level-details">
+                <i class="bi bi-chevron-down"></i>
+            </button>
+        </div>
     </div>
 
-    {# ----------------------------------------------
-       CORPS DU NIVEAU (PARAMÈTRES)
-       ---------------------------------------------- #}
-    <div class="level-body">
+    <div class="level-body" style="{{ bodyStyle }}">
 
-        {# ---------- TÂCHES ---------- #}
-        <div class="level-section mb-3">
-            <div class="level-section-title">Tâches</div>
+        {# ============================================================
+           TÂCHES
+           ============================================================ #}
+        <div class="level-section-title mt-0">Tâches</div>
 
-            {% set taskTypes = {
-                'C1': '1 élément manquant',
-                'C2': '2 éléments manquants',
-                'REC': 'Reconstitution d’un fait',
-                'ID': 'Validation d’un fait',
-                'MEMB': 'Identification des résultats'
-            } %}
+        <div class="tasks-line">
+            {% for task in TASKS %}
+                {% set activeTask = tasksArray|filter(t => t.taskType == task.code)|first %}
 
-            <div class="task-types-row">
-                {% for code, label in taskTypes %}
-                    {% set activeTask = niveau.taches|filter(t => t.taskType == code)|first %}
-                    <button type="button"
-                            class="task-pill {{ activeTask ? 'task-active' : '' }}"
-                            data-task-type="{{ code }}">
-                        <span class="task-code">{{ code }}</span>
-                        <span class="task-label">{{ label }}</span>
-                    </button>
-                {% endfor %}
-            </div>
+                <button type="button"
+                        class="task-card {{ activeTask ? 'task-active' : '' }}"
+                        data-task-type="{{ task.code }}">
+
+                    <div class="task-icon"><i class="bi {{ task.icon }}"></i></div>
+                    <div class="task-text">
+                        <div class="task-code">{{ task.code }}</div>
+                        <div class="task-label">{{ task.label }}</div>
+                    </div>
+                </button>
+            {% endfor %}
         </div>
 
-        {# ---------- POSITION DE L'ÉGAL ET FACTEUR ---------- #}
-        <div class="row g-3 mb-3">
-            <div class="col-md-6">
-                <div class="level-section-title mb-2">Position de l’égal</div>
-                <div class="btn-group w-100 equal-position-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary" data-value="LEFT">Gauche</button>
-                    <button type="button" class="btn btn-outline-secondary" data-value="MIX">Les deux</button>
-                    <button type="button" class="btn btn-outline-secondary" data-value="RIGHT">Droite</button>
+        {# ============================================================
+           CRITÈRES DE COMPLÉTION
+           ============================================================ #}
+        <div class="level-section-title mt-4">Critère de complétion du niveau</div>
+
+        <div class="completion-row">
+            <div class="completion-block">
+                <div class="small fw-bold">% Vus</div>
+                <input type="range" min="0" max="100"
+                       class="form-range completion-seen"
+                       value="{{ niveau.encounterCompletionCriteria }}">
+                <div class="completion-value completion-seen-value">
+                    {{ niveau.encounterCompletionCriteria }}%
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="level-section-title mb-2">Position du facteur</div>
-                <div class="btn-group w-100 factor-position-group" role="group">
-                    <button type="button" class="btn btn-outline-secondary" data-value="OPERAND_TABLE">Gauche</button>
-                    <button type="button" class="btn btn-outline-secondary" data-value="MIX">Les deux</button>
-                    <button type="button" class="btn btn-outline-secondary" data-value="TABLE_OPERAND">Droite</button>
+            <div class="completion-block">
+                <div class="small fw-bold">% Succès</div>
+                <input type="range" min="0" max="100"
+                       class="form-range completion-success"
+                       value="{{ niveau.successCompletionCriteria }}">
+                <div class="completion-value completion-success-value">
+                    {{ niveau.successCompletionCriteria }}%
                 </div>
             </div>
         </div>
 
-        {# ---------- INTERVALLE ---------- #}
-        <div class="level-section mb-3">
-            <div class="level-section-title mb-2">Intervalle de la table</div>
+        {# ============================================================
+           POSITIONS
+           ============================================================ #}
+        <div class="positions-row">
 
-            <div class="d-flex align-items-center">
-                <span class="me-2 small">1</span>
-                <input type="range"
-                       class="form-range flex-grow-1 level-interval-slider"
-                       min="1"
-                       max="10"
-                       value="{{ niveau.intervalMax|default(10) }}">
-                <span class="ms-2 small">10</span>
+            <div class="position-col">
+                <h6>Position de l’égal</h6>
+
+                <div class="position-box equal-position-group">
+
+                    <div class="position-btn" data-value="LEFT">
+                        <span class="exemple">4 = 2 × 2</span>
+                        <span class="label">Gauche</span>
+                    </div>
+
+                    <div class="position-btn" data-value="MIX">
+                        <span class="exemple">/</span>
+                        <span class="label">Les deux</span>
+                    </div>
+
+                    <div class="position-btn" data-value="RIGHT">
+                        <span class="exemple">2 × 2 = 4</span>
+                        <span class="label">Droite</span>
+                    </div>
+
+                </div>
             </div>
 
-            <div class="text-end small text-muted">
-                Min : <span data-interval-min>{{ niveau.intervalMin|default(1) }}</span> —
-                Max : <span data-interval-max>{{ niveau.intervalMax|default(10) }}</span>
+            <div class="position-col">
+                <h6>Position du facteur</h6>
+
+                <div class="position-box factor-position-group">
+
+                    <div class="position-btn" data-value="OPERAND_TABLE">
+                        <span class="exemple">2 × ? = 4</span>
+                        <span class="label">Gauche</span>
+                    </div>
+
+                    <div class="position-btn" data-value="MIX">
+                        <span class="exemple">/</span>
+                        <span class="label">Les deux</span>
+                    </div>
+
+                    <div class="position-btn" data-value="TABLE_OPERAND">
+                        <span class="exemple">? × 2 = 4</span>
+                        <span class="label">Droite</span>
+                    </div>
+
+                </div>
             </div>
         </div>
 
-        {# ---------- BOUTONS SUPPRIMER / ENREGISTRER ---------- #}
-        <div class="d-flex justify-content-between align-items-center mt-3">
-            <button type="button"
-                    class="btn btn-outline-danger btn-sm delete-level-btn">
+        {# ============================================================
+           INTERVALLE DES FACTEURS
+           ============================================================ #}
+        <div class="level-section-title mt-4">Intervalle des facteurs</div>
+
+        <div class="range-double"
+             data-min="{{ niveau.intervalMin }}"
+             data-max="{{ niveau.intervalMax }}">
+
+            <div class="range-track"></div>
+            <div class="range-range"></div>
+
+            <div class="range-handle range-handle-min"></div>
+            <div class="range-handle range-handle-max"></div>
+        </div>
+
+        <div class="interval-container">
+            <div class="interval-values">
+                <span data-interval-min>{{ niveau.intervalMin }}</span>
+                <span class="mx-1 text-muted">–</span>
+                <span data-interval-max>{{ niveau.intervalMax }}</span>
+            </div>
+        </div>
+
+        {# ============================================================
+           DELETE LEVEL
+           ============================================================ #}
+        <div class="level-footer">
+            <button class="btn btn-outline-danger btn-sm delete-level-btn">
                 <i class="bi bi-trash me-1"></i> Supprimer le niveau
-            </button>
-
-            <button type="button"
-                    class="btn btn-violet btn-sm save-level-btn">
-                <i class="bi bi-save2 me-1"></i> Enregistrer les modifications
             </button>
         </div>
 

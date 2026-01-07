@@ -1,0 +1,94 @@
+/*
+====================================
+MODAL PREVIEW
+====================================
+ */
+
+/* ----------- PREVIEW BOX ----------- */
+.c1-preview-box {
+    background: #f7f4ff;
+    border: 1px solid #e7dcff;
+    padding: 18px;
+    border-radius: 14px;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+/* ----------- EQUATION ----------- */
+.preview-equation {
+    font-size: 2rem;
+    font-weight: 600;
+    color: #5a3df0;
+    letter-spacing: 1px;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.preview-equation.updated {
+    opacity: 0;
+    transform: translateY(-6px);
+}
+
+/* éléments masqués */
+.preview-hidden {
+    color: #fff;
+    background: #7b57ff;
+    padding: 4px 12px;
+    border-radius: 12px;
+    animation: pulseShadow 1.8s infinite ease-in-out;
+}
+
+@keyframes pulseShadow {
+    0% { box-shadow: 0 0 0px rgba(123,87,255,0.4); }
+    70% { box-shadow: 0 0 14px rgba(123,87,255,0.7); }
+    100% { box-shadow: 0 0 0px rgba(123,87,255,0.4); }
+}
+
+/* ----------- OPTIONS MODE CHOICE ----------- */
+.preview-option-btn {
+    background: #ffffff;
+    border: 1px solid #c8baff;
+    padding: 8px 18px;
+    border-radius: 10px;
+    margin: 4px;
+    font-size: 1.1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    opacity: 0;
+    transform: translateY(6px);
+}
+
+.preview-option-btn.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.preview-option-btn:hover {
+    background: #ece6ff;
+    border-color: #b09aff;
+}
+
+/* ----------- INPUT MODE ----------- */
+.preview-input {
+    width: 200px;
+    text-align: center;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #c8baff;
+    background: white;
+    font-size: 1.1rem;
+    transition: 0.2s ease;
+}
+
+.preview-input:focus {
+    border-color: #7b57ff;
+    box-shadow: 0 0 0 3px rgba(123,87,255,0.2);
+}
+
+/* ----------- HINT TEXT ----------- */
+.preview-hint {
+    font-style: italic;
+    color: #777;
+    transition: opacity 0.25s ease;
+}
+

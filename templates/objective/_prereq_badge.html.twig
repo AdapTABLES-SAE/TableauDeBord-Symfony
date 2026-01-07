@@ -1,0 +1,42 @@
+<div class="prereq-badge" id="prereq-badge-{{ p.id }}">
+
+    <div class="prereq-info">
+        <div class="prereq-names">
+            {# On affiche le nom, sinon l'ID s'il n'y a pas de nom #}
+            <span class="p-obj">
+                <i class="bi bi-bullseye"></i> {{ targetObjName|default('Objectif inconnu') }}
+            </span>
+            <i class="bi bi-chevron-right text-muted mx-1" style="font-size: 0.8em;"></i>
+            <span class="p-lvl">
+                {{ targetLvlName|default('Niveau inconnu') }}
+            </span>
+        </div>
+
+        <div class="prereq-stats">
+            <span class="badge-stat views" title="Vues requises">
+                <i class="bi bi-eye"></i> {{ p.encountersPercent }}%
+            </span>
+            <span class="badge-stat success" title="Succès requis">
+                <i class="bi bi-trophy"></i> {{ p.successPercent }}%
+            </span>
+        </div>
+    </div>
+
+    <div class="d-flex gap-1">
+        <button type="button" class="btn-action-prereq btn-edit"
+                onclick="openEditPrereq({{ p.id }}, {{ targetObjDbId }}, {{ targetLvlDbId }}, {{ p.encountersPercent }}, {{ p.successPercent }})">
+            <i class="bi bi-pencil"></i>
+        </button>
+
+        <button type="button"
+                class="btn-action-prereq btn-delete delete-prereq-btn"
+                data-prereq-id="{{ p.id }}"
+                data-prereq-name="Prérequis #{{ p.id }}"
+
+                data-delete-url="{{ path('objective_prerequis_delete', {id: p.id}) }}"
+
+                title="Supprimer ce prérequis">
+            <i class="bi bi-trash"></i>
+        </button>
+    </div>
+</div>

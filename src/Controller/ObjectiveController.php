@@ -7,6 +7,7 @@ use App\Entity\Entrainement;
 use App\Entity\Objectif;
 use App\Entity\Niveau;
 use App\Entity\Tache;
+use App\Entity\Prerequis;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -85,8 +86,14 @@ class ObjectiveController extends AbstractController
      * Ajout d’un niveau vide (créé immédiatement en base).
      */
     #[Route('/objectif/{id}/niveau/add', name: 'add_level', methods: ['POST'])]
-    public function addLevel(Objectif $objectif): JsonResponse
+    public function addLevel(Objectif $objectif, Request $request): JsonResponse
     {
+        // 1. Récupération des données envoyées par le JS (body JSON)
+        $data = json_decode($request->getContent(), true);
+
+        // Si 'tables' est présent dans le JSON, on l'utilise, sinon valeur par défaut ['1']
+        $selectedTables = $data['tables'] ?? ['1'];
+
         $niveau = new Niveau();
         $index  = $objectif->getNiveaux()->count() + 1;
 
@@ -94,10 +101,12 @@ class ObjectiveController extends AbstractController
         $niveau->setName('Niveau ' . $index);
         $niveau->setObjectif($objectif);
 
-        // valeurs par défaut
+        // 2. Application des tables dynamiques
+        $niveau->setTables($selectedTables);
+
+        // Valeurs par défaut
         $niveau->setSuccessCompletionCriteria(80);
         $niveau->setEncounterCompletionCriteria(100);
-        $niveau->setTables(['1']);
         $niveau->setResultLocation('RIGHT');        // RIGHT = égal à droite
         $niveau->setLeftOperand('OPERAND_TABLE');   // facteur à gauche
         $niveau->setIntervalMin(1);
@@ -148,6 +157,102 @@ class ObjectiveController extends AbstractController
             'success' => true,
         ]);
     }
+
+
+    #[Route('/objectif/{id}/save-all', name: 'save_all', methods: ['POST'])]
+    public function saveAll(Objectif $objectif, Request $request): JsonResponse
+    {
+        $payload = json_decode($request->getContent(), true);
+
+        if (!$payload) {
+            return new JsonResponse(['success' => false, 'message' => 'Missing payload'], 400);
+        }
+
+        /* --------------------------
+           1) Sauvegarde objectif
+           -------------------------- */
+        if (isset($payload['objective'])) {
+            $objectif->setName($payload['objective']['name'] ?? $objectif->getName());
+        }
+
+        /* --------------------------
+           2) Sauvegarde niveaux
+           -------------------------- */
+        if (isset($payload['levels']) && is_array($payload['levels'])) {
+            foreach ($payload['levels'] as $lvlData) {
+                // On vérifie l'ID
+                if (empty($lvlData['id'])) continue;
+
+                $niveau = $this->em->getRepository(Niveau::class)->find($lvlData['id']);
+
+                // Sécurité : on s'assure que le niveau appartient bien à l'objectif en cours
+                if (!$niveau || $niveau->getObjectif()->getId() !== $objectif->getId()) {
+                    continue;
+                }
+
+                $niveau->setName($lvlData['name']);
+                $niveau->setTables($lvlData['tables'] ?? []); // Fallback array vide si null
+                $niveau->setIntervalMin((int)$lvlData['intervalMin']);
+                $niveau->setIntervalMax((int)$lvlData['intervalMax']);
+                $niveau->setResultLocation($lvlData['equalPosition']);
+                $niveau->setLeftOperand($lvlData['factorPosition']);
+
+                // --- AJOUT : CRITÈRES DE COMPLÉTION ---
+                if (isset($lvlData['encounterCompletionCriteria'])) {
+                    $niveau->setEncounterCompletionCriteria((int)$lvlData['encounterCompletionCriteria']);
+                }
+
+                if (isset($lvlData['successCompletionCriteria'])) {
+                    $niveau->setSuccessCompletionCriteria((int)$lvlData['successCompletionCriteria']);
+                }
+            }
+        }
+
+        /* --------------------------
+           3) Sauvegarde tâches
+           -------------------------- */
+        // (Cette partie est conservée telle quelle si votre JS envoie aussi les tâches ici)
+        if (isset($payload['tasks']) && is_array($payload['tasks'])) {
+            foreach ($payload['tasks'] as $taskPayload) {
+
+                if (empty($taskPayload['levelId'])) continue;
+
+                $niveau = $this->em->getRepository(Niveau::class)->find($taskPayload['levelId']);
+                if (!$niveau) continue;
+
+                $task = $this->em->getRepository(Tache::class)->findOneBy([
+                    'niveau' => $niveau,
+                    'taskType' => $taskPayload['taskType']
+                ]);
+
+                if (!$task) {
+                    $task = new Tache();
+                    $task->setNiveau($niveau);
+                    $task->setTaskType($taskPayload['taskType']);
+                    $this->em->persist($task);
+                }
+
+                // Champs communs
+                $task->setTimeMaxSecond($taskPayload['timeMaxSecond']);
+                $task->setRepartitionPercent($taskPayload['repartitionPercent']);
+                $task->setSuccessiveSuccessesToReach($taskPayload['successiveSuccessesToReach']);
+
+                // Champs spécifiques (null coalescing operator ?? pour éviter les erreurs si index manquant)
+                $task->setTargets($taskPayload['targets'] ?? null);
+                $task->setAnswerModality($taskPayload['answerModality'] ?? null);
+                $task->setNbIncorrectChoices($taskPayload['nbIncorrectChoices'] ?? null);
+                $task->setNbCorrectChoices($taskPayload['nbCorrectChoices'] ?? null);
+                $task->setNbFacts($taskPayload['nbFacts'] ?? null);
+                $task->setSourceVariation($taskPayload['sourceVariation'] ?? null);
+                $task->setTarget($taskPayload['target'] ?? null);
+            }
+        }
+
+        $this->em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
 
     /**
      * Suppression d’un niveau.
@@ -297,5 +402,199 @@ class ObjectiveController extends AbstractController
         }
 
         return new JsonResponse(['success' => true]);
+    }
+
+
+    /**
+     * API pour récupérer les objectifs et niveaux d'un entraînement (pour la modale prérequis).
+     * On exclut l'objectif actuel pour éviter les boucles infinies.
+     */
+    #[Route('/{entrainement}/api/data', name: 'api_data', methods: ['GET'])]
+    public function getTrainingData(Entrainement $entrainement, Request $request): JsonResponse
+    {
+        $currentObjId = (int) $request->query->get('exclude_id');
+        $data = [];
+
+        foreach ($entrainement->getObjectifs() as $obj) {
+            // On ne propose pas l'objectif qu'on est en train d'éditer comme prérequis de lui-même
+            if ($obj->getId() === $currentObjId) {
+                continue;
+            }
+
+            $levels = [];
+            foreach ($obj->getNiveaux() as $lvl) {
+                $levels[] = [
+                    'id' => $lvl->getId(),
+                    'name' => $lvl->getName()
+                ];
+            }
+
+            $data[] = [
+                'id' => $obj->getId(),
+                'name' => $obj->getName(),
+                'levels' => $levels
+            ];
+        }
+
+        return new JsonResponse($data);
+    }
+
+    /**
+     * Ajout d'un prérequis en base de données.
+     */
+    #[Route('/objectif/{id}/prerequis/add', name: 'add_prerequis', methods: ['POST'])]
+    public function addPrerequis(Objectif $objectif, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        // 1. Validation (Au moins 1% requis)
+        $views   = (float)($data['views'] ?? 0);
+        $success = (float)($data['success'] ?? 0);
+
+        if ($views <= 0 && $success <= 0) {
+            return new JsonResponse(['success' => false, 'message' => 'Au moins 1% requis.'], 400);
+        }
+
+        // 2. Récupération des cibles
+        $targetObjId = $data['targetObjectiveId'] ?? null;
+        $targetLvlId = $data['targetLevelId'] ?? null;
+
+        $targetObj = $this->em->getRepository(Objectif::class)->find($targetObjId);
+        $targetLvl = $this->em->getRepository(Niveau::class)->find($targetLvlId);
+
+        if (!$targetObj || !$targetLvl) {
+            return new JsonResponse(['success' => false, 'message' => 'Cible introuvable'], 404);
+        }
+
+        $targetObjStringID = $targetObj->getObjID();
+
+        // 3. Validation Unicité
+        foreach ($objectif->getPrerequis() as $existingPrereq) {
+            if ($existingPrereq->getRequiredObjective() === $targetObjStringID) {
+                $name = $targetObj->getName() ?: 'cet objectif';
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => "Un prérequis pour l'objectif \"$name\" existe déjà."
+                ], 400);
+            }
+        }
+
+        // 4. Création
+        $prerequis = new Prerequis();
+        $prerequis->setObjectif($objectif);
+        $prerequis->setRequiredObjective($targetObjStringID);
+        $prerequis->setRequiredLevel($targetLvl->getLevelID());
+        $prerequis->setEncountersPercent($views);
+        $prerequis->setSuccessPercent($success);
+
+        $this->em->persist($prerequis);
+        $this->em->flush();
+
+        // 5. Préparation des variables pour l'affichage
+        $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
+        $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
+
+        // 6. Rendu HTML
+        $html = $this->renderView('objective/_prereq_badge.html.twig', [
+            'p' => $prerequis,
+            'targetObjName' => $targetObjName,
+            'targetLvlName' => $targetLvlName,
+
+            'targetObjDbId' => $targetObj->getId(),
+            'targetLvlDbId' => $targetLvl->getId()
+        ]);
+
+        return new JsonResponse([
+            'success' => true,
+            'html' => $html
+        ]);
+    }
+
+    /**
+     * Suppression d'un prérequis.
+     */
+    #[Route('/prerequis/{id}/delete', name: 'prerequis_delete', methods: ['DELETE'])]
+    public function deletePrerequis(Prerequis $prerequis): JsonResponse
+    {
+        $this->em->remove($prerequis);
+        $this->em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    /**
+     * Modification d'un prérequis existant.
+     */
+    #[Route('/prerequis/{id}/edit', name: 'edit_prerequis', methods: ['POST'])]
+    public function editPrerequis(Prerequis $prerequis, Request $request): JsonResponse
+    {
+        $data = json_decode($request->getContent(), true);
+
+        // 1. Validation basique (Sliders)
+        $views   = (float)($data['views'] ?? 0);
+        $success = (float)($data['success'] ?? 0);
+
+        if ($views <= 0 && $success <= 0) {
+            return new JsonResponse(['success' => false, 'message' => 'Au moins 1% requis.'], 400);
+        }
+
+        // 2. Récupération des cibles
+        $targetObjId = $data['targetObjectiveId'] ?? null;
+        $targetLvlId = $data['targetLevelId'] ?? null;
+
+        $targetObj = $this->em->getRepository(Objectif::class)->find($targetObjId);
+        $targetLvl = $this->em->getRepository(Niveau::class)->find($targetLvlId);
+
+        if (!$targetObj || !$targetLvl) {
+            return new JsonResponse(['success' => false, 'message' => 'Cible introuvable'], 404);
+        }
+
+        // 3. Validation Unicité (On exclut le prérequis actuel de la vérification)
+        $targetObjStringID = $targetObj->getObjID();
+        $currentObjectif = $prerequis->getObjectif();
+
+        foreach ($currentObjectif->getPrerequis() as $existing) {
+            // Si c'est un AUTRE prérequis (id différent) mais qui pointe vers le MÊME objectif
+            if ($existing->getId() !== $prerequis->getId() && $existing->getRequiredObjective() === $targetObjStringID) {
+                // Pour l'affichage de l'erreur
+                $conflictName = $targetObj->getName() ?: $targetObjStringID;
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => "Un prérequis pour l'objectif \"$conflictName\" existe déjà."
+                ], 400);
+            }
+        }
+
+        // 4. Mise à jour de l'entité
+        $prerequis->setRequiredObjective($targetObjStringID);
+        $prerequis->setRequiredLevel($targetLvl->getLevelID());
+        $prerequis->setEncountersPercent($views);
+        $prerequis->setSuccessPercent($success);
+
+        $this->em->flush();
+
+        // 5. Préparation des variables pour la vue (Gestion des noms vides)
+        $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
+        $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
+
+        // 6. Rendu du badge HTML
+        // C'EST ICI QUE L'ERREUR SE PRODUISAIT : Il manquait les DbId
+        $html = $this->renderView('objective/_prereq_badge.html.twig', [
+            'p' => $prerequis,
+
+            // Pour l'affichage texte
+            'targetObjName' => $targetObjName,
+            'targetLvlName' => $targetLvlName,
+
+            // INDISPENSABLES pour le JS (bouton édition)
+            'targetObjDbId' => $targetObj->getId(),
+            'targetLvlDbId' => $targetLvl->getId()
+        ]);
+
+        return new JsonResponse([
+            'success' => true,
+            'html' => $html,
+            'id' => $prerequis->getId()
+        ]);
     }
 }

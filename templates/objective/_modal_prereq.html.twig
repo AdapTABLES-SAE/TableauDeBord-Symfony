@@ -1,0 +1,57 @@
+<div id="prerequisite-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content-prereq">
+
+        <div class="modal-header-prereq">
+            <h3 class="modal-title">Ajouter un prérequis</h3>
+            <button type="button" class="btn-close-modal" aria-label="Fermer">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="modal-body-prereq">
+            <div class="mb-3">
+                <label for="prereq-objective-select" class="form-label">Choisir un objectif</label>
+                <select id="prereq-objective-select" class="form-select">
+                    <option value="" selected disabled>Sélectionnez un objectif...</option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label for="prereq-level-select" class="form-label">Choisir un niveau</label>
+                <select id="prereq-level-select" class="form-select" disabled>
+                    <option value="" selected disabled>Sélectionnez d'abord un objectif</option>
+                </select>
+            </div>
+
+            <div id="prereq-criteria-section" style="display: none;">
+                <h4 class="text-center mb-4">
+                    Choisissez le nombre de faits minimum<br>
+                    à rencontrer et à valider
+                </h4>
+
+                <div class="criteria-row">
+                    <div class="criteria-block">
+                        <div class="criteria-label">Vues Requises</div>
+                        <div class="criteria-slider-container">
+                            <input type="range" min="0" max="100" value="0" class="criteria-range" id="prereq-views-range">
+                            <div class="criteria-value" id="prereq-views-value">0</div>
+                        </div>
+                    </div>
+
+                    <div class="criteria-block">
+                        <div class="criteria-label">Succès Requis</div>
+                        <div class="criteria-slider-container">
+                            <input type="range" min="0" max="100" value="0" class="criteria-range" id="prereq-successes-range">
+                            <div class="criteria-value" id="prereq-successes-value">0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer-prereq">
+            <button type="button" class="btn btn-secondary btn-cancel-prereq">Annuler</button>
+            <button type="button" class="btn btn-primary" id="confirm-prereq-btn" disabled>Confirmer</button>
+        </div>
+    </div>
+</div>

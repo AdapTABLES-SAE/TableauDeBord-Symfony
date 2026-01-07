@@ -4,9 +4,15 @@
 
 {% block stylesheets %}
     {{ parent() }}
-    <link rel="stylesheet" href="{{ asset('css/objective_builder.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/objective/objective_builder.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/objective/level_block.css') }}">
     <link rel="stylesheet" href="{{ asset('css/task/task_modals.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/task/task_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/c1task_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/c2task_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/rectask_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/idtask_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/task/membtask_preview.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/objective/prereq_modal.css') }}">
 {% endblock %}
 
 {% block body %}
@@ -52,8 +58,10 @@
 
                         <div id="tables-wrapper" class="tables-grid mb-4">
                             {% for t in 1..12 %}
+                                {% set isActive = (t in selectedTables) or ((t ~ '') in selectedTables) %}
+
                                 <button type="button"
-                                        class="btn table-pill {{ t in selectedTables ? 'active' : '' }}"
+                                        class="btn table-pill {{ isActive ? 'active' : '' }}"
                                         data-value="{{ t }}">
                                     {{ t }}
                                 </button>
@@ -65,53 +73,73 @@
                             <i class="bi bi-flag me-2"></i> Prérequis
                         </div>
 
-                        <div class="prereq-block mb-4">
-                            <div class="prereq-row mb-3">
-                                <div class="d-flex justify-content-between">
-                                    <span>Vus</span>
-                                    <span id="prereq_seen_value">{{ prereq_seen }}%</span>
-                                </div>
-                                <input type="range"
-                                       class="form-range"
-                                       min="0"
-                                       max="100"
-                                       value="{{ prereq_seen }}"
-                                       name="prereq_seen"
-                                       id="prereq_seen_slider">
-                            </div>
+                        <button type="button" id="btn-open-prereq-modal" class="btn-add-prereq mb-4">
+                            <i class="bi bi-plus-circle me-2"></i> Ajouter un prérequis
+                        </button>
 
-                            <div class="prereq-row">
-                                <div class="d-flex justify-content-between">
-                                    <span>Complétés</span>
-                                    <span id="prereq_completed_value">{{ prereq_done }}%</span>
-                                </div>
-                                <input type="range"
-                                       class="form-range"
-                                       min="0"
-                                       max="100"
-                                       value="{{ prereq_done }}"
-                                       name="prereq_completed"
-                                       id="prereq_completed_slider">
-                            </div>
+                        <div id="prerequisites-list" class="d-flex flex-column gap-2 mb-2">
+                            {% for p in objectif.prerequis %}
+                            {% set targetObj = find_objective_entity(p.requiredObjective, entrainement) %}
+                            {% set targetLvl = find_level_entity(p.requiredLevel, entrainement) %}
+
+                            {% if targetObj and targetLvl %}
+                            {% include 'objective/_prereq_badge.html.twig' with {
+                            'p': p,
+
+                            'targetObjName': targetObj.name|default(targetObj.objID),
+                            'targetLvlName': targetLvl.name|default(targetLvl.levelID),
+
+                            'targetObjDbId': targetObj.id,
+                            'targetLvlDbId': targetLvl.id
+                            } %}
+                            {% endif %}
+                            {% endfor %}
                         </div>
 
                         <!-- Preview params -->
-                        <div class="section-title mb-2">
-                            <i class="bi bi-eye me-2"></i> Preview params
-                        </div>
+                        <div class="preview-container mb-4">
 
-                        <div class="preview-card mb-4">
-                            <div id="preview-box" class="small text-center text-muted">
-                                En attente de paramètres…
+                            <div class="preview-header">
+                                <h6 class="preview-title">Aperçu aléatoire du niveau</h6>
+
+                                <button type="button" id="refresh-preview-btn" class="btn-refresh-preview" title="Régénérer les exemples">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
                             </div>
+
+                            <div id="preview-info-line">
+                                Calcul en cours...
+                            </div>
+
+                            <div id="preview-box">
+                                <div class="preview-empty">
+                                    Sélectionnez des tables pour voir des exemples.
+                                </div>
+                            </div>
+
+                            <div class="preview-footer">
+                                Basé sur la configuration de vos niveaux.
+                            </div>
+
                         </div>
 
-                        <!-- Bouton sauvegarde de l'objectif -->
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-violet px-4">
-                                <i class="bi bi-save2 me-1"></i> Enregistrer l’objectif
-                            </button>
+                        <!-- Bouton sauvegarde -->
+                        <div style="height: 120px;"></div>
+
+                        <button type="button"
+                                id="save-all-btn"
+                                class="btn btn-primary fw-bold"
+                            {# On vérifie s'il y a des élèves liés à l'entrainement parent #}
+                            {# On vérifie aussi si entrainement existe pour éviter une erreur #}
+                                data-has-students="{{ (objectif.entrainement and objectif.entrainement.eleves|length > 0) ? 'true' : 'false' }}">
+                            <i class="bi bi-save me-2"></i> Enregistrer tout
+                        </button>
+
+                        <div id="save-loader" class="save-loader d-none">
+                            <div class="spinner-border text-violet" role="status"></div>
+                            <span class="ms-2">Enregistrement...</span>
                         </div>
+
                     </form>
                 </div>
 
@@ -135,11 +163,11 @@
                                 {% include 'objective/_level_block.html.twig' with {
                                     niveau: niveau,
                                     index: loop.index,
-                                    active: loop.first
+                                    active: false
                                 } %}
                             {% endfor %}
                         {% else %}
-                            <div class="alert alert-info small">
+                            <div id="no-levels-alert" class="alert alert-info small">
                                 Aucun niveau pour le moment. Cliquez sur <strong>Ajouter un niveau</strong>.
                             </div>
                         {% endif %}
@@ -150,12 +178,97 @@
         </div>
     </div>
 
+    <!-- MODALE SUPPRESSION NIVEAU -->
+    <div id="delete-level-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content danger-modal-content animate-pop-in">
+
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Supprimer le niveau
+                </h5>
+                <button type="button" class="btn-close-custom text-white" id="btn-close-delete-modal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-4">
+                <p class="fs-5 mb-3">Êtes-vous sûr de vouloir supprimer ce niveau ?</p>
+
+                <div class="d-flex align-items-start gap-2 text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                    <span>Cette action est irréversible et supprimera toutes les tâches associées.</span>
+                </div>
+
+                <div class="mt-3 text-muted">
+                    Niveau sélectionné : <span id="delete-level-name-target" class="fw-bold text-dark">...</span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary px-4 fw-500" id="btn-cancel-delete">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-danger px-4 fw-500" id="btn-confirm-delete">
+                    <i class="bi bi-trash me-2"></i> Supprimer le niveau
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE SUPPRESSION PREREQUIS -->
+    <div id="delete-prereq-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content danger-modal-content animate-pop-in">
+
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title fw-bold text-white">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Supprimer le prérequis
+                </h5>
+                <button type="button" class="btn-close-custom text-white" id="btn-close-delete-prereq">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-4">
+                <p class="fs-5 mb-3">Êtes-vous sûr de vouloir supprimer ce prérequis ?</p>
+
+                <div class="d-flex align-items-start gap-2 text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                    <span>Cette action est irréversible.</span>
+                </div>
+
+                <div class="mt-3 text-muted">
+                    Prérequis : <span id="delete-prereq-name-target" class="fw-bold text-dark">...</span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary px-4 fw-500" id="btn-cancel-delete-prereq">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-danger px-4 fw-500" id="btn-confirm-delete-prereq">
+                    <i class="bi bi-trash me-2"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+
     {# ===================== MODALES DE TÂCHES ===================== #}
     {% include 'objective/_modal_task_c1.html.twig' %}
     {% include 'objective/_modal_task_c2.html.twig' %}
     {% include 'objective/_modal_task_rec.html.twig' %}
     {% include 'objective/_modal_task_id.html.twig' %}
     {% include 'objective/_modal_task_memb.html.twig' %}
+
+    {# ===================== MODALES SUPPRESSION DE TÂCHES ===================== #}
+    {% include 'objective/_modal_delete_tasks.html.twig' %}
+
+    {# MODALE CONFIRMATION DE SAUVEGARDE #}
+    {% include 'objective/_modal_confirm_save.html.twig' %}
+
+    {# MODALE PREREQUIS #}
+    {% include 'objective/_modal_prereq.html.twig' %}
 
     {# Toasts génériques pour showToast() #}
     {% include 'components/toast.html.twig' with {
@@ -172,7 +285,12 @@
             saveLevelUrlTemplate: '{{ path('objective_save_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
             deleteLevelUrlTemplate: '{{ path('objective_delete_level', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
             saveTaskUrlTemplate: '{{ path('objective_save_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
-            deleteTaskUrlTemplate: '{{ path('objective_delete_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}'
+            deleteTaskUrlTemplate: '{{ path('objective_delete_task', {id: 999999})|replace({'999999':'__LEVEL_ID__'}) }}',
+            saveAllUrl: '{{ path('objective_save_all', {id: objectif.id}) }}',
+            apiDataUrl: '{{ path('objective_api_data', {entrainement: entrainement.id}) }}?exclude_id={{ objectif.id }}',
+            addPrerequisUrl: '{{ path('objective_add_prerequis', {id: objectif.id}) }}',
+            deletePrerequisUrlTemplate: '{{ path('objective_prerequis_delete', {id: 999999})|replace({'999999':'__ID__'}) }}',
+            editPrerequisUrlTemplate: '{{ path('objective_edit_prerequis', {id: 999999})|replace({'999999':'__ID__'}) }}'
         };
     </script>
     <script type="module" src="{{ asset('js/objective_builder.js') }}"></script>
