@@ -117,20 +117,19 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     // ========================================================================
-    // 4. DELETE TRAINING
-    // ========================================================================
+// 4. DELETE TRAINING
+// ========================================================================
     if (deleteBtn && deleteModalEl && confirmDeleteBtn) {
         const deleteModal = new bootstrap.Modal(deleteModalEl);
-        const trainingId = deleteBtn.dataset.trainingId;
+        const deleteUrl = deleteBtn.dataset.action; // full URL
 
         deleteBtn.addEventListener("click", () => deleteModal.show());
 
         confirmDeleteBtn.addEventListener("click", async () => {
             try {
-                const response = await fetch(
-                    `/dashboard/training/delete/${trainingId}`,
-                    { method: "DELETE" }
-                );
+                const response = await fetch(deleteUrl, {
+                    method: "DELETE"
+                });
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
@@ -141,11 +140,11 @@ document.addEventListener("partial:loaded", (e) => {
 
                     await window.reloadListOnly("trainings");
                     container.innerHTML = `
-                        <h2 class="fw-bold mb-3">Mes entraînements</h2>
-                        <p class="text-primary fs-5">
-                            Sélectionner un entraînement pour voir le détail.
-                        </p>
-                    `;
+                    <h2 class="fw-bold mb-3">Mes entraînements</h2>
+                    <p class="text-primary fs-5">
+                        Sélectionner un entraînement pour voir le détail.
+                    </p>
+                `;
                 } else {
                     showToast(false, "Erreur", "Impossible de supprimer l’entraînement.");
                 }
@@ -156,6 +155,7 @@ document.addEventListener("partial:loaded", (e) => {
             }
         });
     }
+
 
     // ========================================================================
     // 5. ADD OBJECTIVE

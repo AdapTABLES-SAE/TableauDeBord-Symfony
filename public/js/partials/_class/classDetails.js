@@ -135,7 +135,7 @@ document.addEventListener("partial:loaded", (e) => {
     // ========================================================================
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
-            window.reloadDashboardPair("classes");
+            window.reloadDetailOnly("classes", currentId);
         });
     }
 
