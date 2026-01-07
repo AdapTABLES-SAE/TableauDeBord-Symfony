@@ -28,7 +28,14 @@
             <i class="bi bi-pencil"></i>
         </button>
 
-        <button type="button" class="btn-action-prereq btn-delete" onclick="deletePrerequis({{ p.id }})">
+        <button type="button"
+                class="btn-action-prereq btn-delete delete-prereq-btn"
+                data-prereq-id="{{ p.id }}"
+                data-prereq-name="Prérequis #{{ p.id }}"
+
+                data-delete-url="{{ path('objective_prerequis_delete', {id: p.id}) }}"
+
+                title="Supprimer ce prérequis">
             <i class="bi bi-trash"></i>
         </button>
     </div>

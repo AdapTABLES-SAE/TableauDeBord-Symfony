@@ -1,5 +1,3 @@
-// public/js/objective_builder.js
-
 import { showToast } from './toast/toast.js';
 
 // Import des modales
@@ -29,6 +27,77 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Initialisation de la modale prérequis
     initPrereqModal();
+
+    // =========================================================================
+    // GESTION GLOBALE DE LA MODALE DE SUPPRESSION NIVEAU
+    // =========================================================================
+
+    const deleteModal     = document.getElementById("delete-level-modal");
+    const confirmDelBtn   = document.getElementById("btn-confirm-delete");
+    const cancelDelBtn    = document.getElementById("btn-cancel-delete");
+    const closeDelBtn     = document.getElementById("btn-close-delete-modal");
+
+    // Variable pour se souvenir QUEL niveau on veut supprimer
+    let cardPendingDelete = null;
+
+    // Fonction de fermeture
+    const closeDeleteModal = () => {
+        if (deleteModal) deleteModal.style.display = "none";
+        cardPendingDelete = null;
+        if (confirmDelBtn) confirmDelBtn.disabled = false;
+    };
+
+    // Events de fermeture
+    if (cancelDelBtn) cancelDelBtn.addEventListener("click", closeDeleteModal);
+    if (closeDelBtn)  closeDelBtn.addEventListener("click", closeDeleteModal);
+    if (deleteModal) {
+        deleteModal.addEventListener("click", (e) => {
+            if (e.target === deleteModal) closeDeleteModal();
+        });
+    }
+
+    // --- CLIC SUR LE BOUTON "OUI, SUPPRIMER" ---
+    if (confirmDelBtn) {
+        confirmDelBtn.addEventListener("click", async () => {
+            if (!cardPendingDelete) return;
+
+            const card = cardPendingDelete;
+            const url = config.deleteLevelUrlTemplate.replace("__LEVEL_ID__", card.dataset.levelId);
+
+            // UI Loading
+            confirmDelBtn.disabled = true;
+            const originalHTML = confirmDelBtn.innerHTML;
+            confirmDelBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Suppression...';
+
+            try {
+                const resp = await fetch(url, {
+                    method: "DELETE",
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+
+                const json = await resp.json();
+
+                if (!json.success) {
+                    showToast(false, json.message || "Erreur lors de la suppression.");
+                } else {
+                    // Suppression réussie
+                    card.remove();
+                    showToast(true, "Niveau supprimé.");
+
+                    updatePreview();
+                    captureInitialState(); // Reset de l'état "modifié"
+                }
+            } catch (err) {
+                console.error(err);
+                showToast(false, "Erreur serveur.");
+            } finally {
+                // Reset UI
+                confirmDelBtn.innerHTML = originalHTML;
+                closeDeleteModal();
+            }
+        });
+    }
+
 
     /* =========================================================================================
        COLLECTEUR GLOBAL : objectif + niveaux
@@ -161,10 +230,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!previewBox) return;
 
-        // 1. Récupérer les tables globales
+        // Récupérer les tables globales
         const tables = getSelectedTables();
 
-        // 2. Trouver le niveau OUVERT (celui qui n'a pas la classe .collapsed)
+        // Trouver le niveau OUVERT (celui qui n'a pas la classe .collapsed)
         const openCard = document.querySelector(".level-card:not(.collapsed)");
 
         // Cas : Aucun niveau ou aucun niveau ouvert
@@ -178,7 +247,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 3. Calcul du total pour CE niveau uniquement
+        // Calcul du total pour CE niveau uniquement
         const totalFacts = computeFactsCount(openCard);
 
         // Mise à jour du texte d'information
@@ -197,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // 4. Génération des exemples
+        // Génération des exemples
         const list = [];
         const count = 8;
 
@@ -257,7 +326,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (refreshPreviewBtn) {
         refreshPreviewBtn.addEventListener("click", () => {
 
-            // 1. Animation de rotation pour le fun (UX)
+            // Animation de rotation
             const icon = refreshPreviewBtn.querySelector("i");
             if (icon) {
                 // On applique la rotation
@@ -271,12 +340,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 }, 400);
             }
 
-            // 2. Appel de la fonction de mise à jour
+            // Appel de la fonction de mise à jour
             updatePreview();
         });
     }
 
-    // Appel initial au chargement de la page
     updatePreview();
 
     /* =========================================================================================
@@ -336,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* =========================================================================================
-       FACTS COUNT
+       COMPTAGE DES FAITS
     ========================================================================================= */
 
     function getTablesForCard(card) {
@@ -348,20 +416,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function computeFactsCount(card) {
-        // 1. Base : (Nombre de tables) x (Taille de l'intervalle)
+        // Base : (Nombre de tables) x (Taille de l'intervalle)
         const tables = getTablesForCard(card);
         const min = parseInt(card.dataset.intervalMin || "1", 10);
         const max = parseInt(card.dataset.intervalMax || "10", 10);
         let count = tables.length * Math.max(0, max - min + 1);
 
-        // 2. Position du signe Égal
+        // Position du signe Égal
         // Si "MIX" (Les deux), on double car "a = b" et "b = a" sont deux items distincts
         const eqPos = card.dataset.equalPosition || "RIGHT";
         if (eqPos === "MIX") {
             count *= 2;
         }
 
-        // 3. Position des Facteurs
+        // Position des Facteurs
         // Si "MIX" (Les deux), on double car "a x b" et "b x a" sont deux items distincts
         const facPos = card.dataset.factorPosition || "OPERAND_TABLE";
         if (facPos === "MIX") {
@@ -524,7 +592,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (isCurrentlyOpen) {
                 // Si c'est ouvert, on ferme simplement
                 closeCard(card);
-                // Optionnel : On vide l'aperçu car rien n'est sélectionné
                 updatePreview();
             } else {
                 // Si c'est fermé, ON FERME TOUS LES AUTRES d'abord
@@ -534,10 +601,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
 
-                // Puis on ouvre celui-ci
                 openCard(card);
-
-                // Et on met à jour l'aperçu immédiatement
                 updatePreview();
             }
         });
@@ -604,31 +668,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Delete level
         const deleteBtn = card.querySelector(".delete-level-btn");
-        if (deleteBtn && config.deleteLevelUrlTemplate) {
-            deleteBtn.addEventListener("click", async () => {
-                if (!confirm("Supprimer ce niveau ?")) return;
 
-                const url = config.deleteLevelUrlTemplate.replace("__LEVEL_ID__", card.dataset.levelId);
+        // On vérifie juste que le bouton existe
+        if (deleteBtn) {
+            deleteBtn.addEventListener("click", () => {
 
-                try {
-                    const resp = await fetch(url, {
-                        method: "DELETE",
-                        headers: { "X-Requested-With": "XMLHttpRequest" }
-                    });
+                // SÉCURITÉ : EMPÊCHER LA SUPPRESSION DU DERNIER NIVEAU
+                const allLevels = document.querySelectorAll(".level-card");
+                if (allLevels.length <= 1) {
+                    showToast(false, "Impossible de supprimer l'unique niveau de l'objectif.");
+                    return;
+                }
 
-                    const json = await resp.json();
-                    if (!json.success) return showToast(false);
+                // PRÉPARATION DE LA SUPPRESSION
+                cardPendingDelete = card;
 
-                    card.remove();
-                    showToast(true);
+                //Récupérer le nom pour l'afficher dans la modale ---
+                const levelName = card.querySelector(".level-name-input").value || "Niveau sans nom";
+                const nameSpan = document.getElementById("delete-level-name-target");
+                if(nameSpan) nameSpan.textContent = levelName;
 
-                    updatePreview();
-
-                    captureInitialState();
-
-                } catch (err) {
-                    console.error(err);
-                    showToast(false);
+                // OUVERTURE DE LA MODALE
+                const deleteModal = document.getElementById("delete-level-modal");
+                if (deleteModal) {
+                    deleteModal.style.display = "flex";
                 }
             });
         }
@@ -659,6 +722,122 @@ document.addEventListener("DOMContentLoaded", () => {
 
     initAllLevelCards();
     captureInitialState();
+
+    // =========================================================================
+    // GESTION SUPPRESSION PRÉREQUIS (Via Modale Rouge)
+    // =========================================================================
+
+    const delPrereqModal   = document.getElementById("delete-prereq-modal");
+    const confirmPrereqBtn = document.getElementById("btn-confirm-delete-prereq");
+    const cancelPrereqBtn  = document.getElementById("btn-cancel-delete-prereq");
+    const closePrereqBtn   = document.getElementById("btn-close-delete-prereq");
+    const prereqNameTarget = document.getElementById("delete-prereq-name-target");
+
+    // Variables pour stocker ce qu'on est en train de supprimer
+    let pendingPrereqId = null;
+    let pendingPrereqBadge = null;
+    let pendingDeleteUrl = null;
+
+    // --- FERMETURE DE LA MODALE ---
+    const closePrereqModal = () => {
+        if (delPrereqModal) delPrereqModal.style.display = "none";
+        pendingPrereqId = null;
+        pendingPrereqBadge = null;
+        pendingDeleteUrl = null;
+        if (confirmPrereqBtn) confirmPrereqBtn.disabled = false;
+    };
+
+    // Écouteurs pour fermer la modale
+    if (cancelPrereqBtn) cancelPrereqBtn.addEventListener("click", closePrereqModal);
+    if (closePrereqBtn)  closePrereqBtn.addEventListener("click", closePrereqModal);
+    if (delPrereqModal) {
+        delPrereqModal.addEventListener("click", (e) => {
+            if (e.target === delPrereqModal) closePrereqModal();
+        });
+    }
+
+    // --- DÉTECTION DU CLIC SUR LA POUBELLE (Event Delegation) ---
+    document.addEventListener('click', (e) => {
+        const btn = e.target.closest('.delete-prereq-btn');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            pendingPrereqId = btn.dataset.prereqId;
+            const name = btn.dataset.prereqName || "ce prérequis";
+            pendingPrereqBadge = btn.closest('.prereq-badge');
+
+            pendingDeleteUrl = btn.dataset.deleteUrl;
+
+            if (prereqNameTarget) prereqNameTarget.textContent = name;
+            if (delPrereqModal) delPrereqModal.style.display = "flex";
+        }
+    });
+
+    // --- CONFIRMATION DE LA SUPPRESSION (Appel Serveur) ---
+    if (confirmPrereqBtn) {
+        confirmPrereqBtn.addEventListener("click", async () => {
+            // On vérifie l'URL
+            if (!pendingDeleteUrl) return;
+
+            // --- SAUVEGARDE LOCALE IMPORTANTE ---
+            // On stocke l'élément dans une variable locale
+            const badgeToRemove = pendingPrereqBadge;
+            const container = document.getElementById('prerequisites-list');
+
+            // UI : Loading
+            confirmPrereqBtn.disabled = true;
+            const originalHTML = confirmPrereqBtn.innerHTML;
+            confirmPrereqBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Suppression...';
+
+            try {
+                const resp = await fetch(pendingDeleteUrl, {
+                    method: "DELETE",
+                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                });
+
+                if (!resp.ok) throw new Error("Erreur réseau : " + resp.status);
+
+                const json = await resp.json();
+
+                if (json.success) {
+                    // SUCCÈS
+                    if (badgeToRemove) {
+                        // Animation
+                        badgeToRemove.style.transition = "all 0.3s ease";
+                        badgeToRemove.style.opacity = "0";
+                        badgeToRemove.style.transform = "translateX(20px)";
+
+                        setTimeout(() => {
+                            // Suppression
+                            badgeToRemove.remove();
+
+                            // Nettoyage du conteneur (Espace blanc)
+                            if (container) {
+                                const remainingCount = container.querySelectorAll('.prereq-badge').length;
+                                if (remainingCount === 0) {
+                                    container.style.display = 'none';
+                                    container.classList.remove('d-flex', 'mb-2', 'gap-2');
+                                    container.classList.add('d-none');
+                                }
+                            }
+                        }, 300);
+                    }
+                    showToast(true, "Prérequis supprimé.");
+                } else {
+                    showToast(false, json.message || "Impossible de supprimer.");
+                }
+
+            } catch (err) {
+                console.error("Erreur suppression:", err);
+                showToast(false, "Une erreur est survenue.");
+            } finally {
+                // Reset UI et Fermeture
+                confirmPrereqBtn.innerHTML = originalHTML;
+                closePrereqModal();
+            }
+        });
+    }
 
     /* =========================================================================================
        SAVE ALL
@@ -711,23 +890,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (addLevelBtn && config.addLevelUrl) {
         addLevelBtn.addEventListener("click", async () => {
             try {
-                // 1. On récupère les tables ACTUELLEMENT sélectionnées
+                // On récupère les tables ACTUELLEMENT sélectionnées
                 const currentTables = getSelectedTables();
 
-                // 2. On les envoie au serveur lors de la création
+                // On les envoie au serveur lors de la création
                 const resp = await fetch(config.addLevelUrl, {
                     method: "POST",
                     headers: {
-                        "Content-Type": "application/json", // <--- Indispensable pour envoyer des données
+                        "Content-Type": "application/json",
                         "X-Requested-With": "XMLHttpRequest"
                     },
-                    body: JSON.stringify({ tables: currentTables }) // <--- On envoie la sélection
+                    body: JSON.stringify({ tables: currentTables })
                 });
 
                 const json = await resp.json();
                 if (!json.success || !json.html) return showToast(false);
 
-                // 3. Création du DOM
+                // Création du DOM
                 const temp = document.createElement("div");
                 temp.innerHTML = json.html.trim();
                 const newCard = temp.firstElementChild;

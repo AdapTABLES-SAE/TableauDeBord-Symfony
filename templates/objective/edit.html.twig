@@ -99,41 +99,42 @@
                         <!-- Preview params -->
                         <div class="preview-container mb-4">
 
-                            <div class="preview-header mb-2 d-flex justify-content-between align-items-center">
-                                <span>Aperçu aléatoire</span>
+                            <div class="preview-header">
+                                <h6 class="preview-title">Aperçu aléatoire du niveau</h6>
 
                                 <button type="button" id="refresh-preview-btn" class="btn-refresh-preview" title="Régénérer les exemples">
                                     <i class="bi bi-arrow-clockwise"></i>
                                 </button>
                             </div>
 
-                            <div id="preview-info-line" class="small text-muted mb-3" style="font-size: 0.85rem;">
+                            <div id="preview-info-line">
                                 Calcul en cours...
                             </div>
 
-                            <div id="preview-box" class="preview-grid">
+                            <div id="preview-box">
                                 <div class="preview-empty">
                                     Sélectionnez des tables pour voir des exemples.
                                 </div>
                             </div>
 
-                            <div class="text-center mt-2">
-                                <small class="text-muted" style="font-size: 0.75rem;">
-                                    Basé sur la configuration de vos niveaux.
-                                </small>
+                            <div class="preview-footer">
+                                Basé sur la configuration de vos niveaux.
                             </div>
+
                         </div>
 
                         <!-- Bouton sauvegarde -->
-                        <div class="text-end">
-                            <button type="button" id="save-all-btn" class="btn btn-violet px-4">
-                                <i class="bi bi-save2 me-1"></i> Enregistrer toutes les modifications
-                            </button>
-                        </div>
+                        <div style="height: 120px;"></div>
+
+                        <button type="button" id="save-all-btn" class="btn btn-primary fw-bold">
+                            <i class="bi bi-save me-2"></i> Enregistrer tout
+                        </button>
+
                         <div id="save-loader" class="save-loader d-none">
                             <div class="spinner-border text-violet" role="status"></div>
                             <span class="ms-2">Enregistrement...</span>
                         </div>
+
                     </form>
                 </div>
 
@@ -172,6 +173,82 @@
         </div>
     </div>
 
+    <!-- MODALE SUPPRESSION NIVEAU -->
+    <div id="delete-level-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content danger-modal-content animate-pop-in">
+
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Supprimer le niveau
+                </h5>
+                <button type="button" class="btn-close-custom text-white" id="btn-close-delete-modal">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-4">
+                <p class="fs-5 mb-3">Êtes-vous sûr de vouloir supprimer ce niveau ?</p>
+
+                <div class="d-flex align-items-start gap-2 text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                    <span>Cette action est irréversible et supprimera toutes les tâches associées.</span>
+                </div>
+
+                <div class="mt-3 text-muted">
+                    Niveau sélectionné : <span id="delete-level-name-target" class="fw-bold text-dark">...</span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary px-4 fw-500" id="btn-cancel-delete">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-danger px-4 fw-500" id="btn-confirm-delete">
+                    <i class="bi bi-trash me-2"></i> Supprimer le niveau
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODALE SUPPRESSION PREREQUIS -->
+    <div id="delete-prereq-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content danger-modal-content animate-pop-in">
+
+            <div class="modal-header bg-danger">
+                <h5 class="modal-title fw-bold text-white">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Supprimer le prérequis
+                </h5>
+                <button type="button" class="btn-close-custom text-white" id="btn-close-delete-prereq">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <div class="modal-body p-4">
+                <p class="fs-5 mb-3">Êtes-vous sûr de vouloir supprimer ce prérequis ?</p>
+
+                <div class="d-flex align-items-start gap-2 text-danger fw-bold">
+                    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                    <span>Cette action est irréversible.</span>
+                </div>
+
+                <div class="mt-3 text-muted">
+                    Prérequis : <span id="delete-prereq-name-target" class="fw-bold text-dark">...</span>
+                </div>
+            </div>
+
+            <div class="modal-footer border-0 pt-0 pb-4 px-4 justify-content-end gap-2">
+                <button type="button" class="btn btn-secondary px-4 fw-500" id="btn-cancel-delete-prereq">
+                    Annuler
+                </button>
+                <button type="button" class="btn btn-danger px-4 fw-500" id="btn-confirm-delete-prereq">
+                    <i class="bi bi-trash me-2"></i> Supprimer
+                </button>
+            </div>
+        </div>
+    </div>
+
     {# ===================== MODALES DE TÂCHES ===================== #}
     {% include 'objective/_modal_task_c1.html.twig' %}
     {% include 'objective/_modal_task_c2.html.twig' %}
@@ -201,7 +278,7 @@
             saveAllUrl: '{{ path('objective_save_all', {id: objectif.id}) }}',
             apiDataUrl: '{{ path('objective_api_data', {entrainement: entrainement.id}) }}?exclude_id={{ objectif.id }}',
             addPrerequisUrl: '{{ path('objective_add_prerequis', {id: objectif.id}) }}',
-            deletePrerequisUrlTemplate: '{{ path('objective_delete_prerequis', {id: 999999})|replace({'999999':'__ID__'}) }}',
+            deletePrerequisUrlTemplate: '{{ path('objective_prerequis_delete', {id: 999999})|replace({'999999':'__ID__'}) }}',
             editPrerequisUrlTemplate: '{{ path('objective_edit_prerequis', {id: 999999})|replace({'999999':'__ID__'}) }}'
         };
     </script>

@@ -97,8 +97,8 @@ export function initPrereqModal() {
     }
 
     /* ============================================================
-       3. CONFIRMATION
-    ============================================================ */
+   3. CONFIRMATION
+============================================================ */
     confirmBtn.addEventListener("click", async () => {
         let url = config.addPrerequisUrl;
         if (currentEditingId) {
@@ -131,13 +131,34 @@ export function initPrereqModal() {
                 const newBadge = temp.firstElementChild;
 
                 if (currentEditingId) {
+                    // --- CAS ÉDITION (Pas de changement de visibilité nécessaire) ---
                     const oldBadge = document.getElementById(`prereq-badge-${currentEditingId}`);
                     if (oldBadge) {
                         oldBadge.replaceWith(newBadge);
                         showToast(true, "Prérequis mis à jour");
                     }
                 } else {
+                    // --- CAS AJOUT ---
+
+                    const listContainer = document.getElementById('prerequisites-list');
+
+                    // 1. RÉINITIALISER LE CONTENEUR (Inverse de la suppression)
+                    if (listContainer) {
+                        // Si le conteneur était caché ou vide
+                        if (listContainer.classList.contains('d-none') || listContainer.style.display === 'none') {
+
+                            // On enlève le masquage
+                            listContainer.classList.remove('d-none');
+                            listContainer.style.display = ''; // Retire le style inline 'none'
+
+                            // On remet les classes de mise en page (Flexbox et Marges)
+                            listContainer.classList.add('d-flex', 'flex-column', 'gap-2', 'mb-2');
+                        }
+                    }
+
+                    // 2. Ajouter le badge
                     listContainer.appendChild(newBadge);
+
                     setTimeout(() => { listContainer.scrollTop = listContainer.scrollHeight; }, 50);
                     showToast(true, "Prérequis ajouté");
                 }

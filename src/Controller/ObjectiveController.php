@@ -180,23 +180,42 @@ class ObjectiveController extends AbstractController
            -------------------------- */
         if (isset($payload['levels']) && is_array($payload['levels'])) {
             foreach ($payload['levels'] as $lvlData) {
+                // On vérifie l'ID
+                if (empty($lvlData['id'])) continue;
+
                 $niveau = $this->em->getRepository(Niveau::class)->find($lvlData['id']);
-                if (!$niveau) continue;
+
+                // Sécurité : on s'assure que le niveau appartient bien à l'objectif en cours
+                if (!$niveau || $niveau->getObjectif()->getId() !== $objectif->getId()) {
+                    continue;
+                }
 
                 $niveau->setName($lvlData['name']);
-                $niveau->setTables($lvlData['tables']);
-                $niveau->setIntervalMin($lvlData['intervalMin']);
-                $niveau->setIntervalMax($lvlData['intervalMax']);
+                $niveau->setTables($lvlData['tables'] ?? []); // Fallback array vide si null
+                $niveau->setIntervalMin((int)$lvlData['intervalMin']);
+                $niveau->setIntervalMax((int)$lvlData['intervalMax']);
                 $niveau->setResultLocation($lvlData['equalPosition']);
                 $niveau->setLeftOperand($lvlData['factorPosition']);
+
+                // --- AJOUT : CRITÈRES DE COMPLÉTION ---
+                if (isset($lvlData['encounterCompletionCriteria'])) {
+                    $niveau->setEncounterCompletionCriteria((int)$lvlData['encounterCompletionCriteria']);
+                }
+
+                if (isset($lvlData['successCompletionCriteria'])) {
+                    $niveau->setSuccessCompletionCriteria((int)$lvlData['successCompletionCriteria']);
+                }
             }
         }
 
         /* --------------------------
            3) Sauvegarde tâches
            -------------------------- */
+        // (Cette partie est conservée telle quelle si votre JS envoie aussi les tâches ici)
         if (isset($payload['tasks']) && is_array($payload['tasks'])) {
             foreach ($payload['tasks'] as $taskPayload) {
+
+                if (empty($taskPayload['levelId'])) continue;
 
                 $niveau = $this->em->getRepository(Niveau::class)->find($taskPayload['levelId']);
                 if (!$niveau) continue;
@@ -218,7 +237,7 @@ class ObjectiveController extends AbstractController
                 $task->setRepartitionPercent($taskPayload['repartitionPercent']);
                 $task->setSuccessiveSuccessesToReach($taskPayload['successiveSuccessesToReach']);
 
-                // Champs spécifiques
+                // Champs spécifiques (null coalescing operator ?? pour éviter les erreurs si index manquant)
                 $task->setTargets($taskPayload['targets'] ?? null);
                 $task->setAnswerModality($taskPayload['answerModality'] ?? null);
                 $task->setNbIncorrectChoices($taskPayload['nbIncorrectChoices'] ?? null);
@@ -494,7 +513,7 @@ class ObjectiveController extends AbstractController
     /**
      * Suppression d'un prérequis.
      */
-    #[Route('/prerequis/{id}/delete', name: 'delete_prerequis', methods: ['DELETE'])]
+    #[Route('/prerequis/{id}/delete', name: 'prerequis_delete', methods: ['DELETE'])]
     public function deletePrerequis(Prerequis $prerequis): JsonResponse
     {
         $this->em->remove($prerequis);
