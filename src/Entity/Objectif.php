@@ -103,4 +103,12 @@ class Objectif
         }
         return $this;
     }
+
+    public function __clone()
+    {
+        $this->id = null;
+        $this->objID = uniqid('obj_', true);
+        $this->niveaux = new ArrayCollection();
+        $this->prerequis = new ArrayCollection();
+    }
 }

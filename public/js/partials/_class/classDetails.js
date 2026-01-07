@@ -135,22 +135,27 @@ document.addEventListener("partial:loaded", (e) => {
     // ========================================================================
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
-            window.reloadDashboardPair("classes");
+            window.reloadDetailOnly("classes", currentId);
         });
     }
 
-// ========================================================================
-// 7. SAVE FORM (POST updates) — avec modale conditionnelle
-// ========================================================================
+    // ========================================================================
+    // 7. SAVE FORM (POST updates) — modales séquentielles propres
+    // ========================================================================
     if (form && saveBtn) {
-        const saveWarningModalEl = document.querySelector("#saveWarningModal");
-        const saveWarningText = document.querySelector("#saveWarningText");
-        const confirmSaveBtn = document.querySelector("#confirmSaveBtn");
-        const saveWarningModal = new bootstrap.Modal(saveWarningModalEl);
 
-        let pendingSubmitData = null; // on garde la FormData avant confirmation
+        const trainingModalEl = q("#confirmAssignTrainingModal");
+        const deleteModalEl   = q("#deleteStudentModal");
 
-        // Le vrai traitement de sauvegarde
+        const confirmTrainingBtn = q("#confirm-assign-btn");
+        const confirmDeleteBtn   = q("#confirmDeleteStudentBtn");
+
+        const trainingModal = new bootstrap.Modal(trainingModalEl);
+        const deleteModal   = new bootstrap.Modal(deleteModalEl);
+
+        let pendingSubmitData = null;
+        let pendingSteps = [];
+
         async function performSave(data) {
             try {
                 const response = await fetch(form.action, {
@@ -177,95 +182,79 @@ document.addEventListener("partial:loaded", (e) => {
             }
         }
 
-        // Lorsqu'on clique sur le bouton "Enregistrer"
-        form.addEventListener("submit", async (e) => {
+        function nextStep() {
+            const step = pendingSteps.shift();
+            if (!step) {
+                performSave(pendingSubmitData);
+                pendingSubmitData = null;
+                return;
+            }
+            step();
+        }
+
+        form.addEventListener("submit", (e) => {
             e.preventDefault();
 
             const editedRows = [...qAll('[data-row-edited="true"]')];
             const classTitle = q("#classTitle");
 
-            // -----------------------
-            // Construire la FormData
-            // -----------------------
             const data = new FormData();
 
             if (classTitle && classTitle.value !== classTitle.defaultValue) {
-                data.append(`class[title]`, classTitle.value);
+                data.append("class[title]", classTitle.value);
             }
 
-            let hasStudentTrainingChanges = false;
-            let hasStudentDeletion = false;
+            let hasTrainingChanges = false;
+            let hasDeletions = false;
 
             editedRows.forEach(row => {
                 const dbId = row.dataset.dbId;
-                const select = row.querySelector("td select");
+                const select = row.querySelector("select");
 
                 if (row.dataset.rowDeleted === "true") {
-                    hasStudentDeletion = true;
+                    hasDeletions = true;
                     data.append(`students[${dbId}][delete]`, "1");
                     return;
                 }
 
                 if (select) {
-                    // Si un select change → modification d'entraînement
-                    hasStudentTrainingChanges = true;
+                    hasTrainingChanges = true;
                     data.append(`students[${dbId}][trainingPathId]`, select.value);
                 }
             });
 
-            // -----------------------
-            // Déterminer si on doit afficher la modale
-            // -----------------------
             const onlyClassNameChanged =
-                !hasStudentDeletion &&
-                !hasStudentTrainingChanges &&
+                !hasTrainingChanges &&
+                !hasDeletions &&
                 classTitle &&
                 classTitle.value !== classTitle.defaultValue;
 
             if (onlyClassNameChanged) {
-                // Aucun impact élève → sauvegarde directe
                 return performSave(data);
             }
 
-            // Si on arrive ici → il y a au moins un changement élève
-            if (hasStudentDeletion && hasStudentTrainingChanges) {
-                saveWarningText.textContent =
-                    "Attention, un ou plusieurs élèves vont :" +
-                    "\n - Être supprimé" +
-                    "\n - Avoir un entraînement modifié." +
-                    "\n" +
-                    "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
-                    "\n" +
-                    "\nVoulez-vous continuer ?";
-                // console.log("aa");
-            } else if (hasStudentDeletion) {
-                saveWarningText.textContent =
-                    "Attention, un ou plusieurs élèves vont :" +
-                    "\n - Être supprimé" +
-                    "\n" +
-                    "\nVoulez-vous continuer ?";
-            } else if (hasStudentTrainingChanges) {
-                saveWarningText.textContent =
-                    "Attention, un ou plusieurs élèves vont :" +
-                    "\n - Avoir un entraînement modifié." +
-                    "\n" +
-                    "\nLe changement d'entraînement entrainera une perte de la progression de jeu. " +
-                    "\n" +
-                    "\nVoulez-vous continuer ?";
+            pendingSubmitData = data;
+            pendingSteps = [];
+
+            if (hasTrainingChanges) {
+                pendingSteps.push(() => trainingModal.show());
             }
 
-            pendingSubmitData = data;
-            saveWarningModal.show();
+            if (hasDeletions) {
+                pendingSteps.push(() => deleteModal.show());
+            }
+
+            nextStep();
         });
 
-        // ---------------------------------------
-        // CONFIRMATION PAR LA MODALE
-        // ---------------------------------------
-        confirmSaveBtn.addEventListener("click", () => {
-            saveWarningModal.hide();
-            if (pendingSubmitData) {
-                performSave(pendingSubmitData);
-            }
+        confirmTrainingBtn.addEventListener("click", () => {
+            trainingModal.hide();
+            nextStep();
+        });
+
+        confirmDeleteBtn.addEventListener("click", () => {
+            deleteModal.hide();
+            nextStep();
         });
     }
 

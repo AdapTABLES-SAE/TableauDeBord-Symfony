@@ -38,8 +38,10 @@ class TrainingAssignmentService
             ->findOneBy([
                 'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID
             ]);
-        $defaultTraining->setLearningPathID(ApiEndpoints::GET_DEFAULT_API_LEARNING_PATH_ID($eleve->getLearnerId()));
-        $defaultTraining->setEnseignant(null);
+
+        if (!$defaultTraining) {
+            return false;
+        }
 
         return $this->apiClient->assignTrainingToLearner($eleve, $defaultTraining);
     }
