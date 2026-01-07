@@ -79,11 +79,9 @@
 
                         <div id="prerequisites-list" class="d-flex flex-column gap-2 mb-2">
                             {% for p in objectif.prerequis %}
-                            {# 1. Récupération des entités #}
                             {% set targetObj = find_objective_entity(p.requiredObjective, entrainement) %}
                             {% set targetLvl = find_level_entity(p.requiredLevel, entrainement) %}
 
-                            {# 2. Vérification (Twig utilise 'and', pas '&&') #}
                             {% if targetObj and targetLvl %}
                             {% include 'objective/_prereq_badge.html.twig' with {
                             'p': p,
@@ -159,7 +157,7 @@
                                 {% include 'objective/_level_block.html.twig' with {
                                     niveau: niveau,
                                     index: loop.index,
-                                    active: loop.first
+                                    active: false
                                 } %}
                             {% endfor %}
                         {% else %}

@@ -1,5 +1,5 @@
 {# ==============================================================
-   BLOC D’UN NIVEAU — Version compacte & premium (CORRIGÉ)
+   BLOC D’UN NIVEAU
    ============================================================== #}
 
 {% set TASKS = [
@@ -9,11 +9,6 @@
     { code: 'ID',  label: 'Validation d’un fait',      icon: 'bi-check2-circle' },
     { code: 'MEMB',label: 'Identification des résultats', icon: 'bi-eye' }
 ] %}
-
-{# -------------------
-   SERIALISATION TÂCHES — CORRECTION CRITIQUE
-   Doctrine renvoie une ArrayCollection => on convertit proprement
-   -------------------- #}
 
 {% set tasksArray = [] %}
 {% for t in niveau.taches %}
@@ -33,7 +28,11 @@
     }]) %}
 {% endfor %}
 
-<div class="level-card"
+{# On vérifie si la variable 'active' est vraie. Sinon, on met 'collapsed' #}
+{% set cardClass = (active is defined and active) ? 'level-card' : 'level-card collapsed' %}
+{% set bodyStyle = (active is defined and active) ? '' : 'max-height: 0px; opacity: 0;' %}
+
+<div class="{{ cardClass }}"
      data-level-id="{{ niveau.id }}"
      data-equal-position="{{ niveau.resultLocation }}"
      data-factor-position="{{ niveau.leftOperand }}"
@@ -70,7 +69,7 @@
         </div>
     </div>
 
-    <div class="level-body">
+    <div class="level-body" style="{{ bodyStyle }}">
 
         {# ============================================================
            TÂCHES
@@ -198,7 +197,7 @@
         </div>
 
         {# ============================================================
-           DELETE LEVEL (Footer structuré)
+           DELETE LEVEL
            ============================================================ #}
         <div class="level-footer">
             <button class="btn btn-outline-danger btn-sm delete-level-btn">

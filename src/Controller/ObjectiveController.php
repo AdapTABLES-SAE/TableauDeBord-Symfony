@@ -86,8 +86,14 @@ class ObjectiveController extends AbstractController
      * Ajout d’un niveau vide (créé immédiatement en base).
      */
     #[Route('/objectif/{id}/niveau/add', name: 'add_level', methods: ['POST'])]
-    public function addLevel(Objectif $objectif): JsonResponse
+    public function addLevel(Objectif $objectif, Request $request): JsonResponse
     {
+        // 1. Récupération des données envoyées par le JS (body JSON)
+        $data = json_decode($request->getContent(), true);
+
+        // Si 'tables' est présent dans le JSON, on l'utilise, sinon valeur par défaut ['1']
+        $selectedTables = $data['tables'] ?? ['1'];
+
         $niveau = new Niveau();
         $index  = $objectif->getNiveaux()->count() + 1;
 
@@ -95,10 +101,12 @@ class ObjectiveController extends AbstractController
         $niveau->setName('Niveau ' . $index);
         $niveau->setObjectif($objectif);
 
-        // valeurs par défaut
+        // 2. Application des tables dynamiques
+        $niveau->setTables($selectedTables);
+
+        // Valeurs par défaut
         $niveau->setSuccessCompletionCriteria(80);
         $niveau->setEncounterCompletionCriteria(100);
-        $niveau->setTables(['1']);
         $niveau->setResultLocation('RIGHT');        // RIGHT = égal à droite
         $niveau->setLeftOperand('OPERAND_TABLE');   // facteur à gauche
         $niveau->setIntervalMin(1);
@@ -420,19 +428,15 @@ class ObjectiveController extends AbstractController
     {
         $data = json_decode($request->getContent(), true);
 
-        // --- 1. Validation des pourcentages (Règle : Au moins un critère > 0) ---
+        // 1. Validation (Au moins 1% requis)
         $views   = (float)($data['views'] ?? 0);
         $success = (float)($data['success'] ?? 0);
 
-        // On vérifie strictement si les deux sont à 0 (ou négatifs)
         if ($views <= 0 && $success <= 0) {
-            return new JsonResponse([
-                'success' => false,
-                'message' => 'Vous devez définir au moins 1% de vues ou de succès.'
-            ], 400);
+            return new JsonResponse(['success' => false, 'message' => 'Au moins 1% requis.'], 400);
         }
 
-        // --- 2. Récupération des cibles ---
+        // 2. Récupération des cibles
         $targetObjId = $data['targetObjectiveId'] ?? null;
         $targetLvlId = $data['targetLevelId'] ?? null;
 
@@ -445,41 +449,40 @@ class ObjectiveController extends AbstractController
 
         $targetObjStringID = $targetObj->getObjID();
 
-        // --- 3. Validation d'unicité (Règle : Pas de doublon d'objectif) ---
-        // On parcourt les prérequis existants de l'objectif en cours d'édition
+        // 3. Validation Unicité
         foreach ($objectif->getPrerequis() as $existingPrereq) {
-            // Si on a déjà un prérequis qui pointe vers le même Objectif Cible (peu importe le niveau)
             if ($existingPrereq->getRequiredObjective() === $targetObjStringID) {
-                // On récupère le nom pour un message d'erreur clair
                 $name = $targetObj->getName() ?: 'cet objectif';
                 return new JsonResponse([
                     'success' => false,
-                    'message' => "Un prérequis pour l'objectif \"$name\" existe déjà. Supprimez l'ancien pour changer de niveau."
+                    'message' => "Un prérequis pour l'objectif \"$name\" existe déjà."
                 ], 400);
             }
         }
 
-        // --- 4. Création et Enregistrement ---
+        // 4. Création
         $prerequis = new Prerequis();
         $prerequis->setObjectif($objectif);
-
         $prerequis->setRequiredObjective($targetObjStringID);
         $prerequis->setRequiredLevel($targetLvl->getLevelID());
-
         $prerequis->setEncountersPercent($views);
         $prerequis->setSuccessPercent($success);
 
         $this->em->persist($prerequis);
         $this->em->flush();
 
-        // --- 5. Rendu ---
+        // 5. Préparation des variables pour l'affichage
         $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
         $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
 
+        // 6. Rendu HTML
         $html = $this->renderView('objective/_prereq_badge.html.twig', [
             'p' => $prerequis,
             'targetObjName' => $targetObjName,
-            'targetLvlName' => $targetLvlName
+            'targetLvlName' => $targetLvlName,
+
+            'targetObjDbId' => $targetObj->getId(),
+            'targetLvlDbId' => $targetLvl->getId()
         ]);
 
         return new JsonResponse([

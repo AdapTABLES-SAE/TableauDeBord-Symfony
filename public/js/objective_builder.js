@@ -711,27 +711,32 @@ document.addEventListener("DOMContentLoaded", () => {
     if (addLevelBtn && config.addLevelUrl) {
         addLevelBtn.addEventListener("click", async () => {
             try {
+                // 1. On récupère les tables ACTUELLEMENT sélectionnées
+                const currentTables = getSelectedTables();
+
+                // 2. On les envoie au serveur lors de la création
                 const resp = await fetch(config.addLevelUrl, {
                     method: "POST",
-                    headers: { "X-Requested-With": "XMLHttpRequest" }
+                    headers: {
+                        "Content-Type": "application/json", // <--- Indispensable pour envoyer des données
+                        "X-Requested-With": "XMLHttpRequest"
+                    },
+                    body: JSON.stringify({ tables: currentTables }) // <--- On envoie la sélection
                 });
 
                 const json = await resp.json();
                 if (!json.success || !json.html) return showToast(false);
 
-                // 1. Création du DOM
+                // 3. Création du DOM
                 const temp = document.createElement("div");
                 temp.innerHTML = json.html.trim();
                 const newCard = temp.firstElementChild;
 
-                // 2. Suppression du bandeau "Aucun niveau" s'il existe
+                // Suppression du bandeau "Aucun niveau" s'il existe
                 const alertBanner = document.getElementById("no-levels-alert");
-                if (alertBanner) {
-                    alertBanner.remove();
-                }
+                if (alertBanner) alertBanner.remove();
 
-                // 3. FERMETURE DE TOUS LES NIVEAUX EXISTANTS (Mode Accordéon)
-                // On ferme visuellement tout ce qui est déjà là pour que le focus soit sur le nouveau
+                // FERMETURE DE TOUS LES NIVEAUX EXISTANTS
                 document.querySelectorAll(".level-card").forEach(c => {
                     c.classList.add("collapsed");
                     const b = c.querySelector(".level-body");
@@ -741,22 +746,17 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
 
-                // 4. Injection du nouveau niveau dans le conteneur
+                // Injection du nouveau niveau
                 levelsContainer.appendChild(newCard);
 
-                // 5. Sync des tables globales vers le nouveau niveau
-                const currentTables = getSelectedTables();
+                // Mise à jour de l'attribut dataset (Synchronisation visuelle immédiate)
+                // Note : Le serveur devrait l'avoir renvoyé correctement dans le HTML,
+                // mais on force la mise à jour pour être sûr.
                 newCard.dataset.tables = JSON.stringify(currentTables);
 
-                // 6. Initialisation (Events, Sliders...)
-                // Note : Le HTML renvoyé par le serveur pour un "nouveau" niveau ne doit pas avoir la classe "collapsed",
-                // donc initCollapse va le laisser ouvert par défaut.
+                // Initialisation
                 initLevelCard(newCard);
-
-                // 7. Mise à jour des compteurs et de l'aperçu
                 updateFactsCount(newCard);
-
-                // updatePreview() va chercher le seul niveau ouvert (le nouveau) pour générer les exemples
                 updatePreview();
 
                 showToast(true);
