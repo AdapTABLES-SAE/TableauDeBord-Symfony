@@ -6,6 +6,7 @@ use App\Entity\Classe;
 use App\Entity\Eleve;
 use App\Entity\Enseignant;
 use App\Entity\Entrainement;
+use App\Entity\Objectif;
 use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
 use App\Service\TrainingSyncService;
@@ -48,14 +49,15 @@ class TeacherDashboardController extends AbstractController
         return $this->render('/dashboard/dashboard.html.twig', [
             "dashboard_css" => [
                 $assets->getUrl('css/dashboard/_class_partial.css'),
-                $assets->getUrl('css/caroussel.css'),
-                $assets->getUrl('css/training.css'),
+                $assets->getUrl('css/dashboard/_training_partial.css'),
+//                $assets->getUrl('css/carousel.css'),
+//                $assets->getUrl('css/training.css'),
             ],
             "dashboard_js" => [
                 $assets->getUrl('js/partials/_class/classDetails.js'),
                 $assets->getUrl('js/partials/_class/classList.js'),
-
-//                $assets->getUrl('js/partials/_training/carousel.js'),
+                $assets->getUrl('js/partials/_training/trainingDetails.js'),
+                $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
             'breadcrumbItems' => $breadcrumbItems,
@@ -76,30 +78,26 @@ class TeacherDashboardController extends AbstractController
         $teacher = $em->getRepository(Enseignant::class)->find($teacherID);
 
         $name = $request->request->get('className');
-        if (empty($name)) return new JsonResponse(['success' => false]);
+        $id = $request->request->get('classID');
 
-        $generatedID = $name . $count;
+        if (empty($name) || empty($id)) return new JsonResponse(['success' => false]);
 
-        //cant really do better cause parsing from a request sorted by name would not be foolproof
-        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
-        while (!$isNewId){
-            $generatedID = $name . ++$count;
-            $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $generatedID]));
+        $isNewId = empty($em->getRepository(Classe::class)->findOneBy(["idClasse" => $id]));
+        if($isNewId){
+            $ok = $apiClient->addClassroom($teacher->getIdProf(), $id, $name);
+            if ($ok) {
+                $classe = new Classe();
+                $classe->setEnseignant($teacher);
+                $classe->setIdClasse($id);
+                $classe->setName($name);
+
+                $em->persist($classe);
+                $em->flush();
+            }
+            return new JsonResponse(['success' => $ok, 'fatal' => !$ok]);
+        }else {
+            return new JsonResponse(['success' => false, 'fatal' => false]);
         }
-
-        $ok = $apiClient->addClassroom($teacher->getIdProf(), $generatedID, $name);
-
-        if ($ok) {
-            $classe = new Classe();
-            $classe->setEnseignant($teacher);
-            $classe->setIdClasse($generatedID);
-            $classe->setName($name);
-
-            $em->persist($classe);
-            $em->flush();
-        }
-
-        return new JsonResponse(['success' => $ok]);
     }
 
     #[Route('/dashboard/classroom/delete/{id}', name: 'delete_classroom', methods: ['DELETE'])]
@@ -222,12 +220,14 @@ class TeacherDashboardController extends AbstractController
             if (!$student) continue;
 
             if (isset($data['delete']) && $data['delete'] === "1") {
-                $apiClient->deleteStudent(
-                    (string)$student->getClasse()->getEnseignant()->getId(),
-                    (string)$student->getClasse()->getId(),
+                $ok = $apiClient->deleteStudent(
+                    (string)$student->getClasse()->getEnseignant()->getIdProf(),
+                    (string)$student->getClasse()->getIdClasse(),
                     (string)$student->getLearnerId()
                 );
-                $em->remove($student);
+                if($ok) $em->remove($student);
+                else return new JsonResponse(['success' => false]);
+
                 continue;
             }
 
@@ -286,7 +286,7 @@ class TeacherDashboardController extends AbstractController
 
         $objectifs = $training->getObjectifs();
 
-        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
+        return $this->render('/dashboard/partials/_training/_trainingDetails.html.twig', [
             'training' => $training,
             'objectifs' => $objectifs
         ]);
@@ -298,7 +298,6 @@ class TeacherDashboardController extends AbstractController
 //            'trainingPaths' => $trainingPaths,   // <-- REQUIRED
 //        ]);
     }
-
 
     #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
     public function trainingUpdate(
@@ -320,4 +319,46 @@ class TeacherDashboardController extends AbstractController
 
         return new JsonResponse(['success' => true]);
     }
+
+    #[Route('/dashboard/training/{id}/objective/add', name: 'training_objective_add', methods: ['POST'])]
+    public function addObjective(
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        SessionInterface $session
+    ): JsonResponse {
+        $training = $em->getRepository(Entrainement::class)->find($id);
+        if (!$training) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $teacherId = $session->get('teacher_id');
+        if (!$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $name = trim((string) ($data['name'] ?? ''));
+
+        if ($name === '') {
+            return new JsonResponse(['success' => false, 'fatal' => false]);
+        }
+
+        $objectif = new Objectif();
+        $objectif->setName($name);
+        $objectif->setEntrainement($training);
+        $objectif->setObjID(uniqid('obj_', true));
+
+        $em->persist($objectif);
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'objective' => [
+                'id' => $objectif->getId(),
+                'name' => $objectif->getName(),
+            ],
+        ]);
+    }
+
 }

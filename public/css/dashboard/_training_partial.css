@@ -1,0 +1,273 @@
+/* ============================================ */
+/* SECTION LAYOUT                               */
+/* ============================================ */
+
+.section-title-area {
+    height: 15%;
+}
+
+.section-objectives-area {
+    height: 65%;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-buttons-area {
+    height: 20%;
+}
+
+/* ============================================ */
+/* TRAINING TITLE                               */
+/* ============================================ */
+
+#trainingTitle {
+    max-width: 250px;
+}
+
+/* ============================================ */
+/* OBJECTIVES CAROUSEL (NEW CORE)                */
+/* ============================================ */
+
+.objectives-carousel {
+    position: relative;
+    flex: 1 1 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    outline: none;
+}
+
+/* -------------------------------------------- */
+/* Viewport (limits to 3 slides max)             */
+/* -------------------------------------------- */
+
+.carousel-viewport {
+    overflow: hidden;
+    width: 100%;
+    max-width: 820px; /* 3 × 260px + gaps */
+}
+
+/* -------------------------------------------- */
+/* Track                                        */
+/* -------------------------------------------- */
+
+.carousel-track {
+    display: flex;
+    align-items: stretch;
+    gap: 1.25rem;
+
+    transition: transform 0.35s ease;
+    will-change: transform;
+}
+
+/* -------------------------------------------- */
+/* Slides (cards)                               */
+/* -------------------------------------------- */
+
+.carousel-slide {
+    flex: 0 0 260px;
+    height: 260px;
+
+    border-radius: 1.25rem;
+    cursor: pointer;
+
+    background-color: #ffffff;
+    color: #212529;
+
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease,
+        opacity 0.25s ease;
+}
+
+/* Center (focused) slide */
+.carousel-slide.is-center {
+    transform: scale(1.08);
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.18);
+    z-index: 2;
+}
+
+/* Side slides */
+.carousel-slide.is-side {
+    opacity: 0.65;
+}
+
+/* -------------------------------------------- */
+/* Card content                                 */
+/* -------------------------------------------- */
+
+.carousel-slide .card-body {
+    height: 100%;
+    padding: 1.1rem;
+    display: flex;
+    flex-direction: column;
+}
+
+/* -------------------------------------------- */
+/* Icons & chevron                              */
+/* -------------------------------------------- */
+
+.carousel-slide i {
+    color: #6c757d;
+}
+
+.tile-chevron {
+    opacity: 0.4;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.carousel-slide:hover .tile-chevron {
+    transform: translateX(4px);
+    opacity: 0.7;
+}
+
+/* -------------------------------------------- */
+/* Bottom label                                 */
+/* -------------------------------------------- */
+
+.tile-hint {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* -------------------------------------------- */
+/* Text truncation                              */
+/* -------------------------------------------- */
+
+.text-truncate-multiline {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    line-height: 1.25rem;
+    max-height: 3.75rem;
+}
+
+/* -------------------------------------------- */
+/* Text styling                                 */
+/* -------------------------------------------- */
+
+.objective-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.objective-info {
+    font-size: 0.8rem;
+    color: #495057;
+}
+
+/* ============================================ */
+/* CAROUSEL ARROWS                              */
+/* ============================================ */
+
+.carousel-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 3;
+
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: none;
+
+    background: #ffffff;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+
+    font-size: 1.6rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.carousel-arrow-left {
+    left: 0;
+}
+
+.carousel-arrow-right {
+    right: 0;
+}
+
+.carousel-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+
+/* ============================================ */
+/* RESPONSIVE                                   */
+/* ============================================ */
+
+@media (max-width: 768px) {
+    .carousel-slide {
+        flex: 0 0 200px;
+        height: 230px;
+    }
+
+    .carousel-viewport {
+        max-width: 640px;
+    }
+}
+
+/* ============================================ */
+/* CAROUSEL INDICATORS                          */
+/* ============================================ */
+
+.carousel-indicators {
+    display: flex;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.carousel-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+
+    border: none;
+    background-color: #adb5bd;
+    opacity: 0.5;
+
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.carousel-indicator.is-active {
+    opacity: 1;
+    transform: scale(1.4);
+    background-color: #495057;
+}
+
+/* -------------------------------------------- */
+/* Edited input state (same logic as class)     */
+/* -------------------------------------------- */
+
+#trainingTitle.is-edited {
+    background-color: #fff3cd; /* light yellow, same visual cue */
+}
+
+
+/* -------------------------------------------- */
+/* Training title — stable centering            */
+/* -------------------------------------------- */
+#trainingTitle {
+    text-align: center;
+    line-height: 1.5;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+/* Edited state (same color, no layout shift) */
+#trainingTitle.is-edited {
+    background-color: #dcdca7;
+}
+
+/* Prevent Bootstrap focus jump */
+#trainingTitle:focus {
+    box-shadow: none;
+}

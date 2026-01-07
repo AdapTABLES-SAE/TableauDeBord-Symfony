@@ -1,24 +1,73 @@
 import { showToast } from '../../toast/toast.js';
+
 document.addEventListener('partial:list:loaded', async (e) => {
-    const {pair, container} = e.detail || {};
+    const { pair, container } = e.detail || {};
     if (pair !== "classes") return;
     if (!container) return;
 
     await Promise.resolve();
 
-    const modal = new bootstrap.Modal("#addClassModal");
+    const modalElement = container.querySelector('#addClassModal');
     const btn = container.querySelector('#addClassConfirm');
     const form = container.querySelector('#addClassForm');
 
-    if (!modal || !btn || !form) return;
+    const nameInput = container.querySelector('#className');
+    const idInput   = container.querySelector('#classID');
 
-    // const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+    if (!modalElement || !btn || !form || !nameInput || !idInput) return;
 
-    btn.addEventListener('click', async () => {
-        e.preventDefault();      // ⬅ STOP native form submission
-        e.stopPropagation();     // ⬅ STOP bubbling (safety)
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+    const MAX_ID_LENGTH = 10;
+
+    // ---------------------------------------------------------------------
+    // AUTO-PREVIEW IDENTIFIANT + LIMIT 10 CHARS
+    // ---------------------------------------------------------------------
+    function autoGenerateId() {
+        if (idInput.dataset.userEdited !== "true") {
+            const raw = nameInput.value.trim();
+
+            let generated = raw
+                .replace(/\s+/g, "_")
+                .toUpperCase()
+                .slice(0, MAX_ID_LENGTH);  // 🔥 max 10 chars
+
+            idInput.value = generated;
+        }
+    }
+
+    // ---------------------------------------------------------------------
+    // USER EDIT DETECTION + LIMIT
+    // ---------------------------------------------------------------------
+    idInput.addEventListener("input", () => {
+        let value = idInput.value.trim();
+
+        if (value.length > MAX_ID_LENGTH) {
+            value = value.slice(0, MAX_ID_LENGTH);
+            idInput.value = value; // impose la limite
+        }
+
+        if (value !== "") {
+            idInput.dataset.userEdited = "true";
+        } else {
+            idInput.dataset.userEdited = "false";
+            autoGenerateId();
+        }
+    });
+
+    // Mise à jour auto lors de la saisie du nom
+    nameInput.addEventListener("input", autoGenerateId);
+
+    // ---------------------------------------------------------------------
+    // SUBMIT
+    // ---------------------------------------------------------------------
+    btn.addEventListener('click', async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
         try {
             const formData = new FormData(form);
+
             const response = await fetch(form.action, {
                 method: "POST",
                 body: formData
@@ -28,25 +77,22 @@ document.addEventListener('partial:list:loaded', async (e) => {
 
             const result = await response.json();
 
-            if (result.success) {
-                modal.hide();
-                showToast(
-                    true,
-                    "Succès",
-                    "Classe ajoutée."
-                );
-                await window.reloadListOnly("classes");
-            } else {
-                showToast(
-                    false,
-                    "Erreur de mise à jour",
-                    "Erreur lors de l'ajout de la classe."
-                );
+            if (result.fatal) {
+                showToast(false, "Erreur", "Erreur lors de l'ajout de la classe.");
             }
+            else if (!result.success && !result.fatal) {
+                showToast(false, "Erreur", "Cet identifiant existe déjà.");
+            }
+            else if (result.success) {
+                modal.hide();
+
+                showToast(true, "Succès", "Classe ajoutée.");
+                await window.reloadListOnly("classes");
+            }
+
         } catch (err) {
             console.error("Erreur ajout classe:", err);
-            showToast(
-                false,
+            showToast(false,
                 "Erreur réseau lors de l'ajout de la classe.",
                 "Erreur de communication avec l'API."
             );

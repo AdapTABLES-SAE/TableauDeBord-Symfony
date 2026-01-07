@@ -1,140 +1,157 @@
-document.addEventListener("partial:loaded", () => {
-    let track = document.getElementById("carouselTrack");
-    const leftBtn = document.querySelector(".arrow-left");
-    const rightBtn = document.querySelector(".arrow-right");
-    let indicator = document.getElementById("carouselIndicator");
+// ============================================================================
+//  OBJECTIVES CAROUSEL — Activated when partial:loaded fires
+// ============================================================================
 
-    let visibleCount = 3;
-    let middleOffset = 1;
+document.addEventListener("partial:loaded", (e) => {
+    const { pair, container } = e.detail || {};
 
-    let initialCards = track.querySelectorAll(".objective-card");
+    if (pair !== "trainings") return;
+    if (!container) return;
 
-    if (initialCards.length < 3) {
-        track.classList.add("few-cards");
-    } else {
-        track.classList.remove("few-cards");
+    const q = (sel) => container.querySelector(sel);
+    const qAll = (sel) => container.querySelectorAll(sel);
+
+    const carousel = q(".objectives-carousel");
+    if (!carousel) return;
+
+    const viewport   = q(".carousel-viewport");
+    const track      = q(".carousel-track");
+    const slides     = [...qAll(".carousel-slide")];
+    const btnPrev    = q(".carousel-arrow-left");
+    const btnNext    = q(".carousel-arrow-right");
+    const indicators = [...qAll(".carousel-indicator")];
+
+    if (!viewport || !track || slides.length === 0) return;
+
+    let currentIndex = 0;
+    let slideWidth = 0;
+    let gap = 0;
+
+    function measure() {
+        slideWidth = slides[0].offsetWidth;
+        const styles = getComputedStyle(track);
+        gap = parseInt(styles.gap || 20, 10);
     }
 
-    if (initialCards.length <= 1) {
-        leftBtn.style.display = "none";
-        rightBtn.style.display = "none";
-        track.style.transition = "none";
+    function translateTo(index, animate = true) {
+        const viewportWidth = viewport.clientWidth;
+        const offset =
+            index * (slideWidth + gap) -
+            (viewportWidth / 2 - slideWidth / 2);
 
-        let onlyCard = initialCards[0];
-        if (onlyCard) onlyCard.classList.add("active");
-
-        indicator.textContent = "Objectif 1 / 1";
-        return;
+        track.style.transition = animate ? "transform 0.35s ease" : "none";
+        track.style.transform = `translateX(${-offset}px)`;
     }
 
-    function getVisibleCards() {
-        return Array.from(track.querySelectorAll(".objective-card"));
-    }
-
-    function getCenterCard() {
-        const cards = Array.from(track.querySelectorAll(".objective-card"));
-
-        // centre du conteneur
-        const trackRect = track.getBoundingClientRect();
-        const centerX = trackRect.left + trackRect.width / 2;
-
-        let closest = null;
-        let smallestDiff = Infinity;
-
-        cards.forEach(card => {
-            const rect = card.getBoundingClientRect();
-            const cardCenter = rect.left + rect.width / 2;
-
-            const diff = Math.abs(cardCenter - centerX);
-            if (diff < smallestDiff) {
-                smallestDiff = diff;
-                closest = card;
-            }
+    function updateClasses() {
+        slides.forEach((slide, i) => {
+            slide.classList.toggle("is-center", i === currentIndex);
+            slide.classList.toggle("is-side", Math.abs(i - currentIndex) === 1);
         });
 
-        return closest;
-    }
-
-    function initCarouselPosition() {
-        let cards = track.querySelectorAll(".objective-card");
-
-        if (cards.length < 2) return;
-        let last = cards[cards.length - 1];
-
-        track.insertBefore(last, cards[0]);
-        track.style.transition = "none";
-        track.style.transform = "translateX(-240px)";
-
-        requestAnimationFrame(() => {
-            track.style.transform = "none";
-        });
-    }
-
-
-    function updateIndicator() {
-        let cards = getVisibleCards();
-        let total = cards.length;
-        let centerCard = getCenterCard();
-        let realIndex = centerCard.getAttribute("data-id");
-
-        indicator.textContent = `Objectif ${realIndex} / ${total}`;
-    }
-
-    function updateActiveCard() {
-        let cards = getVisibleCards();
-
-        cards.forEach(c => c.classList.remove("active"));
-
-        let center = getCenterCard();
-        if (center) center.classList.add("active");
-    }
-
-    function slideRight() {
-        track.style.transition = "transform 0.3s ease";
-        track.style.transform = "translateX(-240px)";
-
-        track.addEventListener("transitionend", (e) => {
-
-            if (e.target !== track) return;
-
-            track.style.transition = "none";
-            track.style.transform = "none";
-
-            let first = track.querySelectorAll(".objective-card")[0];
-            track.appendChild(first);
-
-            updateIndicator();
-            updateActiveCard();
-        }, { once: true });
-    }
-
-    function slideLeft() {
-        track.style.transition = "none";
-
-        let cards = track.querySelectorAll(".objective-card");
-        let last = cards[cards.length - 1];
-        track.insertBefore(last, cards[0]);
-
-        track.style.transform = "translateX(-240px)";
-
-        requestAnimationFrame(() => {
-            track.style.transition = "transform 0.3s ease";
-            track.style.transform = "none";
+        indicators.forEach((dot, i) => {
+            dot.classList.toggle("is-active", i === currentIndex);
         });
 
-        updateIndicator();
-        updateActiveCard();
+        btnPrev && (btnPrev.disabled = currentIndex === 0);
+        btnNext && (btnNext.disabled = currentIndex === slides.length - 1);
     }
 
-    rightBtn.addEventListener("click", slideRight);
-    leftBtn.addEventListener("click", slideLeft);
+    function goTo(index) {
+        currentIndex = Math.max(0, Math.min(index, slides.length - 1));
+        translateTo(currentIndex, true);
+        updateClasses();
+    }
 
-    document.addEventListener("keydown", (e) => {
-        if (e.key === "ArrowLeft") slideLeft();
-        if (e.key === "ArrowRight") slideRight();
+    // ------------------------------------------------------------------------
+    // ARROWS / INDICATORS
+    // ------------------------------------------------------------------------
+    btnPrev?.addEventListener("click", () => goTo(currentIndex - 1));
+    btnNext?.addEventListener("click", () => goTo(currentIndex + 1));
+    indicators.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
+
+    // ------------------------------------------------------------------------
+    // SWIPE / TAP HANDLING (BUTTON-GUARDED)
+    // ------------------------------------------------------------------------
+    let isDragging = false;
+    let startX = 0;
+    let startTranslate = 0;
+    let activeSlide = null;
+
+    function getTranslateX() {
+        const match = track.style.transform.match(/-?\d+(\.\d+)?/);
+        return match ? parseFloat(match[0]) : 0;
+    }
+
+    function indexFromTranslate(x) {
+        const viewportCenter = viewport.clientWidth / 2;
+        const slideSpan = slideWidth + gap;
+        const trackOffset = -x + viewportCenter - slideWidth / 2;
+        return Math.round(trackOffset / slideSpan);
+    }
+
+    viewport.addEventListener("pointerdown", (e) => {
+        // Only react to primary button / touch
+        if (e.button !== 0) return;
+
+        isDragging = false;
+        startX = e.clientX;
+        startTranslate = getTranslateX();
+        activeSlide = e.target.closest(".carousel-slide") || null;
+
+        track.style.transition = "none";
+        viewport.setPointerCapture(e.pointerId);
     });
 
-    initCarouselPosition();
-    updateIndicator();
-    updateActiveCard();
+    viewport.addEventListener("pointermove", (e) => {
+        // 🚫 Do nothing unless primary button is pressed
+        if (e.buttons !== 1) return;
+
+        const delta = e.clientX - startX;
+
+        if (Math.abs(delta) > 6) {
+            isDragging = true;
+        }
+
+        if (isDragging) {
+            track.style.transform = `translateX(${startTranslate + delta}px)`;
+        }
+    });
+
+    viewport.addEventListener("pointerup", () => {
+        if (isDragging) {
+            goTo(indexFromTranslate(getTranslateX()));
+        } else if (activeSlide) {
+            const url = activeSlide.dataset.editUrl;
+            if (url) window.location.href = url;
+        }
+
+        isDragging = false;
+        activeSlide = null;
+    });
+
+    viewport.addEventListener("pointercancel", () => {
+        isDragging = false;
+        activeSlide = null;
+        goTo(currentIndex);
+    });
+
+    viewport.addEventListener("pointerleave", () => {
+        if (isDragging) {
+            isDragging = false;
+            activeSlide = null;
+            goTo(currentIndex);
+        }
+    });
+
+    // ------------------------------------------------------------------------
+    // INIT
+    // ------------------------------------------------------------------------
+    measure();
+    goTo(0);
+
+    window.addEventListener("resize", () => {
+        measure();
+        translateTo(currentIndex, false);
+    });
 });
