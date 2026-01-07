@@ -126,7 +126,12 @@
                         <!-- Bouton sauvegarde -->
                         <div style="height: 120px;"></div>
 
-                        <button type="button" id="save-all-btn" class="btn btn-primary fw-bold">
+                        <button type="button"
+                                id="save-all-btn"
+                                class="btn btn-primary fw-bold"
+                            {# On vérifie s'il y a des élèves liés à l'entrainement parent #}
+                            {# On vérifie aussi si entrainement existe pour éviter une erreur #}
+                                data-has-students="{{ (objectif.entrainement and objectif.entrainement.eleves|length > 0) ? 'true' : 'false' }}">
                             <i class="bi bi-save me-2"></i> Enregistrer tout
                         </button>
 
@@ -257,7 +262,10 @@
     {% include 'objective/_modal_task_memb.html.twig' %}
 
     {# ===================== MODALES SUPPRESSION DE TÂCHES ===================== #}
-    {% include 'objective/_modal_delete_c1.html.twig' %}
+    {% include 'objective/_modal_delete_tasks.html.twig' %}
+
+    {# MODALE CONFIRMATION DE SAUVEGARDE #}
+    {% include 'objective/_modal_confirm_save.html.twig' %}
 
     {# MODALE PREREQUIS #}
     {% include 'objective/_modal_prereq.html.twig' %}

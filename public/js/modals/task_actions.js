@@ -10,7 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function initTaskDeleteListeners() {
-    // On cible l'ID défini dans _modal_delete_c1.html.twig
+    // On cible l'ID défini dans _modal_delete_tasks.html.twig
     const modal = document.getElementById("delete-task-modal");
     const confirmBtn = document.getElementById("btn-confirm-delete-task");
     const cancelBtn = document.getElementById("btn-cancel-delete-task");

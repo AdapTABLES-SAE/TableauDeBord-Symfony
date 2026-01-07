@@ -9,7 +9,7 @@ import { openMembModal } from "./modals/modal_memb.js";
 import { initPrereqModal } from './modals/modal_prereq.js';
 
 // Import des actions communes
-import { saveTask as originalSaveTask, deleteTask as originalDeleteTask } from "./modals/task_actions.js";
+import { saveTask as originalSaveTask, openTaskDeleteModal } from "./modals/task_actions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -840,46 +840,97 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /* =========================================================================================
-       SAVE ALL
-    ========================================================================================= */
+   SAVE ALL (AVEC SÉCURITÉ ÉLÈVES)
+========================================================================================= */
 
+    const saveModal    = document.getElementById("confirm-save-modal");
+    const forceSaveBtn = document.getElementById("btn-force-save"); // Bouton dans la modale
+    const closeSaveBtn = document.getElementById("btn-close-confirm-save");
+    const cancelSaveBtn = document.getElementById("btn-cancel-confirm-save");
+
+// --- FONCTION DE FERMETURE MODALE ---
+    const closeSaveModal = () => {
+        if (saveModal) saveModal.style.display = "none";
+        if (forceSaveBtn) {
+            forceSaveBtn.disabled = false;
+            forceSaveBtn.innerHTML = '<i class="bi bi-save me-2"></i> Confirmer et Enregistrer';
+        }
+    };
+
+    if (cancelSaveBtn) cancelSaveBtn.addEventListener("click", closeSaveModal);
+    if (closeSaveBtn) closeSaveBtn.addEventListener("click", closeSaveModal);
+
+// --- FONCTION DE SAUVEGARDE RÉUTILISABLE (Votre logique originale encapsulée) ---
+    async function executeGlobalSave() {
+        const payload = collectAllData();
+
+        // UI Loading sur le bouton principal (si visible)
+        if (saveAllBtn) saveAllBtn.classList.add("loading");
+
+        try {
+            const resp = await fetch(config.saveAllUrl, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const json = await resp.json();
+
+            // Nettoyage UI
+            if (saveAllBtn) saveAllBtn.classList.remove("loading");
+            closeSaveModal(); // On ferme la modale si elle était ouverte
+
+            if (!json.success) {
+                return showToast(false, json.message || "Erreur lors de l'enregistrement");
+            }
+
+            captureInitialState();
+            showToast(true, "Enregistrement réussi !");
+
+        } catch (err) {
+            console.error(err);
+            if (saveAllBtn) saveAllBtn.classList.remove("loading");
+            closeSaveModal();
+            showToast(false, "Erreur serveur");
+        }
+    }
+
+// --- CLIC SUR LE BOUTON PRINCIPAL "ENREGISTRER TOUT" ---
     if (saveAllBtn) {
         saveAllBtn.addEventListener("click", async () => {
 
+            // 1. Validation de base (Tables)
             const selectedTables = getSelectedTables();
             if (!selectedTables.length) {
                 showToast(false, "Sélectionnez au moins une table pour enregistrer.");
                 return;
             }
 
-            const payload = collectAllData();
-            saveAllBtn.classList.add("loading");
+            // 2. Vérification de sécurité (Élèves présents ?)
+            const hasStudents = saveAllBtn.dataset.hasStudents === "true";
 
-            try {
-                const resp = await fetch(config.saveAllUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Requested-With": "XMLHttpRequest"
-                    },
-                    body: JSON.stringify(payload)
-                });
-
-                const json = await resp.json();
-
-                if (!json.success) {
-                    saveAllBtn.classList.remove("loading");
-                    return showToast(false);
-                }
-
-                captureInitialState();
-                showToast(true);
-
-            } catch (err) {
-                console.error(err);
-                saveAllBtn.classList.remove("loading");
-                showToast(false);
+            if (hasStudents) {
+                // A. Il y a des élèves : on ouvre la modale rouge
+                if (saveModal) saveModal.style.display = "flex";
+            } else {
+                // B. Pas d'élèves : on sauvegarde directement
+                await executeGlobalSave();
             }
+        });
+    }
+
+// --- CLIC SUR LE BOUTON DE CONFIRMATION (DANS LA MODALE) ---
+    if (forceSaveBtn) {
+        forceSaveBtn.addEventListener("click", async () => {
+            // UI Loading sur le bouton de la modale pour feedback immédiat
+            forceSaveBtn.disabled = true;
+            forceSaveBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Enregistrement...';
+
+            // On lance la sauvegarde réelle
+            await executeGlobalSave();
         });
     }
 
@@ -961,13 +1012,19 @@ document.addEventListener("DOMContentLoaded", () => {
         return result;
     };
 
-    window.deleteTask = async function(levelId, taskType, card, modalId) {
-        const result = await originalDeleteTask(levelId, taskType, card, modalId);
+    window.deleteTask = function(levelId, taskType, card, modalId) {
 
-        if (result && result.success) {
-            updateTaskState(card, taskType, null);
+        let taskName = `Tâche ${taskType}`;
+
+        switch (taskType) {
+            case 'C1':   taskName = "Tâche 1 élément manquant (C1)"; break;
+            case 'C2':   taskName = "Tâche 2 éléments manquants (C2)"; break;
+            case 'ID':   taskName = "Tâche Identification (ID)"; break;
+            case 'MEMB': taskName = "Tâche Appartenance (MEMB)"; break;
+            case 'REC':  taskName = "Tâche Récupération (REC)"; break;
         }
-        return result;
+
+        openTaskDeleteModal(levelId, taskType, card, modalId, taskName);
     };
 
 });
