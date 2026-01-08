@@ -1,16 +1,14 @@
 // ============================================================================
 //  TRAINING DETAIL ACTIONS — Activated when partial:loaded fires
 // ============================================================================
-import {showToast} from "../../toast/toast.js";
+import { showToast } from "../../toast/toast.js";
 
 document.addEventListener("partial:loaded", (e) => {
     const { pair, container } = e.detail || {};
-
-    if (pair !== "trainings") return;
-    if (!container) return;
+    if (pair !== "trainings" || !container) return;
 
     // ------------------------------------------------------------------------
-    // LOOKUP HELPERS
+    // HELPERS
     // ------------------------------------------------------------------------
     const q = (sel) => container.querySelector(sel);
     const qAll = (sel) => container.querySelectorAll(sel);
@@ -22,8 +20,12 @@ document.addEventListener("partial:loaded", (e) => {
     const cancelBtn = q("#input_cancel_button");
     const form      = q("#save_form");
 
-    const saveModalEl    = q("#saveTrainingModal");
-    const confirmSaveBtn = q("#confirmSaveTraining");
+    const saveModalEl        = q("#saveTrainingModal");
+    const confirmSaveBtn    = q("#confirmSaveTraining");
+
+    const deleteSummaryModalEl = q("#deleteObjectivesSummaryModal");
+    const deleteListEl         = q("#deleteObjectivesList");
+    const confirmDeleteObjsBtn = q("#confirmDeleteObjectivesBtn");
 
     const deleteBtn        = q("#deleteTrainingBtn");
     const deleteModalEl    = q("#deleteTrainingModal");
@@ -36,25 +38,65 @@ document.addEventListener("partial:loaded", (e) => {
 
     if (!saveBtn || !cancelBtn || !form) return;
 
-    // ========================================================================
-    // 1. FIELD CHANGE DETECTION
-    // ========================================================================
-    qAll(".save-able-field").forEach(element => {
-        const eventType =
-            element.tagName.toLowerCase() === "select"
-                ? "change"
-                : "input";
+    const saveUrl = form.dataset.action;
 
-        element.addEventListener(eventType, () => {
-            if (element.value !== element.defaultValue) {
-                element.classList.add("is-edited");
-                enableButtons(saveBtn, cancelBtn);
+    // ------------------------------------------------------------------------
+    // STATE
+    // ------------------------------------------------------------------------
+    const editedFields = new Set();
+
+    function getMarkedObjectives() {
+        return [...qAll(".carousel-slide.is-marked-delete")].map(el => ({
+            id: el.dataset.id,
+            name: el.dataset.name
+        }));
+    }
+
+    function updateButtonsState() {
+        if (editedFields.size > 0 || getMarkedObjectives().length > 0) {
+            enableButtons(saveBtn, cancelBtn);
+        } else {
+            resetButtons(saveBtn, cancelBtn);
+        }
+    }
+
+    // ========================================================================
+    // 1. FIELD CHANGE DETECTION (training name)
+    // ========================================================================
+    qAll(".save-able-field").forEach(el => {
+        const eventType =
+            el.tagName.toLowerCase() === "select" ? "change" : "input";
+
+        el.addEventListener(eventType, () => {
+            if (el.value !== el.defaultValue) {
+                el.classList.add("is-edited");
+                editedFields.add(el);
+            } else {
+                el.classList.remove("is-edited");
+                editedFields.delete(el);
             }
+            updateButtonsState();
         });
     });
 
     // ========================================================================
-    // 2. CANCEL — reload training partial
+    // 2. OBJECTIVE DELETE — STATE OBSERVER ONLY
+    // ========================================================================
+
+    const observer = new MutationObserver(() => {
+        updateButtonsState();
+    });
+
+    qAll(".carousel-slide").forEach(slide => {
+        observer.observe(slide, {
+            attributes: true,
+            attributeFilter: ["class"]
+        });
+    });
+
+
+    // ========================================================================
+    // 3. CANCEL — reload training partial
     // ========================================================================
     cancelBtn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -63,46 +105,67 @@ document.addEventListener("partial:loaded", (e) => {
     });
 
     // ========================================================================
-    // 3. SAVE — confirmation modal + AJAX POST
+    // 4. SAVE — DELETE WARNING → SAVE CONFIRM → JSON POST
     // ========================================================================
-    if (saveModalEl && confirmSaveBtn) {
+    if (saveModalEl && confirmSaveBtn && deleteSummaryModalEl && confirmDeleteObjsBtn) {
         const saveModal = new bootstrap.Modal(saveModalEl);
+        const deleteSummaryModal = new bootstrap.Modal(deleteSummaryModalEl);
 
+        // Step 1 — click Save
         saveBtn.addEventListener("click", (e) => {
             e.preventDefault();
             if (saveBtn.classList.contains("disabled")) return;
+
+            const marked = getMarkedObjectives();
+
+            if (marked.length > 0) {
+                // Fill delete summary
+                deleteListEl.innerHTML = "";
+                marked.forEach(obj => {
+                    const li = document.createElement("li");
+                    li.textContent = obj.name;
+                    deleteListEl.appendChild(li);
+                });
+
+                deleteSummaryModal.show();
+            } else {
+                saveModal.show();
+            }
+        });
+
+        // Step 2 — confirm deletion warning
+        confirmDeleteObjsBtn.addEventListener("click", () => {
+            deleteSummaryModal.hide();
             saveModal.show();
         });
 
+        // Step 3 — confirm save
         confirmSaveBtn.addEventListener("click", async () => {
-            const trainingId = form.action.match(/\/training\/(\d+)\//)?.[1];
-            if (!trainingId) return;
+            const payload = {};
 
-            const data = new FormData();
-            qAll(".save-able-field").forEach(el => {
-                if (el.value !== el.defaultValue && el.name) {
-                    data.append(el.name, el.value);
-                }
+            // Name change
+            editedFields.forEach(el => {
+                if (el.name) payload[el.name] = el.value;
             });
 
+            // Deleted objectives
+            const marked = getMarkedObjectives();
+            if (marked.length > 0) {
+                payload.deletedObjectiveIds = marked.map(o => o.id);
+            }
+
             try {
-                const response = await fetch(
-                    `/dashboard/training/${trainingId}/update`,
-                    { method: "POST", body: data }
-                );
+                const response = await fetch(saveUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 const result = await response.json();
 
                 if (result.success) {
-                    qAll(".save-able-field").forEach(el => {
-                        el.defaultValue = el.value;
-                        el.classList.remove("is-edited");
-                    });
-
                     saveModal.hide();
-                    resetButtons(saveBtn, cancelBtn);
-
                     showToast(true, "Succès", "Entraînement mis à jour.");
                     setTimeout(() => window.reloadDashboardPair("trainings"), 200);
                 } else {
@@ -117,21 +180,19 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     // ========================================================================
-// 4. DELETE TRAINING
-// ========================================================================
+    // 5. DELETE TRAINING
+    // ========================================================================
     if (deleteBtn && deleteModalEl && confirmDeleteBtn) {
         const deleteModal = new bootstrap.Modal(deleteModalEl);
-        const deleteUrl = deleteBtn.dataset.action; // full URL
+        const deleteUrl = deleteBtn.dataset.action;
 
         deleteBtn.addEventListener("click", () => deleteModal.show());
 
         confirmDeleteBtn.addEventListener("click", async () => {
             try {
-                const response = await fetch(deleteUrl, {
-                    method: "DELETE"
-                });
-
+                const response = await fetch(deleteUrl, { method: "DELETE" });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
                 const result = await response.json();
 
                 if (result.success) {
@@ -140,11 +201,11 @@ document.addEventListener("partial:loaded", (e) => {
 
                     await window.reloadListOnly("trainings");
                     container.innerHTML = `
-                    <h2 class="fw-bold mb-3">Mes entraînements</h2>
-                    <p class="text-primary fs-5">
-                        Sélectionner un entraînement pour voir le détail.
-                    </p>
-                `;
+                        <h2 class="fw-bold mb-3">Mes entraînements</h2>
+                        <p class="text-primary fs-5">
+                            Sélectionner un entraînement pour voir le détail.
+                        </p>
+                    `;
                 } else {
                     showToast(false, "Erreur", "Impossible de supprimer l’entraînement.");
                 }
@@ -156,9 +217,8 @@ document.addEventListener("partial:loaded", (e) => {
         });
     }
 
-
     // ========================================================================
-    // 5. ADD OBJECTIVE
+    // 6. ADD OBJECTIVE
     // ========================================================================
     if (addObjectiveBtn && addObjectiveModalEl && confirmAddObjectiveBtn && objectiveNameInput) {
         const addObjectiveModal = new bootstrap.Modal(addObjectiveModalEl);
@@ -201,7 +261,7 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     // ========================================================================
-    // 6. INITIAL STATE
+    // 7. INITIAL STATE
     // ========================================================================
     resetButtons(saveBtn, cancelBtn);
 });

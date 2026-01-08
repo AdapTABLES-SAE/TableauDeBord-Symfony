@@ -479,4 +479,38 @@ class TeacherDashboardController extends AbstractController
             ],
         ]);
     }
+
+
+    #[Route('/dashboard/training/{trainingID}/objectives/delete', name: 'objective_delete', methods: ['POST'])]
+    public function deleteObjectives(
+        int $trainingID,
+        Request $request
+    ): JsonResponse {
+        // Payload example:
+        // { "objectiveIds": [1, 2, 3] }
+
+        $data = json_decode($request->getContent(), true);
+
+        if (!isset($data['objectiveIds']) || !is_array($data['objectiveIds'])) {
+            return new JsonResponse([
+                'success' => false,
+                'error' => 'Invalid payload'
+            ], 400);
+        }
+
+        $objectiveIds = $data['objectiveIds'];
+
+        // TODO:
+        // - Validate training ownership
+        // - Fetch objectives by IDs + trainingID
+        // - Delete objectives
+        // - Flush entity manager
+
+        return new JsonResponse([
+            'success' => true,
+            'deletedIds' => $objectiveIds
+        ]);
+    }
+
+
 }

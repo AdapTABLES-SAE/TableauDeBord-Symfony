@@ -23,6 +23,10 @@ document.addEventListener("partial:loaded", (e) => {
 
     if (!viewport || !track || slides.length === 0) return;
 
+    // ========================================================================
+    // CAROUSEL CORE
+    // ========================================================================
+
     let currentIndex = 0;
     let slideWidth = 0;
     let gap = 0;
@@ -70,13 +74,15 @@ document.addEventListener("partial:loaded", (e) => {
     btnNext?.addEventListener("click", () => goTo(currentIndex + 1));
     indicators.forEach((dot, i) => dot.addEventListener("click", () => goTo(i)));
 
-    // ------------------------------------------------------------------------
-    // SWIPE / TAP HANDLING (BUTTON-GUARDED)
-    // ------------------------------------------------------------------------
+    // ========================================================================
+    // SWIPE / TAP HANDLING (ROBUST)
+    // ========================================================================
+
     let isDragging = false;
     let startX = 0;
     let startTranslate = 0;
     let activeSlide = null;
+    let ignoreTap = false;
 
     function getTranslateX() {
         const match = track.style.transform.match(/-?\d+(\.\d+)?/);
@@ -91,27 +97,32 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     viewport.addEventListener("pointerdown", (e) => {
-        // Only react to primary button / touch
         if (e.button !== 0) return;
 
+        // If interaction starts on delete button → ignore tap completely
+        if (e.target.closest(".objective-delete-btn")) {
+            ignoreTap = true;
+            isDragging = false;
+            activeSlide = null;
+            return;
+        }
+
+        ignoreTap = false;
         isDragging = false;
         startX = e.clientX;
         startTranslate = getTranslateX();
-        activeSlide = e.target.closest(".carousel-slide") || null;
+        activeSlide = e.target.closest(".carousel-slide");
 
         track.style.transition = "none";
         viewport.setPointerCapture(e.pointerId);
     });
 
     viewport.addEventListener("pointermove", (e) => {
-        // 🚫 Do nothing unless primary button is pressed
+        if (ignoreTap) return;
         if (e.buttons !== 1) return;
 
         const delta = e.clientX - startX;
-
-        if (Math.abs(delta) > 6) {
-            isDragging = true;
-        }
+        if (Math.abs(delta) > 6) isDragging = true;
 
         if (isDragging) {
             track.style.transform = `translateX(${startTranslate + delta}px)`;
@@ -119,9 +130,19 @@ document.addEventListener("partial:loaded", (e) => {
     });
 
     viewport.addEventListener("pointerup", () => {
+        if (ignoreTap) {
+            ignoreTap = false;
+            isDragging = false;
+            activeSlide = null;
+            return;
+        }
+
         if (isDragging) {
             goTo(indexFromTranslate(getTranslateX()));
-        } else if (activeSlide) {
+        } else if (
+            activeSlide &&
+            !activeSlide.classList.contains("is-marked-delete")
+        ) {
             const url = activeSlide.dataset.editUrl;
             if (url) window.location.href = url;
         }
@@ -131,6 +152,7 @@ document.addEventListener("partial:loaded", (e) => {
     });
 
     viewport.addEventListener("pointercancel", () => {
+        ignoreTap = false;
         isDragging = false;
         activeSlide = null;
         goTo(currentIndex);
@@ -138,15 +160,45 @@ document.addEventListener("partial:loaded", (e) => {
 
     viewport.addEventListener("pointerleave", () => {
         if (isDragging) {
+            ignoreTap = false;
             isDragging = false;
             activeSlide = null;
             goTo(currentIndex);
         }
     });
 
-    // ------------------------------------------------------------------------
+    // ========================================================================
+    // OBJECTIVE DELETE — MARK / UNMARK (SELECTION ONLY)
+    // ========================================================================
+
+    const markedObjectives = new Map(); // id → { name, element }
+
+    qAll(".objective-delete-btn").forEach(btn => {
+        // Stop gesture system early
+        btn.addEventListener("pointerdown", e => e.stopPropagation());
+
+        btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            const card = btn.closest(".carousel-slide");
+            if (!card) return;
+
+            const id = card.dataset.id;
+            const name = card.dataset.name;
+
+            if (card.classList.contains("is-marked-delete")) {
+                card.classList.remove("is-marked-delete");
+                markedObjectives.delete(id);
+            } else {
+                card.classList.add("is-marked-delete");
+                markedObjectives.set(id, { name, element: card });
+            }
+        });
+    });
+
+    // ========================================================================
     // INIT
-    // ------------------------------------------------------------------------
+    // ========================================================================
     measure();
     goTo(0);
 
