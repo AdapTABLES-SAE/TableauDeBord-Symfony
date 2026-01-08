@@ -9,42 +9,29 @@ let pendingSaveCallback = null;
 document.addEventListener("DOMContentLoaded", () => {
     initTaskDeleteListeners();
     initTaskSaveListeners();
-    checkAndReopenLevel(); // <--- NOUVELLE FONCTION
+    checkAndReopenLevel();
+    initLevelSliders();
 });
 
 /* ============================================================
-   LOGIQUE DE RÉOUVERTURE APRÈS REFRESH (Version data-attribute)
+   LOGIQUE DE RÉOUVERTURE APRÈS REFRESH
 ============================================================ */
 function checkAndReopenLevel() {
-    // 1. Récupération de l'ID stocké
     const levelId = sessionStorage.getItem("REFRESH_REOPEN_LEVEL_ID");
 
     if (levelId) {
-        console.log("🔄 Tentative de réouverture du niveau ID :", levelId);
-
-        // Nettoyage immédiat
         sessionStorage.removeItem("REFRESH_REOPEN_LEVEL_ID");
 
         setTimeout(() => {
-            // 2. RECHERCHE PAR ATTRIBUT DATA (C'est la clé du correctif)
-            // On cherche la div qui a la classe .level-card ET l'attribut data-level-id="X"
             const cardEl = document.querySelector(`.level-card[data-level-id="${levelId}"]`);
 
             if (cardEl) {
-                console.log("✅ Carte trouvée :", cardEl);
-
-                // 3. OUVERTURE
-                // Votre Twig montre que si c'est fermé, la classe 'collapsed' est présente.
                 if (cardEl.classList.contains('collapsed')) {
-                    // La méthode la plus sûre est de cliquer sur le bouton qui gère l'ouverture
-                    // pour déclencher vos animations JS existantes.
                     const toggleBtn = cardEl.querySelector('.toggle-level-details');
                     if (toggleBtn) {
                         toggleBtn.click();
                     } else {
-                        // Fallback : On force le retrait de la classe si bouton introuvable
                         cardEl.classList.remove('collapsed');
-                        // On doit aussi nettoyer le style inline mis par le Twig (max-height: 0px...)
                         const body = cardEl.querySelector('.level-body');
                         if (body) {
                             body.style.maxHeight = null;
@@ -52,14 +39,11 @@ function checkAndReopenLevel() {
                         }
                     }
                 }
-
-                // 4. SCROLL
                 cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
             } else {
-                console.error(`❌ Impossible de trouver une carte avec data-level-id="${levelId}"`);
+                console.error(`Impossible de trouver une carte avec data-level-id="${levelId}"`);
             }
-        }, 300); // Délai pour s'assurer que le DOM est prêt
+        }, 300);
     }
 }
 
@@ -254,4 +238,30 @@ async function executeDeleteTask(levelId, taskType, parentModalId) {
         showToast(false, "Erreur serveur");
         return false;
     }
+}
+
+/* ============================================================
+   GESTION DES SLIDERS DE NIVEAU
+   ============================================================ */
+function initLevelSliders() {
+    const sliders = document.querySelectorAll('.completion-seen, .completion-success');
+
+    sliders.forEach(slider => {
+        const updateSlider = () => {
+            let val = parseInt(slider.value, 10);
+
+            if (val < 1) {
+                val = 1;
+                slider.value = 1;
+            }
+
+            const display = slider.parentElement.querySelector('.completion-value');
+            if (display) {
+                display.textContent = val + '%';
+            }
+        };
+
+        slider.addEventListener('input', updateSlider);
+        updateSlider();
+    });
 }
