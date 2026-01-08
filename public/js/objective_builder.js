@@ -8,6 +8,8 @@ import { openIdModal }   from "./modals/modal_id.js";
 import { openMembModal } from "./modals/modal_memb.js";
 import { initPrereqModal } from './modals/modal_prereq.js';
 
+import "./add_level_manager.js";
+
 // Import des actions communes
 import { saveTask as originalSaveTask, openTaskDeleteModal } from "./modals/task_actions.js";
 
@@ -934,70 +936,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    /* =========================================================================================
-       AJOUT NIVEAU
-    ========================================================================================= */
 
-    if (addLevelBtn && config.addLevelUrl) {
-        addLevelBtn.addEventListener("click", async () => {
-            try {
-                // On récupère les tables ACTUELLEMENT sélectionnées
-                const currentTables = getSelectedTables();
-
-                // On les envoie au serveur lors de la création
-                const resp = await fetch(config.addLevelUrl, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Requested-With": "XMLHttpRequest"
-                    },
-                    body: JSON.stringify({ tables: currentTables })
-                });
-
-                const json = await resp.json();
-                if (!json.success || !json.html) return showToast(false);
-
-                // Création du DOM
-                const temp = document.createElement("div");
-                temp.innerHTML = json.html.trim();
-                const newCard = temp.firstElementChild;
-
-                // Suppression du bandeau "Aucun niveau" s'il existe
-                const alertBanner = document.getElementById("no-levels-alert");
-                if (alertBanner) alertBanner.remove();
-
-                // FERMETURE DE TOUS LES NIVEAUX EXISTANTS
-                document.querySelectorAll(".level-card").forEach(c => {
-                    c.classList.add("collapsed");
-                    const b = c.querySelector(".level-body");
-                    if (b) {
-                        b.style.maxHeight = "0px";
-                        b.style.opacity   = "0";
-                    }
-                });
-
-                // Injection du nouveau niveau
-                levelsContainer.appendChild(newCard);
-
-                // Mise à jour de l'attribut dataset (Synchronisation visuelle immédiate)
-                // Note : Le serveur devrait l'avoir renvoyé correctement dans le HTML,
-                // mais on force la mise à jour pour être sûr.
-                newCard.dataset.tables = JSON.stringify(currentTables);
-
-                // Initialisation
-                initLevelCard(newCard);
-                updateFactsCount(newCard);
-                updatePreview();
-
-                showToast(true);
-                captureInitialState();
-
-            } catch (err) {
-                console.error(err);
-                showToast(false);
-            }
-        });
-    }
 
     /* =========================================================================================
        TASK WRAPPERS — LIVE UPDATE

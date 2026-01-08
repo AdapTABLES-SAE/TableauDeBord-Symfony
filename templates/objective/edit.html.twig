@@ -254,6 +254,37 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modal-add-level-confirm" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title text-white">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Attention : Élèves impactés
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Vous êtes sur le point d'ajouter un niveau à un entraînement déjà attribué.</p>
+
+                    <div class="alert alert-danger d-flex align-items-center">
+                        <i class="bi bi-info-circle-fill me-2 fs-4"></i>
+                        <div>
+                            Cela réinitialisera la progression en cours des élèves liés à cet objectif, car la structure de l'entraînement change.
+                        </div>
+                    </div>
+
+                    <p class="mb-0 fw-bold">Voulez-vous vraiment créer ce niveau ?</p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" id="btn-confirm-add-level-final" class="btn btn-danger">
+                        <i class="bi bi-plus-circle me-1"></i> Confirmer et Créer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {# ===================== MODALES DE TÂCHES ===================== #}
     {% include 'objective/_modal_task_c1.html.twig' %}
     {% include 'objective/_modal_task_c2.html.twig' %}
