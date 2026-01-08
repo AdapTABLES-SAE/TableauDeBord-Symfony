@@ -1,13 +1,19 @@
-/* === Header général === */
+/* ========================================= */
+/* HEADER                                    */
+/* ========================================= */
+
 .header-wrapper {
-    border-radius: 0.75rem;
-    background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     position: relative;
     min-height: 70px;
+    border-radius: 0.75rem;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-/* === Logo centré === */
+/* ========================================= */
+/* LOGO                                      */
+/* ========================================= */
+
 .header-logo {
     object-fit: contain;
     transition: transform 0.2s ease;
@@ -17,17 +23,33 @@
     transform: scale(1.05);
 }
 
-/* Couleur violette AdapTABLES */
+/* ========================================= */
+/* COLORS                                    */
+/* ========================================= */
+
 .text-violet {
     color: #6a47f8 !important;
 }
 
-/* === Breadcrumb === */
+/* ========================================= */
+/* BREADCRUMB                                */
+/* ========================================= */
+
 .breadcrumb {
     margin-bottom: 0;
     background: none;
     font-size: 0.95rem;
     line-height: 1.5rem;
+
+    /* prevent wrapping */
+    white-space: nowrap;
+}
+
+/* allow breadcrumb to grow right but not overlap logo */
+nav[aria-label="breadcrumb"] {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(50% - 80px); /* adjust if logo size changes */
 }
 
 .breadcrumb-item + .breadcrumb-item::before {
@@ -39,11 +61,24 @@
     color: #6c757d;
 }
 
+/* only underline real links */
+.breadcrumb .breadcrumb-item a[href] {
+    text-decoration: underline;
+}
+
+.breadcrumb .breadcrumb-item a:not([href]) {
+    text-decoration: none;
+    cursor: default;
+}
+
 .breadcrumb-item a:hover {
     color: #4b3bbd;
 }
 
-/* === Zone Professeur === */
+/* ========================================= */
+/* TEACHER INFO                              */
+/* ========================================= */
+
 .teacher-info {
     font-size: 0.95rem;
 }
@@ -53,6 +88,10 @@
     align-items: center;
 }
 
+/* ========================================= */
+/* BUTTONS                                   */
+/* ========================================= */
+
 .btn-outline-violet {
     border: 1px solid #7a5af8;
     color: #7a5af8;
@@ -61,31 +100,37 @@
 
 .btn-outline-violet:hover {
     background-color: #7a5af8;
-    color: #fff;
+    color: #ffffff;
 }
 
-/* Responsive : empile le logo et les infos sur petit écran */
+/* ========================================= */
+/* RESPONSIVE                                */
+/* ========================================= */
+
 @media (max-width: 768px) {
-    .header-wrapper .container-fluid {
-        flex-direction: column;
-        justify-content: center;
-        text-align: center;
-        gap: 0.5rem;
+
+    .breadcrumb {
+        white-space: normal;
     }
 
-    .header-wrapper nav[aria-label="breadcrumb"] {
-        position: static !important;
-        order: 2;
-    }
-
-    .teacher-info {
-        position: static !important;
-        order: 3;
-        justify-content: center;
+    nav[aria-label="breadcrumb"] {
+        max-width: 100%;
+        overflow: visible;
     }
 
     .header-logo {
-        order: 1;
         height: 40px;
     }
+
+    .teacher-info {
+        justify-content: center;
+        text-align: center;
+    }
+}
+
+.breadcrumb-container {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: calc(50% - 100px);
 }

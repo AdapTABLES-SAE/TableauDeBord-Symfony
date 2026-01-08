@@ -11,8 +11,10 @@
 {% block body %}
     {% include 'components/header.html.twig' with {
         breadcrumb_items: [
-            {'label': 'Mes Classes', 'url': path('class_dashboard')},
-            {'label': 'Fiche Élève', 'url': '#'}
+            {'label': 'Classes', 'url': path('class_dashboard', {'target': 'classrooms'})},
+            {'label': classe.name},
+            {'label': 'Eleves'},
+            {'label': eleve.prenomEleve ~ ' ' ~ eleve.nomEleve, 'url': "#"},
         ]
     } %}
 

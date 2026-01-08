@@ -98,4 +98,36 @@ document.addEventListener('partial:list:loaded', async (e) => {
             );
         }
     });
+
+    // ========================================================================
+    // AUTO-SELECT FIRST CLASS (RADIO-BASED LIST)
+    // ========================================================================
+
+    // Find all class radios
+    const radios = container.querySelectorAll(
+        'input[type="radio"][name="elementSelection_classes"]'
+    );
+
+    if (radios.length > 0) {
+        // Is one already checked?
+        const alreadyChecked = [...radios].some(radio => radio.checked);
+
+        if (!alreadyChecked) {
+            const firstRadio = radios[0];
+            const classId = firstRadio.dataset.id;
+
+            // 1. Check the radio (updates visual state)
+            firstRadio.checked = true;
+
+            // 2. Load its detail panel
+            if (classId) {
+                window.reloadDetailOnly("classes", classId);
+            }
+
+            // 3. Update URL visually (no navigation)
+            const url = new URL(window.location.href);
+            url.searchParams.set("target", "classrooms");
+            history.replaceState({ classId }, "", url.toString());
+        }
+    }
 });

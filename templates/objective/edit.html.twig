@@ -18,8 +18,10 @@
 {% block body %}
     {% include 'components/header.html.twig' with {
         breadcrumb_items: [
-            {'label': 'Mes classes', 'url': path('class_dashboard')},
-            {'label': 'Objectif', 'url': '#'}
+            {'label': 'Entrainements', 'url': path('class_dashboard', {'target': 'trainings'})},
+            {'label': 'Entrainements'},
+            {'label': entrainement.name},
+            {'label': 'Objectifs'},
         ]
     } %}
 
