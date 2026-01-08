@@ -20,8 +20,8 @@ document.addEventListener("partial:loaded", (e) => {
     const cancelBtn = q("#input_cancel_button");
     const form      = q("#save_form");
 
-    const saveModalEl        = q("#saveTrainingModal");
-    const confirmSaveBtn    = q("#confirmSaveTraining");
+    const saveModalEl     = q("#saveTrainingModal");
+    const confirmSaveBtn = q("#confirmSaveTraining");
 
     const deleteSummaryModalEl = q("#deleteObjectivesSummaryModal");
     const deleteListEl         = q("#deleteObjectivesList");
@@ -61,6 +61,18 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     // ========================================================================
+    // OBJECTIVE DELETE — DOM STATE OBSERVER (SOURCE OF TRUTH)
+    // ========================================================================
+    const observer = new MutationObserver(updateButtonsState);
+
+    qAll(".carousel-slide").forEach(slide => {
+        observer.observe(slide, {
+            attributes: true,
+            attributeFilter: ["class"]
+        });
+    });
+
+    // ========================================================================
     // 1. FIELD CHANGE DETECTION (training name)
     // ========================================================================
     qAll(".save-able-field").forEach(el => {
@@ -80,23 +92,7 @@ document.addEventListener("partial:loaded", (e) => {
     });
 
     // ========================================================================
-    // 2. OBJECTIVE DELETE — STATE OBSERVER ONLY
-    // ========================================================================
-
-    const observer = new MutationObserver(() => {
-        updateButtonsState();
-    });
-
-    qAll(".carousel-slide").forEach(slide => {
-        observer.observe(slide, {
-            attributes: true,
-            attributeFilter: ["class"]
-        });
-    });
-
-
-    // ========================================================================
-    // 3. CANCEL — reload training partial
+    // 2. CANCEL — reload training partial
     // ========================================================================
     cancelBtn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -105,82 +101,92 @@ document.addEventListener("partial:loaded", (e) => {
     });
 
     // ========================================================================
-    // 4. SAVE — DELETE WARNING → SAVE CONFIRM → JSON POST
+    // 3. SAVE — DELETE WARNING OR SAVE CONFIRM
     // ========================================================================
-    if (saveModalEl && confirmSaveBtn && deleteSummaryModalEl && confirmDeleteObjsBtn) {
-        const saveModal = new bootstrap.Modal(saveModalEl);
-        const deleteSummaryModal = new bootstrap.Modal(deleteSummaryModalEl);
+    const saveModal = saveModalEl ? new bootstrap.Modal(saveModalEl) : null;
+    const deleteSummaryModal = deleteSummaryModalEl
+        ? new bootstrap.Modal(deleteSummaryModalEl)
+        : null;
 
-        // Step 1 — click Save
-        saveBtn.addEventListener("click", (e) => {
-            e.preventDefault();
-            if (saveBtn.classList.contains("disabled")) return;
+    saveBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (saveBtn.classList.contains("disabled")) return;
 
-            const marked = getMarkedObjectives();
+        const marked = getMarkedObjectives();
 
-            if (marked.length > 0) {
-                // Fill delete summary
-                deleteListEl.innerHTML = "";
-                marked.forEach(obj => {
-                    const li = document.createElement("li");
-                    li.textContent = obj.name;
-                    deleteListEl.appendChild(li);
-                });
-
-                deleteSummaryModal.show();
-            } else {
-                saveModal.show();
-            }
-        });
-
-        // Step 2 — confirm deletion warning
-        confirmDeleteObjsBtn.addEventListener("click", () => {
-            deleteSummaryModal.hide();
-            saveModal.show();
-        });
-
-        // Step 3 — confirm save
-        confirmSaveBtn.addEventListener("click", async () => {
-            const payload = {};
-
-            // Name change
-            editedFields.forEach(el => {
-                if (el.name) payload[el.name] = el.value;
+        if (marked.length > 0) {
+            // Populate delete list
+            deleteListEl.innerHTML = "";
+            marked.forEach(obj => {
+                const li = document.createElement("li");
+                li.textContent = obj.name;
+                deleteListEl.appendChild(li);
             });
 
-            // Deleted objectives
-            const marked = getMarkedObjectives();
-            if (marked.length > 0) {
-                payload.deletedObjectiveIds = marked.map(o => o.id);
-            }
+            deleteSummaryModal.show();
+        } else {
+            saveModal.show();
+        }
+    });
 
-            try {
-                const response = await fetch(saveUrl, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
+    // ========================================================================
+    // 4. CONFIRM DELETE (DIRECT SAVE, NO OTHER MODAL)
+    // ========================================================================
+    confirmDeleteObjsBtn?.addEventListener("click", async () => {
+        deleteSummaryModal.hide();
+        await performSave();
+    });
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                const result = await response.json();
+    // ========================================================================
+    // 5. CONFIRM SAVE (NO DELETE CASE)
+    // ========================================================================
+    confirmSaveBtn?.addEventListener("click", async () => {
+        saveModal.hide();
+        await performSave();
+    });
 
-                if (result.success) {
-                    saveModal.hide();
-                    showToast(true, "Succès", "Entraînement mis à jour.");
-                    setTimeout(() => window.reloadDashboardPair("trainings"), 200);
-                } else {
-                    showToast(false, "Erreur", "Impossible d’enregistrer les modifications.");
-                }
+    // ========================================================================
+    // SAVE IMPLEMENTATION
+    // ========================================================================
+    async function performSave() {
+        const payload = {};
 
-            } catch (err) {
-                console.error("Training save error:", err);
-                showToast(false, "Erreur", "Erreur réseau lors de la sauvegarde.");
-            }
+        // Name change
+        editedFields.forEach(el => {
+            if (el.name) payload[el.name] = el.value;
         });
+
+        // Deleted objectives
+        const marked = getMarkedObjectives();
+        if (marked.length > 0) {
+            payload.deletedObjectiveIds = marked.map(o => o.id);
+        }
+
+        try {
+            const response = await fetch(saveUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const result = await response.json();
+
+            if (result.success) {
+                showToast(true, "Succès", "Entraînement mis à jour.");
+                setTimeout(() => window.reloadDashboardPair("trainings"), 200);
+            } else {
+                showToast(false, "Erreur", "Impossible d’enregistrer les modifications.");
+            }
+
+        } catch (err) {
+            console.error("Training save error:", err);
+            showToast(false, "Erreur", "Erreur réseau lors de la sauvegarde.");
+        }
     }
 
     // ========================================================================
-    // 5. DELETE TRAINING
+    // 6. DELETE TRAINING
     // ========================================================================
     if (deleteBtn && deleteModalEl && confirmDeleteBtn) {
         const deleteModal = new bootstrap.Modal(deleteModalEl);
@@ -218,7 +224,7 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     // ========================================================================
-    // 6. ADD OBJECTIVE
+    // 7. ADD OBJECTIVE
     // ========================================================================
     if (addObjectiveBtn && addObjectiveModalEl && confirmAddObjectiveBtn && objectiveNameInput) {
         const addObjectiveModal = new bootstrap.Modal(addObjectiveModalEl);
@@ -261,7 +267,7 @@ document.addEventListener("partial:loaded", (e) => {
     }
 
     // ========================================================================
-    // 7. INITIAL STATE
+    // 8. INITIAL STATE
     // ========================================================================
     resetButtons(saveBtn, cancelBtn);
 });
