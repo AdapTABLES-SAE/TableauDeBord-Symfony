@@ -9,14 +9,28 @@
 <header class="container-fluid header-wrapper bg-white shadow-sm w-100 py-2 px-4 mb-2">
     <div class="row">
         <!-- Breadcrumb à gauche -->
-        <nav aria-label="breadcrumb" class="col-3 align-content-center justify-content-start text-start">
+        <nav aria-label="breadcrumb"
+             class="col-4 align-content-center justify-content-start text-start breadcrumb-container">
             <ol class="breadcrumb mb-0">
                 {% for item in breadcrumb_items %}
                     {% if loop.last %}
                         <li class="breadcrumb-item active text-violet" aria-current="page">{{ item.label }}</li>
                     {% else %}
                         <li class="breadcrumb-item">
-                            <a href="{{ item.url }}" class="text-decoration-none text-secondary">{{ item.label }}</a>
+                            <a
+                                {% if item.url is defined and item.url %}
+                                    href="{{ item.url }}"
+                                {% endif %}
+                                class="text-secondary
+                                    {% if item.url is defined and item.url %}
+                                        text-decoration-underline
+                                    {% else %}
+                                        text-decoration-none
+                                    {% endif %}
+                                "
+                            >
+                                {{ item.label }}
+                            </a>
                         </li>
                     {% endif %}
                 {% endfor %}
@@ -26,13 +40,13 @@
         <!-- Logo centré -->
 {#        <div class="col-6 d-flex justify-content-center align-items-center">#}
 
-        <img class="col-6 mx-auto my-auto header-logo h-100" style="width: {{ header_logo_height }}"
+        <img class="col-4 mx-auto my-auto header-logo h-100" style="width: {{ header_logo_height }}"
              src="{{ header_logo_path }}" alt="{{ header_logo_alt }}"
         >
 
 
         <!-- Profil professeur à droite -->
-        <div class="col-3 align-content-center justify-content-end text-end teacher-info gap-3">
+        <div class="col-4 align-content-center justify-content-end text-end teacher-info gap-3">
             <div>
             <span class="teacher-name fw-semibold text-secondary">
                 <i class="bi bi-person-circle me-1 text-violet"></i>

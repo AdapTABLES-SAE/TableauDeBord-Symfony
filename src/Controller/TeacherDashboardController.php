@@ -32,13 +32,6 @@ class TeacherDashboardController extends AbstractController
             return $this->redirectToRoute('teacher_login');
         }
 
-        $breadcrumbItems = [
-            [
-                'label' => 'Mes Classes',
-                'url'   => $this->generateUrl('class_dashboard'),
-            ],
-        ];
-
         $validTargets = ['classes', 'trainings'];
         $target = $request->query->get('target', 'classes');
 
@@ -62,7 +55,6 @@ class TeacherDashboardController extends AbstractController
                 $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
-            'breadcrumbItems' => $breadcrumbItems,
             'target' => $target
         ]);
     }
@@ -305,19 +297,86 @@ class TeacherDashboardController extends AbstractController
     public function trainingUpdate(
         int $id,
         Request $request,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        TrainingAssignmentService $trainingAssignmentService,
+        ApiClient $apiClient,
+        SessionInterface $session
     ): JsonResponse {
         $training = $em->getRepository(Entrainement::class)->find($id);
-
         if (!$training) {
-            return new JsonResponse(['success' => false, 'error' => 'Training not found']);
+            return new JsonResponse(['success' => false]);
         }
 
-        if ($name = $request->request->get('name')) {
-            $training->setName($name);
+        $teacherId = $session->get('teacher_id');
+        if (!$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
+            return new JsonResponse(['success' => false]);
         }
 
-        $em->flush();
+        $data = json_decode($request->getContent(), true);
+        if (!is_array($data)) {
+            return new JsonResponse(['success' => false]);
+        }
+
+        if (!empty($data['name'])) {
+            $training->setName($data['name']);
+        }
+
+        $deletedObjectiveIds = $data['deletedObjectiveIds'] ?? [];
+
+        if (is_array($deletedObjectiveIds) && !empty($deletedObjectiveIds)) {
+
+            foreach ($deletedObjectiveIds as $objectiveId) {
+                $objective = $em->getRepository(Objectif::class)->find($objectiveId);
+
+                if (!$objective) continue;
+                if ($objective->getEntrainement()?->getId() !== $training->getId()) continue;
+
+                $em->remove($objective);
+            }
+
+            $em->flush();
+
+            if ($training->getObjectifs()->count() === 0) {
+
+                $defaultTraining = $em->getRepository(Entrainement::class)->findOneBy([
+                    'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID
+                ]);
+
+                if ($defaultTraining) {
+                    $sourceObjective = $defaultTraining->getObjectifs()->first();
+
+                    if ($sourceObjective) {
+                        $objectiveCopy = clone $sourceObjective;
+                        $objectiveCopy->setEntrainement($training);
+
+                        foreach ($sourceObjective->getNiveaux() as $niveau) {
+                            $niveauCopy = clone $niveau;
+                            $niveauCopy->setObjectif($objectiveCopy);
+                            $objectiveCopy->addNiveau($niveauCopy);
+                        }
+
+                        foreach ($sourceObjective->getPrerequis() as $prerequis) {
+                            $prerequisCopy = clone $prerequis;
+                            $prerequisCopy->setObjectif($objectiveCopy);
+                            $objectiveCopy->addPrerequis($prerequisCopy);
+                        }
+
+                        $em->persist($objectiveCopy);
+                        $em->flush();
+                    }
+                }
+            }
+
+            $students = $em->getRepository(Eleve::class)->findBy([
+                'entrainement' => $training
+            ]);
+
+            foreach ($students as $student) {
+                $trainingAssignmentService->assignTraining($student, $training);
+            }
+        } else {
+            $em->flush();
+        }
 
         return new JsonResponse(['success' => true]);
     }
@@ -479,38 +538,4 @@ class TeacherDashboardController extends AbstractController
             ],
         ]);
     }
-
-
-    #[Route('/dashboard/training/{trainingID}/objectives/delete', name: 'objective_delete', methods: ['POST'])]
-    public function deleteObjectives(
-        int $trainingID,
-        Request $request
-    ): JsonResponse {
-        // Payload example:
-        // { "objectiveIds": [1, 2, 3] }
-
-        $data = json_decode($request->getContent(), true);
-
-        if (!isset($data['objectiveIds']) || !is_array($data['objectiveIds'])) {
-            return new JsonResponse([
-                'success' => false,
-                'error' => 'Invalid payload'
-            ], 400);
-        }
-
-        $objectiveIds = $data['objectiveIds'];
-
-        // TODO:
-        // - Validate training ownership
-        // - Fetch objectives by IDs + trainingID
-        // - Delete objectives
-        // - Flush entity manager
-
-        return new JsonResponse([
-            'success' => true,
-            'deletedIds' => $objectiveIds
-        ]);
-    }
-
-
 }
