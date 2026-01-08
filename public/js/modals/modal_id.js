@@ -1,4 +1,4 @@
-import { saveTask, openTaskDeleteModal } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal, requestTaskSave } from "./task_actions.js";
 
 /* ======================================================
    OUTIL : contexte du niveau (comme pour C2 / REC)
@@ -252,19 +252,23 @@ export function openIdModal(levelId, task, card) {
 
     /* ------------------ CONFIRM ------------------ */
     const confirmBtn = document.getElementById("id_confirmBtn");
-    confirmBtn.onclick = async () => {
-        const src = getSourceVariation();
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const src = getSourceVariation();
 
-        const payload = {
-            taskType: "ID",
-            sourceVariation: src,
-            nbFacts: parseInt(nbFactsSlider.value, 10),
-            timeMaxSecond: parseInt(timeSlider.value, 10),
-            successiveSuccessesToReach: parseInt(succSlider.value, 10)
+            const payload = {
+                taskType: "ID",
+                sourceVariation: src,
+                nbFacts: parseInt(nbFactsSlider.value, 10),
+                timeMaxSecond: parseInt(timeSlider.value, 10),
+                successiveSuccessesToReach: parseInt(succSlider.value, 10)
+            };
+
+            requestTaskSave(async () => {
+                await saveTask(levelId, payload, card, "ID", "taskModalID");
+            });
         };
-
-        await saveTask(levelId, payload, card, "ID", "taskModalID");
-    };
+    }
 
     /* ------------------ OUVERTURE ------------------ */
     const modal = new bootstrap.Modal(modalEl);

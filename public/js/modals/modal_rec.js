@@ -1,4 +1,4 @@
-import { saveTask, openTaskDeleteModal } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal, requestTaskSave } from "./task_actions.js";
 
 /* ======================================================================
    CONTEXTE DU NIVEAU (même principe que pour C2)
@@ -273,15 +273,20 @@ export function openRecModal(levelId, task, card) {
 
     // Confirmation
     const confirmBtn = document.getElementById("rec_confirmBtn");
-    confirmBtn.onclick = async () => {
-        const payload = {
-            taskType: "REC",
-            nbIncorrectChoices: parseInt(nbIncSlider.value,10),
-            timeMaxSecond: parseInt(timeSlider.value,10),
-            successiveSuccessesToReach: parseInt(succSlider.value,10)
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const payload = {
+                taskType: "REC",
+                nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
+                timeMaxSecond: parseInt(timeSlider.value, 10),
+                successiveSuccessesToReach: parseInt(succSlider.value, 10)
+            };
+
+            requestTaskSave(async () => {
+                await saveTask(levelId, payload, card, "REC", "taskModalREC");
+            });
         };
-        await saveTask(levelId, payload, card, "REC", "taskModalREC");
-    };
+    }
 
     const modal = new bootstrap.Modal(modalEl);
     generateRecPreview();

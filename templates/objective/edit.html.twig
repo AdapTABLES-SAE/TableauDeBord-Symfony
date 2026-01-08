@@ -266,6 +266,7 @@
 
     {# MODALE CONFIRMATION DE SAUVEGARDE #}
     {% include 'objective/_modal_confirm_save.html.twig' %}
+    {% include 'objective/_modal_confirm_task_save.html.twig' %}
 
     {# MODALE PREREQUIS #}
     {% include 'objective/_modal_prereq.html.twig' %}
@@ -292,6 +293,7 @@
             deletePrerequisUrlTemplate: '{{ path('objective_prerequis_delete', {id: 999999})|replace({'999999':'__ID__'}) }}',
             editPrerequisUrlTemplate: '{{ path('objective_edit_prerequis', {id: 999999})|replace({'999999':'__ID__'}) }}'
         };
+        window.HAS_STUDENTS = {{ (objectif.entrainement and objectif.entrainement.eleves|length > 0) ? 'true' : 'false' }};
     </script>
     <script type="module" src="{{ asset('js/objective_builder.js') }}"></script>
 

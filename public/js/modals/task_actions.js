@@ -1,16 +1,20 @@
 import { showToast } from "../toast/toast.js";
 
 /* ============================================================
-   VARIABLES GLOBALES (Pour la modale de suppression)
+   VARIABLES GLOBALES
 ============================================================ */
-let pendingDeletePayload = null;
+let pendingDeletePayload = null;    // Pour la suppression
+let pendingSaveCallback = null;     // Pour la sauvegarde avec confirmation
 
 document.addEventListener("DOMContentLoaded", () => {
     initTaskDeleteListeners();
+    initTaskSaveListeners();
 });
 
+/* ============================================================
+   INITIALISATION DES ÉCOUTEURS (MODALE SUPPRESSION)
+============================================================ */
 function initTaskDeleteListeners() {
-    // On cible l'ID défini dans _modal_delete_tasks.html.twig
     const modal = document.getElementById("delete-task-modal");
     const confirmBtn = document.getElementById("btn-confirm-delete-task");
     const cancelBtn = document.getElementById("btn-cancel-delete-task");
@@ -55,7 +59,73 @@ function initTaskDeleteListeners() {
     }
 }
 
+/* ============================================================
+   INITIALISATION DES ÉCOUTEURS (MODALE SAUVEGARDE)
+============================================================ */
+function initTaskSaveListeners() {
+    const modal = document.getElementById("confirm-task-save-modal");
+    const confirmBtn = document.getElementById("btn-force-task-save");
+    const cancelBtn = document.getElementById("btn-cancel-confirm-task");
+    const closeBtn = document.getElementById("btn-close-confirm-task");
 
+    const closeModal = () => {
+        if (modal) modal.style.display = "none";
+        pendingSaveCallback = null;
+        if (confirmBtn) confirmBtn.disabled = false;
+    };
+
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (modal) {
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) closeModal();
+        });
+    }
+
+    // --- ACTION : CLIC SUR "CONFIRMER" (DANS LA MODALE) ---
+    if (confirmBtn) {
+        confirmBtn.addEventListener("click", async () => {
+            if (pendingSaveCallback) {
+                // UI Loading
+                confirmBtn.disabled = true;
+
+                // On exécute la fonction de sauvegarde qui était en attente
+                await pendingSaveCallback();
+
+                closeModal();
+            }
+        });
+    }
+}
+
+/* ============================================================
+   FONCTION INTERMÉDIAIRE DE SAUVEGARDE
+   Vérifie s'il faut ouvrir la modale ou sauvegarder direct
+============================================================ */
+/**
+ * @param {Function} saveCallback - La fonction async à exécuter (ex: () => saveTask(...))
+ */
+export function requestTaskSave(saveCallback) {
+    // On vérifie la variable globale définie dans Twig
+    if (window.HAS_STUDENTS === true) {
+        // Il y a des élèves : On ouvre la modale
+        const modal = document.getElementById("confirm-task-save-modal");
+        if (modal) {
+            pendingSaveCallback = saveCallback; // On stocke l'action pour plus tard
+            modal.style.display = "flex";
+        } else {
+            // Fallback sécurité si modale introuvable
+            saveCallback();
+        }
+    } else {
+        // Pas d'élèves : On sauvegarde direct
+        saveCallback();
+    }
+}
+
+/* ============================================================
+   FONCTION DE SAUVEGARDE RÉELLE (API)
+============================================================ */
 export async function saveTask(levelId, payload, card, taskType, modalId) {
 
     const config = window.OBJECTIVE_CONFIG || {};
@@ -80,7 +150,7 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
         const data = await resp.json();
 
         if (!resp.ok || !data.success) {
-            showToast(false);
+            showToast(false, data.message || "Erreur sauvegarde");
             return;
         }
 
@@ -104,12 +174,12 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
             if (modal) modal.hide();
         }
 
-        showToast(true);
+        showToast(true, "Tâche enregistrée");
         return data;
 
     } catch (err) {
         console.error("Erreur saveTask:", err);
-        showToast(false);
+        showToast(false, "Erreur serveur");
     }
 }
 
@@ -130,7 +200,7 @@ export function openTaskDeleteModal(levelId, taskType, card, parentModalId, task
 }
 
 /* ============================================================
-   EXÉCUTION RÉELLE (Interne)
+   EXÉCUTION RÉELLE SUPPRESSION (Interne)
 ============================================================ */
 async function executeDeleteTask(levelId, taskType, card, parentModalId) {
     const config = window.OBJECTIVE_CONFIG || {};

@@ -1,4 +1,4 @@
-import { saveTask, openTaskDeleteModal } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal, requestTaskSave } from "./task_actions.js";
 
 /* ======================================================
    OUTIL : contexte du niveau (table + intervalle)
@@ -283,21 +283,24 @@ export function openMembModal(levelId, task, card) {
 
     /* ---------- Confirmation ---------- */
     const confirmBtn = document.getElementById("memb_confirmBtn");
-    confirmBtn.onclick = async () => {
-        const target =
-            switchIncorrect.checked ? "INCORRECT" : "CORRECT";
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const target = switchIncorrect.checked ? "INCORRECT" : "CORRECT";
 
-        const payload = {
-            taskType: "MEMB",
-            target,
-            nbCorrectChoices: parseInt(nbCorrectSlider.value, 10),
-            nbIncorrectChoices: parseInt(nbIncorrectSlider.value, 10),
-            timeMaxSecond: parseInt(timeSlider.value, 10),
-            successiveSuccessesToReach: parseInt(succSlider.value, 10)
+            const payload = {
+                taskType: "MEMB",
+                target,
+                nbCorrectChoices: parseInt(nbCorrectSlider.value, 10),
+                nbIncorrectChoices: parseInt(nbIncorrectSlider.value, 10),
+                timeMaxSecond: parseInt(timeSlider.value, 10),
+                successiveSuccessesToReach: parseInt(succSlider.value, 10)
+            };
+
+            requestTaskSave(async () => {
+                await saveTask(levelId, payload, card, "MEMB", "taskModalMEMB");
+            });
         };
-
-        await saveTask(levelId, payload, card, "MEMB", "taskModalMEMB");
-    };
+    }
 
     /* ---------- Preview + afficher ---------- */
     const modal = new bootstrap.Modal(modalEl);

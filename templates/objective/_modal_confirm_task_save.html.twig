@@ -1,0 +1,38 @@
+<div id="confirm-task-save-modal" class="modal-overlay" style="display: none; z-index: 1060;">
+    <div class="modal-content danger-modal-content animate-pop-in">
+
+        <div class="modal-header bg-danger">
+            <h5 class="modal-title fw-bold text-white">
+                <i class="bi bi-exclamation-octagon-fill me-2"></i>
+                Élèves impactés
+            </h5>
+            <button type="button" class="btn-close-custom text-white" id="btn-close-confirm-task">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div class="modal-body p-4">
+            <p class="fs-5 mb-3">Vous ajoutez/modifiez une tâche d'un entraînement actif.</p>
+
+            <div class="alert alert-danger d-flex align-items-start gap-2 fw-bold mb-3">
+                <i class="bi bi-exclamation-triangle-fill mt-1 fs-4"></i>
+                <div>
+                    La progression des élèves sur ce niveau sera réinitialisée pour prendre en compte les changements.
+                </div>
+            </div>
+
+            <p class="text-muted mb-0">
+                Voulez-vous vraiment appliquer ces modifications maintenant ?
+            </p>
+        </div>
+
+        <div class="modal-footer border-0 pt-0 pb-4 px-4 justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary px-4 fw-500" id="btn-cancel-confirm-task">
+                Annuler
+            </button>
+            <button type="button" class="btn btn-danger px-4 fw-500" id="btn-force-task-save">
+                <i class="bi bi-check-lg me-2"></i> Confirmer
+            </button>
+        </div>
+    </div>
+</div>

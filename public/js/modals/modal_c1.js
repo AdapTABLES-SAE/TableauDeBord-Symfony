@@ -1,4 +1,4 @@
-import { saveTask, openTaskDeleteModal } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal, requestTaskSave } from "./task_actions.js";
 
 /* ======================================================
    FONCTIONS UTILITAIRES
@@ -367,7 +367,9 @@ export function openC1Modal(levelId, task, card) {
     /* ---------- Enregistrer ---------- */
     const confirmBtn = document.getElementById("c1_confirmBtn");
     if (confirmBtn) {
-        confirmBtn.onclick = async () => {
+        confirmBtn.onclick = () => {
+            // Préparation des données (Payload)
+            // On récupère les valeurs actuelles des inputs au moment du clic
             const selectedRadio = document.querySelector('input[name="c1_target"]:checked');
             const selectedTarget = selectedRadio ? selectedRadio.value : "RESULT";
 
@@ -385,7 +387,13 @@ export function openC1Modal(levelId, task, card) {
                 successiveSuccessesToReach: succSlider ? parseInt(succSlider.value, 10) : 1
             };
 
-            await saveTask(levelId, payload, card, "C1", "taskModalC1");
+            // Appel SÉCURISÉ via requestTaskSave
+            // Cette fonction vérifie s'il y a des élèves.
+            // - Si OUI : Elle ouvre la modale rouge "Attention".
+            // - Si NON : Elle exécute le callback (saveTask) immédiatement.
+            requestTaskSave(async () => {
+                await saveTask(levelId, payload, card, "C1", "taskModalC1");
+            });
         };
     }
 

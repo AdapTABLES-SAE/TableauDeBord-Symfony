@@ -1,4 +1,4 @@
-import { saveTask, openTaskDeleteModal } from "./task_actions.js";
+import { saveTask, openTaskDeleteModal, requestTaskSave } from "./task_actions.js";
 
 /* ======================================================
    OUTIL : récupération du contexte du niveau
@@ -370,17 +370,25 @@ export function openC2Modal(levelId, task, card) {
     }
 
     /* ENREGISTREMENT */
-    document.getElementById("c2_confirmBtn").onclick = async () => {
-        const target = document.querySelector('input[name="c2_target"]:checked')?.value;
+    const confirmBtn = document.getElementById("c2_confirmBtn");
+    if (confirmBtn) {
+        confirmBtn.onclick = () => {
+            const targetInput = document.querySelector('input[name="c2_target"]:checked');
+            const target = targetInput ? targetInput.value : "RESULT";
 
-        await saveTask(levelId, {
-            taskType: "C2",
-            targets: [target],
-            nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
-            timeMaxSecond: parseInt(timeSlider.value, 10),
-            successiveSuccessesToReach: parseInt(succSlider.value, 10),
-        }, card, "C2", "taskModalC2");
-    };
+            const payload = {
+                taskType: "C2",
+                targets: [target],
+                nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
+                timeMaxSecond: parseInt(timeSlider.value, 10),
+                successiveSuccessesToReach: parseInt(succSlider.value, 10),
+            };
+
+            requestTaskSave(async () => {
+                await saveTask(levelId, payload, card, "C2", "taskModalC2");
+            });
+        };
+    }
 
     /* Lancement */
     const modal = new bootstrap.Modal(modalEl);
