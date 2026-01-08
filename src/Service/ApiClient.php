@@ -34,7 +34,6 @@ class ApiClient
      */
     public function fetchStudentsByTeacherAndClass(string $teacherId, string $classId): array
     {
-        // ⚠ Correction IMPORTANTE : teacher (singulier)
         $url =
             ApiEndpoints::BASE_URL .
             ApiEndpoints::GET_STUDENTS_1 . $teacherId . "/" .

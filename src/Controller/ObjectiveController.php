@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use App\Service\ApiClient;
 
 #[Route('/enseignant/entrainements', name: 'objective_')]
 class ObjectiveController extends AbstractController
@@ -42,7 +43,7 @@ class ObjectiveController extends AbstractController
             $objectif->setEntrainement($entrainement);
 
             $this->em->persist($objectif);
-            $this->em->flush(); // besoin de l’ID pour les appels AJAX
+            $this->em->flush();
         }
 
         if ($request->isMethod('POST')) {
@@ -54,7 +55,7 @@ class ObjectiveController extends AbstractController
                 $objectif->setName($name);
             }
 
-            // stockage temporaire en session (à mapper plus tard sur Prerequis si tu veux)
+            // stockage temporaire en session
             $request->getSession()->set('objective_prereq_' . $objectif->getId(), [
                 'seen'      => $seenPercent,
                 'completed' => $completedPercent,
@@ -86,35 +87,42 @@ class ObjectiveController extends AbstractController
      * Ajout d’un niveau vide (créé immédiatement en base).
      */
     #[Route('/objectif/{id}/niveau/add', name: 'add_level', methods: ['POST'])]
-    public function addLevel(Objectif $objectif, Request $request): JsonResponse
+    #[Route('/objectif/{id}/niveau/add', name: 'add_level', methods: ['POST'])]
+    public function addLevel(Objectif $objectif, Request $request, ApiClient $apiClient): JsonResponse
     {
-        // 1. Récupération des données envoyées par le JS (body JSON)
+        // Récupération des données
         $data = json_decode($request->getContent(), true);
-
-        // Si 'tables' est présent dans le JSON, on l'utilise, sinon valeur par défaut ['1']
         $selectedTables = $data['tables'] ?? ['1'];
 
         $niveau = new Niveau();
-        $index  = $objectif->getNiveaux()->count() + 1;
+        $objectif->addNiveau($niveau);
+
+        $index = $objectif->getNiveaux()->count();
+
+        // Sécurité index si count() est capricieux avec la persistence
+        if ($index == 0) $index = 1;
 
         $niveau->setLevelID('L' . $index . '_' . $objectif->getObjID());
         $niveau->setName('Niveau ' . $index);
-        $niveau->setObjectif($objectif);
+        // $niveau->setObjectif($objectif); // Fait automatiquement par addNiveau()
 
-        // 2. Application des tables dynamiques
         $niveau->setTables($selectedTables);
 
         // Valeurs par défaut
         $niveau->setSuccessCompletionCriteria(80);
         $niveau->setEncounterCompletionCriteria(100);
-        $niveau->setResultLocation('RIGHT');        // RIGHT = égal à droite
-        $niveau->setLeftOperand('OPERAND_TABLE');   // facteur à gauche
+        $niveau->setResultLocation('RIGHT');
+        $niveau->setLeftOperand('OPERAND_TABLE');
         $niveau->setIntervalMin(1);
         $niveau->setIntervalMax(10);
 
         $this->em->persist($niveau);
         $this->em->flush();
 
+        // SYNCHRONISATION API
+        $this->syncWithApi($objectif->getEntrainement(), $apiClient);
+
+        // Rendu HTML
         $html = $this->renderView('objective/_level_block.html.twig', [
             'niveau' => $niveau,
             'index'  => $index,
@@ -133,34 +141,42 @@ class ObjectiveController extends AbstractController
      * Sauvegarde des paramètres d’un niveau.
      */
     #[Route('/niveau/{id}/save', name: 'save_level', methods: ['POST'])]
-    public function saveLevel(Niveau $niveau, Request $request): JsonResponse
+    public function saveLevel(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
     {
         $data = json_decode($request->getContent(), true) ?? [];
 
-        $name         = trim((string) ($data['name'] ?? $niveau->getName()));
-        $tables       = $data['tables'] ?? [];
-        $intervalMin  = (int) ($data['intervalMin'] ?? 1);
-        $intervalMax  = (int) ($data['intervalMax'] ?? 10);
-        $equalPos     = $data['equalPosition'] ?? 'RIGHT';        // LEFT | RIGHT | MIX
-        $factorPos    = $data['factorPosition'] ?? 'OPERAND_TABLE'; // OPERAND_TABLE | TABLE_OPERAND | MIX;
+        $niveau->setName(trim((string) ($data['name'] ?? $niveau->getName())));
+        $niveau->setTables($data['tables'] ?? []);
+        $niveau->setIntervalMin((int) ($data['intervalMin'] ?? 1));
+        $niveau->setIntervalMax((int) ($data['intervalMax'] ?? 10));
+        $niveau->setResultLocation($data['equalPosition'] ?? 'RIGHT');
+        $niveau->setLeftOperand($data['factorPosition'] ?? 'OPERAND_TABLE');
 
-        $niveau->setName($name);
-        $niveau->setTables($tables);
-        $niveau->setIntervalMin($intervalMin);
-        $niveau->setIntervalMax($intervalMax);
-        $niveau->setResultLocation($equalPos);
-        $niveau->setLeftOperand($factorPos);
+        // Critères de complétion (si envoyés par le slider individuel)
+        if (isset($data['encounterCompletionCriteria'])) {
+            $niveau->setEncounterCompletionCriteria((float)$data['encounterCompletionCriteria']);
+        }
+        if (isset($data['successCompletionCriteria'])) {
+            $niveau->setSuccessCompletionCriteria((float)$data['successCompletionCriteria']);
+        }
 
         $this->em->flush();
 
-        return new JsonResponse([
-            'success' => true,
-        ]);
+        // SYNCHRONISATION API
+        // On remonte : Niveau -> Objectif -> Entrainement
+        $entrainement = $niveau->getObjectif()->getEntrainement();
+        $this->syncWithApi($entrainement, $apiClient);
+
+        return new JsonResponse(['success' => true]);
     }
 
 
     #[Route('/objectif/{id}/save-all', name: 'save_all', methods: ['POST'])]
-    public function saveAll(Objectif $objectif, Request $request): JsonResponse
+    public function saveAll(
+        Objectif $objectif,
+        Request $request,
+        ApiClient $apiClient
+    ): JsonResponse
     {
         $payload = json_decode($request->getContent(), true);
 
@@ -169,39 +185,36 @@ class ObjectiveController extends AbstractController
         }
 
         /* --------------------------
-           1) Sauvegarde objectif
+           Sauvegarde BDD Locale (Objectif)
            -------------------------- */
         if (isset($payload['objective'])) {
             $objectif->setName($payload['objective']['name'] ?? $objectif->getName());
         }
 
         /* --------------------------
-           2) Sauvegarde niveaux
+           Sauvegarde BDD Locale (Niveaux)
            -------------------------- */
         if (isset($payload['levels']) && is_array($payload['levels'])) {
             foreach ($payload['levels'] as $lvlData) {
-                // On vérifie l'ID
                 if (empty($lvlData['id'])) continue;
 
                 $niveau = $this->em->getRepository(Niveau::class)->find($lvlData['id']);
 
-                // Sécurité : on s'assure que le niveau appartient bien à l'objectif en cours
                 if (!$niveau || $niveau->getObjectif()->getId() !== $objectif->getId()) {
                     continue;
                 }
 
                 $niveau->setName($lvlData['name']);
-                $niveau->setTables($lvlData['tables'] ?? []); // Fallback array vide si null
+                // Gestion fallback pour les tables (si vide, tableau vide)
+                $niveau->setTables($lvlData['tables'] ?? []);
                 $niveau->setIntervalMin((int)$lvlData['intervalMin']);
                 $niveau->setIntervalMax((int)$lvlData['intervalMax']);
                 $niveau->setResultLocation($lvlData['equalPosition']);
                 $niveau->setLeftOperand($lvlData['factorPosition']);
 
-                // --- AJOUT : CRITÈRES DE COMPLÉTION ---
                 if (isset($lvlData['encounterCompletionCriteria'])) {
                     $niveau->setEncounterCompletionCriteria((int)$lvlData['encounterCompletionCriteria']);
                 }
-
                 if (isset($lvlData['successCompletionCriteria'])) {
                     $niveau->setSuccessCompletionCriteria((int)$lvlData['successCompletionCriteria']);
                 }
@@ -209,12 +222,10 @@ class ObjectiveController extends AbstractController
         }
 
         /* --------------------------
-           3) Sauvegarde tâches
+           Sauvegarde BDD Locale (Tâches)
            -------------------------- */
-        // (Cette partie est conservée telle quelle si votre JS envoie aussi les tâches ici)
         if (isset($payload['tasks']) && is_array($payload['tasks'])) {
             foreach ($payload['tasks'] as $taskPayload) {
-
                 if (empty($taskPayload['levelId'])) continue;
 
                 $niveau = $this->em->getRepository(Niveau::class)->find($taskPayload['levelId']);
@@ -232,12 +243,10 @@ class ObjectiveController extends AbstractController
                     $this->em->persist($task);
                 }
 
-                // Champs communs
                 $task->setTimeMaxSecond($taskPayload['timeMaxSecond']);
                 $task->setRepartitionPercent($taskPayload['repartitionPercent']);
                 $task->setSuccessiveSuccessesToReach($taskPayload['successiveSuccessesToReach']);
 
-                // Champs spécifiques (null coalescing operator ?? pour éviter les erreurs si index manquant)
                 $task->setTargets($taskPayload['targets'] ?? null);
                 $task->setAnswerModality($taskPayload['answerModality'] ?? null);
                 $task->setNbIncorrectChoices($taskPayload['nbIncorrectChoices'] ?? null);
@@ -248,7 +257,29 @@ class ObjectiveController extends AbstractController
             }
         }
 
+        // Validation finale en base de données locale
         $this->em->flush();
+
+        // SYNCHRONISATION API
+
+        // On récupère l'entrainement parent
+        $entrainement = $objectif->getEntrainement();
+
+        if ($entrainement) {
+            // On récupère tous les élèves liés à cet entraînement
+            $eleves = $entrainement->getEleves();
+            $apiSuccessCount = 0;
+
+            foreach ($eleves as $eleve) {
+                // On envoie le JSON complet à l'API pour chaque élève
+                // ApiClient se charge d'utiliser TrainingSerializer pour formater le JSON
+                $success = $apiClient->assignTrainingToLearner($eleve, $entrainement);
+
+                if ($success) {
+                    $apiSuccessCount++;
+                }
+            }
+        }
 
         return new JsonResponse(['success' => true]);
     }
@@ -258,10 +289,22 @@ class ObjectiveController extends AbstractController
      * Suppression d’un niveau.
      */
     #[Route('/niveau/{id}/delete', name: 'delete_level', methods: ['DELETE'])]
-    public function deleteLevel(Niveau $niveau): JsonResponse
+    public function deleteLevel(Niveau $niveau, ApiClient $apiClient): JsonResponse
     {
+        // IMPORTANT : On récupère l'entrainement AVANT de supprimer le niveau
+        // Sinon la relation risque d'être cassée après le remove
+        $objectif = $niveau->getObjectif();
+        $entrainement = $objectif->getEntrainement();
+
+        // On retire proprement le niveau de la collection de l'objectif (pour la mémoire PHP)
+        // Cela aide le Serializer à ne pas inclure le niveau supprimé lors de l'envoi API
+        $objectif->removeNiveau($niveau);
+
         $this->em->remove($niveau);
         $this->em->flush();
+
+        // SYNCHRONISATION API
+        $this->syncWithApi($entrainement, $apiClient);
 
         return new JsonResponse(['success' => true]);
     }
@@ -271,7 +314,7 @@ class ObjectiveController extends AbstractController
      * Une seule tâche par type et par niveau.
      */
     #[Route('/niveau/{id}/task/save', name: 'save_task', methods: ['POST'])]
-    public function saveTask(Niveau $niveau, Request $request): JsonResponse
+    public function saveTask(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
     {
         $data = json_decode($request->getContent(), true) ?? [];
         $taskType = $data['taskType'] ?? null;
@@ -356,7 +399,14 @@ class ObjectiveController extends AbstractController
         if ($isNew) {
             $this->em->persist($task);
         }
+
+        // Sauvegarde en base de données locale
         $this->em->flush();
+
+        // SYNCHRONISATION API
+        // On remonte la chaîne : Tache -> Niveau -> Objectif -> Entrainement
+        $entrainement = $niveau->getObjectif()->getEntrainement();
+        $this->syncWithApi($entrainement, $apiClient);
 
         return new JsonResponse([
             'success' => true,
@@ -378,27 +428,31 @@ class ObjectiveController extends AbstractController
     }
 
     /**
-     * Suppression d’une tâche d’un niveau.
+     * Suppression d’une tâche.
      */
     #[Route('/niveau/{id}/task/delete', name: 'delete_task', methods: ['DELETE'])]
-    public function deleteTask(Niveau $niveau, Request $request): JsonResponse
+    public function deleteTask(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
     {
         $data = json_decode($request->getContent(), true) ?? [];
         $taskType = $data['taskType'] ?? null;
 
-        if (!$taskType) {
-            return new JsonResponse(['success' => false, 'message' => 'taskType manquant'], 400);
-        }
+        if (!$taskType) return new JsonResponse(['success' => false], 400);
 
-        $repo = $this->em->getRepository(Tache::class);
-        $task = $repo->findOneBy([
+        $task = $this->em->getRepository(Tache::class)->findOneBy([
             'niveau'   => $niveau,
             'taskType' => $taskType,
         ]);
 
         if ($task) {
+            // Nettoyage collection parent pour serialisation correcte
+            $niveau->removeTache($task);
+
             $this->em->remove($task);
             $this->em->flush();
+
+            // SYNCHRONISATION API
+            $entrainement = $niveau->getObjectif()->getEntrainement();
+            $this->syncWithApi($entrainement, $apiClient);
         }
 
         return new JsonResponse(['success' => true]);
@@ -443,11 +497,11 @@ class ObjectiveController extends AbstractController
      * Ajout d'un prérequis en base de données.
      */
     #[Route('/objectif/{id}/prerequis/add', name: 'add_prerequis', methods: ['POST'])]
-    public function addPrerequis(Objectif $objectif, Request $request): JsonResponse
+    public function addPrerequis(Objectif $objectif, Request $request, ApiClient $apiClient): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
-        // 1. Validation (Au moins 1% requis)
+        // Validation
         $views   = (float)($data['views'] ?? 0);
         $success = (float)($data['success'] ?? 0);
 
@@ -455,7 +509,7 @@ class ObjectiveController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Au moins 1% requis.'], 400);
         }
 
-        // 2. Récupération des cibles
+        // Récupération des cibles
         $targetObjId = $data['targetObjectiveId'] ?? null;
         $targetLvlId = $data['targetLevelId'] ?? null;
 
@@ -468,7 +522,7 @@ class ObjectiveController extends AbstractController
 
         $targetObjStringID = $targetObj->getObjID();
 
-        // 3. Validation Unicité
+        // Validation Unicité
         foreach ($objectif->getPrerequis() as $existingPrereq) {
             if ($existingPrereq->getRequiredObjective() === $targetObjStringID) {
                 $name = $targetObj->getName() ?: 'cet objectif';
@@ -479,7 +533,7 @@ class ObjectiveController extends AbstractController
             }
         }
 
-        // 4. Création
+        // Création
         $prerequis = new Prerequis();
         $prerequis->setObjectif($objectif);
         $prerequis->setRequiredObjective($targetObjStringID);
@@ -487,19 +541,24 @@ class ObjectiveController extends AbstractController
         $prerequis->setEncountersPercent($views);
         $prerequis->setSuccessPercent($success);
 
+        // On met à jour manuellement la collection côté PHP pour que le Serializer le voie tout de suite
+        $objectif->addPrerequis($prerequis);
+
         $this->em->persist($prerequis);
         $this->em->flush();
 
-        // 5. Préparation des variables pour l'affichage
+        // SYNCHRONISATION API
+        $this->syncWithApi($objectif->getEntrainement(), $apiClient);
+
+
+        // Rendu HTML
         $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
         $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
 
-        // 6. Rendu HTML
         $html = $this->renderView('objective/_prereq_badge.html.twig', [
             'p' => $prerequis,
             'targetObjName' => $targetObjName,
             'targetLvlName' => $targetLvlName,
-
             'targetObjDbId' => $targetObj->getId(),
             'targetLvlDbId' => $targetLvl->getId()
         ]);
@@ -514,10 +573,19 @@ class ObjectiveController extends AbstractController
      * Suppression d'un prérequis.
      */
     #[Route('/prerequis/{id}/delete', name: 'prerequis_delete', methods: ['DELETE'])]
-    public function deletePrerequis(Prerequis $prerequis): JsonResponse
+    public function deletePrerequis(Prerequis $prerequis, ApiClient $apiClient): JsonResponse
     {
+        $objectif = $prerequis->getObjectif();
+        $entrainement = $objectif->getEntrainement();
+
+        // Nettoyage collection
+        $objectif->removePrerequis($prerequis);
+
         $this->em->remove($prerequis);
         $this->em->flush();
+
+        // SYNCHRONISATION API
+        $this->syncWithApi($entrainement, $apiClient);
 
         return new JsonResponse(['success' => true]);
     }
@@ -526,11 +594,11 @@ class ObjectiveController extends AbstractController
      * Modification d'un prérequis existant.
      */
     #[Route('/prerequis/{id}/edit', name: 'edit_prerequis', methods: ['POST'])]
-    public function editPrerequis(Prerequis $prerequis, Request $request): JsonResponse
+    public function editPrerequis(Prerequis $prerequis, Request $request, ApiClient $apiClient): JsonResponse
     {
         $data = json_decode($request->getContent(), true);
 
-        // 1. Validation basique (Sliders)
+        // Validation basique (Sliders)
         $views   = (float)($data['views'] ?? 0);
         $success = (float)($data['success'] ?? 0);
 
@@ -538,7 +606,7 @@ class ObjectiveController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Au moins 1% requis.'], 400);
         }
 
-        // 2. Récupération des cibles
+        // Récupération des cibles
         $targetObjId = $data['targetObjectiveId'] ?? null;
         $targetLvlId = $data['targetLevelId'] ?? null;
 
@@ -549,14 +617,12 @@ class ObjectiveController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Cible introuvable'], 404);
         }
 
-        // 3. Validation Unicité (On exclut le prérequis actuel de la vérification)
+        // Validation Unicité (On exclut le prérequis actuel de la vérification)
         $targetObjStringID = $targetObj->getObjID();
         $currentObjectif = $prerequis->getObjectif();
 
         foreach ($currentObjectif->getPrerequis() as $existing) {
-            // Si c'est un AUTRE prérequis (id différent) mais qui pointe vers le MÊME objectif
             if ($existing->getId() !== $prerequis->getId() && $existing->getRequiredObjective() === $targetObjStringID) {
-                // Pour l'affichage de l'erreur
                 $conflictName = $targetObj->getName() ?: $targetObjStringID;
                 return new JsonResponse([
                     'success' => false,
@@ -565,7 +631,7 @@ class ObjectiveController extends AbstractController
             }
         }
 
-        // 4. Mise à jour de l'entité
+        // Mise à jour de l'entité
         $prerequis->setRequiredObjective($targetObjStringID);
         $prerequis->setRequiredLevel($targetLvl->getLevelID());
         $prerequis->setEncountersPercent($views);
@@ -573,20 +639,21 @@ class ObjectiveController extends AbstractController
 
         $this->em->flush();
 
-        // 5. Préparation des variables pour la vue (Gestion des noms vides)
+        // Préparation des variables pour la vue (Gestion des noms vides)
         $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
         $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
 
-        // 6. Rendu du badge HTML
-        // C'EST ICI QUE L'ERREUR SE PRODUISAIT : Il manquait les DbId
+        // SYNCHRONISATION API
+        $entrainement = $prerequis->getObjectif()->getEntrainement();
+        $this->syncWithApi($entrainement, $apiClient);
+
+        // Rendu du badge HTML
         $html = $this->renderView('objective/_prereq_badge.html.twig', [
             'p' => $prerequis,
 
-            // Pour l'affichage texte
             'targetObjName' => $targetObjName,
             'targetLvlName' => $targetLvlName,
 
-            // INDISPENSABLES pour le JS (bouton édition)
             'targetObjDbId' => $targetObj->getId(),
             'targetLvlDbId' => $targetLvl->getId()
         ]);
@@ -596,5 +663,27 @@ class ObjectiveController extends AbstractController
             'html' => $html,
             'id' => $prerequis->getId()
         ]);
+    }
+
+    /* =========================================================================
+       METHODE PRIVÉE POUR CENTRALISER LA SYNCHRO API (SÉCURISÉE)
+       ========================================================================= */
+    private function syncWithApi(?Entrainement $entrainement, ApiClient $apiClient): void
+    {
+        if (!$entrainement) return;
+
+        // On récupère tous les élèves liés à cet entrainement
+        $eleves = $entrainement->getEleves();
+
+        foreach ($eleves as $eleve) {
+            try {
+                // On essaie d'envoyer à l'API
+                $apiClient->assignTrainingToLearner($eleve, $entrainement);
+            } catch (\Throwable $e) {
+                // Si l'API est éteinte ou plante, on ne fait rien pour ne pas bloquer l'enseignant.
+                // Idéalement, on log l'erreur :
+                // error_log("Erreur Synchro API pour l'élève " . $eleve->getId() . " : " . $e->getMessage());
+            }
+        }
     }
 }
