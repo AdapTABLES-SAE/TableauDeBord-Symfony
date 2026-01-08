@@ -396,7 +396,21 @@ class ObjectiveController extends AbstractController
                 break;
         }
 
+        // ON INSERT ICI LA LOGIQUE D'ÉQUILIBRAGE
         if ($isNew) {
+            // 1. On s'assure que la nouvelle tâche est bien liée au niveau pour le calcul
+            if (!$niveau->getTaches()->contains($task)) {
+                $niveau->addTache($task);
+            }
+
+            // 2. On persiste d'abord pour que Doctrine connaisse la nouvelle tâche
+            $this->em->persist($task);
+
+            // 3. MAGIE PHP : On recalcule tout le monde (100% ou 50/50 ou 33/33/33)
+            $this->rebalanceTasks($niveau);
+        } else {
+            // Si ce n'est pas nouveau, on sauvegarde juste les modifs de cette tâche
+            // (Sauf si vous voulez forcer le rééquilibrage à chaque modif, retirez le "else")
             $this->em->persist($task);
         }
 
@@ -428,7 +442,7 @@ class ObjectiveController extends AbstractController
     }
 
     /**
-     * Suppression d’une tâche.
+     * Suppression d’une tâche avec rééquilibrage automatique des pourcentages.
      */
     #[Route('/niveau/{id}/task/delete', name: 'delete_task', methods: ['DELETE'])]
     public function deleteTask(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
@@ -444,13 +458,22 @@ class ObjectiveController extends AbstractController
         ]);
 
         if ($task) {
-            // Nettoyage collection parent pour serialisation correcte
+            // 1. On retire la tâche de la collection du niveau (Mémoire)
+            // C'est vital pour que rebalanceTasks ne compte pas la tâche qu'on supprime !
             $niveau->removeTache($task);
 
+            // 2. On marque la tâche pour suppression (Base de données)
             $this->em->remove($task);
+
+            // 3. MAGIE : On recalcule les % des survivants
+            // Ex: S'il restait une tâche à 50%, elle passe à 100%
+            $this->rebalanceTasks($niveau);
+
+            // 4. On envoie tout à la base de données (DELETE + UPDATE des survivants)
             $this->em->flush();
 
-            // SYNCHRONISATION API
+            // 5. Synchronisation API
+            // L'API recevra la liste propre avec les bons pourcentages
             $entrainement = $niveau->getObjectif()->getEntrainement();
             $this->syncWithApi($entrainement, $apiClient);
         }
@@ -684,6 +707,36 @@ class ObjectiveController extends AbstractController
                 // Idéalement, on log l'erreur :
                 // error_log("Erreur Synchro API pour l'élève " . $eleve->getId() . " : " . $e->getMessage());
             }
+        }
+    }
+
+    /**
+     * Recalcule les pourcentages pour que la somme fasse toujours 100%.
+     * À appeler après un ajout ou une suppression.
+     */
+    private function rebalanceTasks(Niveau $niveau): void
+    {
+        // On récupère les tâches restantes dans la collection en mémoire
+        $tasks = $niveau->getTaches();
+        $count = count($tasks);
+
+        if ($count === 0) return;
+
+        // Calcul de la base (ex: 100 / 3 = 33)
+        $base = (int) floor(100 / $count);
+        $remainder = 100 % $count;
+
+        foreach ($tasks as $t) {
+            $val = $base;
+            // On distribue le reste (ex: 34, 33, 33)
+            if ($remainder > 0) {
+                $val++;
+                $remainder--;
+            }
+
+            // On met à jour l'entité.
+            // Doctrine détectera ce changement automatiquement au prochain flush.
+            $t->setRepartitionPercent($val);
         }
     }
 }

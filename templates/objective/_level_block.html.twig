@@ -72,24 +72,48 @@
     <div class="level-body" style="{{ bodyStyle }}">
 
         {# ============================================================
-           TÂCHES
-           ============================================================ #}
+        TÂCHES
+        ============================================================ #}
         <div class="level-section-title mt-0">Tâches</div>
 
-        <div class="tasks-line">
+        <div class="tasks-line d-flex flex-wrap">
             {% for task in TASKS %}
+                {# Récupération de l'objet Tache s'il existe pour ce niveau #}
                 {% set activeTask = tasksArray|filter(t => t.taskType == task.code)|first %}
 
-                <button type="button"
-                        class="task-card {{ activeTask ? 'task-active' : '' }}"
-                        data-task-type="{{ task.code }}">
+                {# Conteneur vertical pour aligner Bouton + Input #}
+                <div class="task-wrapper d-flex flex-column align-items-center mx-1 mb-2">
 
-                    <div class="task-icon"><i class="bi {{ task.icon }}"></i></div>
-                    <div class="task-text">
-                        <div class="task-code">{{ task.code }}</div>
-                        <div class="task-label">{{ task.label }}</div>
+                    <button type="button"
+                            class="task-card {{ activeTask ? 'task-active' : '' }} mb-1"
+                            data-task-type="{{ task.code }}"
+                        {# Ajoutez un ID unique pour cibler l'input associé en JS facilement #}
+                            id="btn-task-{{ niveau.id }}-{{ task.code }}">
+
+                        <div class="task-icon"><i class="bi {{ task.icon }}"></i></div>
+                        <div class="task-text">
+                            <div class="task-code">{{ task.code }}</div>
+                            <div class="task-label">{{ task.label }}</div>
+                        </div>
+                    </button>
+
+                    <div class="input-group input-group-sm repartition-input-group {{ activeTask ? '' : 'd-none' }}"
+                         style="width: 100%; max-width: 140px;">
+
+                <span class="input-group-text py-0 px-2 text-muted bg-white border-0"
+                      style="font-size: 0.75rem;">%</span>
+
+                        <input type="number"
+                               class="form-control form-control-sm text-center border-0 bg-light fw-bold task-repartition-input"
+                               min="0" max="100" step="5"
+                            {# Si la tâche existe, on prend sa valeur, sinon 100 par défaut #}
+                               value="{{ activeTask ? activeTask.repartitionPercent : 100 }}"
+                               data-task-type="{{ task.code }}"
+                               data-level-id="{{ niveau.id }}"
+                               placeholder="100"
+                               style="height: 24px; font-size: 0.85rem;">
                     </div>
-                </button>
+                </div>
             {% endfor %}
         </div>
 

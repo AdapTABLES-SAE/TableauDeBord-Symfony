@@ -139,74 +139,182 @@
 
 
 /* ============================================================
-   TÂCHES — 5 cartes compactes
+   TÂCHES — 5 cartes alignées sur une seule ligne
 ============================================================ */
 
 .tasks-line {
     display: flex;
-    gap: .9rem;
+    gap: 0.8rem; /* Espace entre les colonnes */
+
+    /* FORCE L'ALIGNEMENT SUR UNE LIGNE */
     flex-wrap: nowrap;
+
+    /* Active le scroll horizontal si l'écran est trop petit */
     overflow-x: auto;
-    padding-bottom: .45rem;
+
+    /* Espace pour ne pas couper l'ombre ou le scrollbar */
+    padding: 0.2rem 0.2rem 1rem 0.2rem;
+
+    /* Aligne les éléments en haut */
+    align-items: flex-start;
+
+    /* Pour que la scrollbar soit jolie (Webkit) */
+    scrollbar-width: thin;
+    scrollbar-color: #dcd7ff transparent;
 }
 
-.task-card {
-    background: #fff;
+/* Personnalisation de la scrollbar (Chrome/Safari/Edge) */
+.tasks-line::-webkit-scrollbar {
+    height: 6px;
+}
+.tasks-line::-webkit-scrollbar-track {
+    background: transparent;
+}
+.tasks-line::-webkit-scrollbar-thumb {
+    background-color: #dcd7ff;
     border-radius: 10px;
-    border: 1px solid #dcd7ff;
-    width: 140px;
-    padding: .6rem .55rem;
-    text-align: center;
-    cursor: pointer;
-    transition: .18s;
+}
+
+/* --- LE CONTENEUR (Carte + Input) --- */
+.task-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: .25rem;
+    gap: 0.5rem;
+
+    /* CRUCIAL : Empêche l'élément de rétrécir */
+    flex: 0 0 auto;
+
+    /* Largeur fixe pour garder l'alignement */
+    width: 135px;
+}
+
+/* --- LA CARTE (Design) --- */
+.task-card {
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #dcd7ff;
+    width: 100%;
+    height: 105px; /* Hauteur fixe pour uniformité */
+    padding: 0.6rem 0.4rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(100, 80, 200, 0.04);
 }
 
 .task-card:hover {
-    background: #f4f0ff;
+    transform: translateY(-2px);
     border-color: #b9a8ff;
+    box-shadow: 0 4px 12px rgba(100, 80, 200, 0.1);
 }
 
-/* --- ACTIVE (violet) --- */
+/* --- ACTIVE STATE (Violet) --- */
 .task-card.task-active {
-    background: #7a5af8 !important;
+    background: linear-gradient(135deg, #7a5af8, #6040e6) !important;
     border-color: #7a5af8 !important;
     color: white !important;
-    box-shadow: 0 3px 8px rgba(122, 90, 248, 0.25);
+    box-shadow: 0 4px 10px rgba(122, 90, 248, 0.3);
 }
 
 /* Icône */
 .task-icon i {
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     color: #7a5af8;
+    margin-bottom: 2px;
+    transition: color 0.2s;
 }
 
 .task-card.task-active .task-icon i {
     color: white !important;
 }
 
-/* CODE (C1, C2, ID...) */
+/* Code (C1, C2...) */
 .task-code {
-    font-weight: 700;
-    font-size: .9rem;
+    font-weight: 800;
+    font-size: 1rem;
     color: #3d3a56;
+    line-height: 1.2;
 }
 
 .task-card.task-active .task-code {
     color: white !important;
 }
 
-/* Sous-label */
+/* Label (description) */
 .task-label {
-    font-size: .75rem;
-    color: #666;
+    font-size: 0.7rem;
+    color: #6c757d;
+    line-height: 1.1;
+    max-width: 95%;
 }
 
 .task-card.task-active .task-label {
-    color: white !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* --- INPUT DE RÉPARTITION (%) --- */
+.repartition-input-group {
+    width: 100%;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+/* État caché (quand tâche inactive) */
+.repartition-input-group.d-none {
+    display: flex !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    height: 0;
+    margin: 0;
+    overflow: hidden;
+}
+
+.repartition-input-group .input-group-text {
+    background: #f4f0ff;
+    border: 1px solid #e5ddff;
+    border-right: none;
+    color: #7a5af8;
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0 0.5rem;
+}
+
+.task-repartition-input {
+    border: 1px solid #e5ddff;
+    border-left: none;
+    color: #3d3a56;
+    font-weight: 700;
+    font-size: 0.9rem;
+    background: #fff;
+    padding: 0.25rem;
+    height: 30px;
+    text-align: center;
+}
+
+.task-repartition-input:focus {
+    box-shadow: none;
+    border-color: #b9a8ff;
+    background: #fff;
+    outline: none;
+}
+
+/* Erreur */
+.task-repartition-input.border-danger {
+    border-color: #ef4444 !important;
+    background-color: #fef2f2 !important;
+    color: #b91c1c !important;
 }
 
 

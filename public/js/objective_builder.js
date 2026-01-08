@@ -100,9 +100,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-
     /* =========================================================================================
-       COLLECTEUR GLOBAL : objectif + niveaux
+       COLLECTEUR GLOBAL : objectif + niveaux + tâches
     ========================================================================================= */
 
     function collectAllData() {
@@ -112,17 +111,14 @@ document.addEventListener("DOMContentLoaded", () => {
         };
 
         const levels = [];
+        const tasks = [];
 
         document.querySelectorAll(".level-card").forEach(card => {
-
             const levelId = parseInt(card.dataset.levelId, 10);
 
+            // 1. Récupération des données du niveau
             let levelTables = [];
-            try {
-                levelTables = JSON.parse(card.dataset.tables || "[]");
-            } catch {
-                levelTables = [];
-            }
+            try { levelTables = JSON.parse(card.dataset.tables || "[]"); } catch { levelTables = []; }
 
             const seenSlider    = card.querySelector(".completion-seen");
             const successSlider = card.querySelector(".completion-success");
@@ -138,9 +134,42 @@ document.addEventListener("DOMContentLoaded", () => {
                 successCompletionCriteria: successSlider ? parseInt(successSlider.value,10) : 80,
                 encounterCompletionCriteria: seenSlider ? parseInt(seenSlider.value,10) : 100
             });
+
+            // 2. RÉCUPÉRATION DES TÂCHES ET DE LEUR RÉPARTITION
+            // On regarde les inputs de ce niveau
+            card.querySelectorAll('.task-repartition-input').forEach(input => {
+                const taskType = input.dataset.taskType;
+
+                // On vérifie si la tâche est active via la classe du bouton associé
+                // (L'input a data-task-type="C1", on cherche le bouton correspondant)
+                const btn = card.querySelector(`.task-card[data-task-type="${taskType}"]`);
+
+                if (btn && btn.classList.contains('task-active')) {
+                    // On récupère les données existantes (pour ne pas perdre les targets, etc.)
+                    const tasksMap = getTasksMap(card);
+                    const currentData = tasksMap[taskType] || {};
+
+                    tasks.push({
+                        levelId: levelId,
+                        taskType: taskType,
+                        repartitionPercent: parseInt(input.value, 10) || 0,
+
+                        // On renvoie aussi les autres paramètres s'ils existent déjà en mémoire
+                        timeMaxSecond: currentData.timeMaxSecond || 20,
+                        successiveSuccessesToReach: currentData.successiveSuccessesToReach || 1,
+                        targets: currentData.targets || [],
+                        answerModality: currentData.answerModality || null,
+                        nbIncorrectChoices: currentData.nbIncorrectChoices || null,
+                        nbCorrectChoices: currentData.nbCorrectChoices || null,
+                        nbFacts: currentData.nbFacts || null,
+                        sourceVariation: currentData.sourceVariation || null,
+                        target: currentData.target || null
+                    });
+                }
+            });
         });
 
-        return { objective, levels };
+        return { objective, levels, tasks };
     }
 
     function captureInitialState() {
@@ -383,10 +412,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
         card.querySelectorAll(".task-card").forEach(btn => {
             const type = btn.dataset.taskType;
+            // On cherche le conteneur de l'input associé
+            const wrapper = btn.closest('.task-wrapper');
+            const inputGroup = wrapper ? wrapper.querySelector('.repartition-input-group') : null;
+
             if (tasksMap[type]) {
+                // Tâche active
                 btn.classList.add("task-active");
+                if (inputGroup) inputGroup.classList.remove("d-none");
+
             } else {
+                // Tâche inactive
                 btn.classList.remove("task-active");
+                if (inputGroup) inputGroup.classList.add("d-none");
             }
         });
     }
@@ -714,6 +752,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             });
         });
+
+        // Écouteur sur les inputs de répartition ---
+        card.querySelectorAll('.task-repartition-input').forEach(input => {
+            input.addEventListener('input', () => {
+                const type = input.dataset.taskType;
+                const tasksMap = getTasksMap(card);
+                if (tasksMap[type]) {
+                    tasksMap[type].repartitionPercent = parseInt(input.value, 10);
+                    setTasksMap(card, tasksMap);
+                }
+
+                // On signale qu'il y a des changements non sauvegardés
+                markDirty();
+            });
+        });
     }
 
     function initAllLevelCards() {
@@ -911,7 +964,40 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            // 2. Vérification de sécurité (Élèves présents ?)
+            // 2. VALIDATION DES POURCENTAGES (NOUVEAU)
+            let percentError = false;
+            document.querySelectorAll(".level-card").forEach(card => {
+                // On récupère les tâches actives
+                const activeInputs = [];
+                card.querySelectorAll('.task-repartition-input').forEach(input => {
+                    const type = input.dataset.taskType;
+                    const btn = card.querySelector(`.task-card[data-task-type="${type}"]`);
+                    if (btn && btn.classList.contains('task-active')) {
+                        activeInputs.push(input);
+                    }
+                });
+
+                if (activeInputs.length > 0) {
+                    // Calcul de la somme
+                    const sum = activeInputs.reduce((acc, input) => acc + (parseInt(input.value, 10) || 0), 0);
+
+                    // On tolère 99, 100 ou 101 à cause des arrondis, ou strict 100 selon votre préférence
+                    // Ici on demande strict 100
+                    if (sum !== 100) {
+                        percentError = true;
+                        // Feedback visuel (bordure rouge temporaire)
+                        activeInputs.forEach(input => input.classList.add('border-danger'));
+                        setTimeout(() => activeInputs.forEach(input => input.classList.remove('border-danger')), 2000);
+                    }
+                }
+            });
+
+            if (percentError) {
+                showToast(false, "La somme des pourcentages des tâches actives doit être égale à 100% pour chaque niveau.");
+                return; // ON BLOQUE L'ENREGISTREMENT
+            }
+
+            // 3. Vérification de sécurité (Élèves présents ?)
             const hasStudents = saveAllBtn.dataset.hasStudents === "true";
 
             if (hasStudents) {
@@ -943,16 +1029,18 @@ document.addEventListener("DOMContentLoaded", () => {
     ========================================================================================= */
 
     window.saveTask = async function(levelId, payload, card, taskType, modalId) {
+        // On appelle simplement la fonction originale.
+        // C'est elle qui appelle le PHP (qui fait le calcul 100%) puis recharge la page.
         const result = await originalSaveTask(levelId, payload, card, taskType, modalId);
 
         if (result && result.success) {
+            // On met juste à jour l'état visuel local en attendant que la page reload
             updateTaskState(card, taskType, result.task);
         }
         return result;
     };
 
     window.deleteTask = function(levelId, taskType, card, modalId) {
-
         let taskName = `Tâche ${taskType}`;
 
         switch (taskType) {
