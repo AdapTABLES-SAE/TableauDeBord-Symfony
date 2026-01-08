@@ -3,13 +3,65 @@ import { showToast } from "../toast/toast.js";
 /* ============================================================
    VARIABLES GLOBALES
 ============================================================ */
-let pendingDeletePayload = null;    // Pour la suppression
-let pendingSaveCallback = null;     // Pour la sauvegarde avec confirmation
+let pendingDeletePayload = null;
+let pendingSaveCallback = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     initTaskDeleteListeners();
     initTaskSaveListeners();
+    checkAndReopenLevel(); // <--- NOUVELLE FONCTION
 });
+
+/* ============================================================
+   LOGIQUE DE RÉOUVERTURE APRÈS REFRESH (Version data-attribute)
+============================================================ */
+function checkAndReopenLevel() {
+    // 1. Récupération de l'ID stocké
+    const levelId = sessionStorage.getItem("REFRESH_REOPEN_LEVEL_ID");
+
+    if (levelId) {
+        console.log("🔄 Tentative de réouverture du niveau ID :", levelId);
+
+        // Nettoyage immédiat
+        sessionStorage.removeItem("REFRESH_REOPEN_LEVEL_ID");
+
+        setTimeout(() => {
+            // 2. RECHERCHE PAR ATTRIBUT DATA (C'est la clé du correctif)
+            // On cherche la div qui a la classe .level-card ET l'attribut data-level-id="X"
+            const cardEl = document.querySelector(`.level-card[data-level-id="${levelId}"]`);
+
+            if (cardEl) {
+                console.log("✅ Carte trouvée :", cardEl);
+
+                // 3. OUVERTURE
+                // Votre Twig montre que si c'est fermé, la classe 'collapsed' est présente.
+                if (cardEl.classList.contains('collapsed')) {
+                    // La méthode la plus sûre est de cliquer sur le bouton qui gère l'ouverture
+                    // pour déclencher vos animations JS existantes.
+                    const toggleBtn = cardEl.querySelector('.toggle-level-details');
+                    if (toggleBtn) {
+                        toggleBtn.click();
+                    } else {
+                        // Fallback : On force le retrait de la classe si bouton introuvable
+                        cardEl.classList.remove('collapsed');
+                        // On doit aussi nettoyer le style inline mis par le Twig (max-height: 0px...)
+                        const body = cardEl.querySelector('.level-body');
+                        if (body) {
+                            body.style.maxHeight = null;
+                            body.style.opacity = null;
+                        }
+                    }
+                }
+
+                // 4. SCROLL
+                cardEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            } else {
+                console.error(`❌ Impossible de trouver une carte avec data-level-id="${levelId}"`);
+            }
+        }, 300); // Délai pour s'assurer que le DOM est prêt
+    }
+}
 
 /* ============================================================
    INITIALISATION DES ÉCOUTEURS (MODALE SUPPRESSION)
@@ -42,19 +94,12 @@ function initTaskDeleteListeners() {
         confirmBtn.addEventListener("click", async () => {
             if (!pendingDeletePayload) return;
 
-            const { levelId, taskType, card, parentModalId } = pendingDeletePayload;
+            const { levelId, taskType, parentModalId } = pendingDeletePayload;
 
             confirmBtn.disabled = true;
             confirmBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Suppression...';
 
-            const success = await executeDeleteTask(levelId, taskType, card, parentModalId);
-
-            if (success) {
-                closeModal();
-            } else {
-                confirmBtn.disabled = false;
-                confirmBtn.innerHTML = '<i class="bi bi-trash me-2"></i> Réessayer';
-            }
+            await executeDeleteTask(levelId, taskType, parentModalId);
         });
     }
 }
@@ -86,13 +131,8 @@ function initTaskSaveListeners() {
     if (confirmBtn) {
         confirmBtn.addEventListener("click", async () => {
             if (pendingSaveCallback) {
-                // UI Loading
                 confirmBtn.disabled = true;
-
-                // On exécute la fonction de sauvegarde qui était en attente
                 await pendingSaveCallback();
-
-                closeModal();
             }
         });
     }
@@ -100,25 +140,17 @@ function initTaskSaveListeners() {
 
 /* ============================================================
    FONCTION INTERMÉDIAIRE DE SAUVEGARDE
-   Vérifie s'il faut ouvrir la modale ou sauvegarder direct
 ============================================================ */
-/**
- * @param {Function} saveCallback - La fonction async à exécuter (ex: () => saveTask(...))
- */
 export function requestTaskSave(saveCallback) {
-    // On vérifie la variable globale définie dans Twig
     if (window.HAS_STUDENTS === true) {
-        // Il y a des élèves : On ouvre la modale
         const modal = document.getElementById("confirm-task-save-modal");
         if (modal) {
-            pendingSaveCallback = saveCallback; // On stocke l'action pour plus tard
+            pendingSaveCallback = saveCallback;
             modal.style.display = "flex";
         } else {
-            // Fallback sécurité si modale introuvable
             saveCallback();
         }
     } else {
-        // Pas d'élèves : On sauvegarde direct
         saveCallback();
     }
 }
@@ -131,7 +163,7 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
     const config = window.OBJECTIVE_CONFIG || {};
 
     if (!config.saveTaskUrlTemplate) {
-        console.error("saveTaskUrlTemplate missing in OBJECTIVE_CONFIG");
+        console.error("saveTaskUrlTemplate missing");
         return;
     }
 
@@ -154,28 +186,11 @@ export async function saveTask(levelId, payload, card, taskType, modalId) {
             return;
         }
 
-        let tasksMap = {};
-
-        try {
-            tasksMap = JSON.parse(card.dataset.tasks || "{}");
-        } catch {
-            tasksMap = {};
-        }
-
-        tasksMap[taskType] = data.task;
-        card.dataset.tasks = JSON.stringify(tasksMap);
-
-        const pill = card.querySelector(`.task-card[data-task-type="${taskType}"]`);
-        if (pill) pill.classList.add("task-active");
-
-        const modalEl = document.getElementById(modalId);
-        if (modalEl) {
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-        }
-
-        showToast(true, "Tâche enregistrée");
-        return data;
+        // =====================================================
+        // SUCCESS : SAUVEGARDE ID ET REFRESH
+        // =====================================================
+        sessionStorage.setItem("REFRESH_REOPEN_LEVEL_ID", levelId);
+        window.location.reload();
 
     } catch (err) {
         console.error("Erreur saveTask:", err);
@@ -191,18 +206,18 @@ export function openTaskDeleteModal(levelId, taskType, card, parentModalId, task
     const nameSpan = document.getElementById("delete-task-name-target");
 
     if (modal) {
-        pendingDeletePayload = { levelId, taskType, card, parentModalId };
+        pendingDeletePayload = { levelId, taskType, parentModalId };
         if (nameSpan) nameSpan.textContent = taskName;
         modal.style.display = "flex";
     } else {
-        console.error("Modale introuvable : #delete-task-modal (Vérifiez l'include Twig)");
+        console.error("Modale introuvable : #delete-task-modal");
     }
 }
 
 /* ============================================================
    EXÉCUTION RÉELLE SUPPRESSION (Interne)
 ============================================================ */
-async function executeDeleteTask(levelId, taskType, card, parentModalId) {
+async function executeDeleteTask(levelId, taskType, parentModalId) {
     const config = window.OBJECTIVE_CONFIG || {};
     if (!config.deleteTaskUrlTemplate) return false;
 
@@ -219,25 +234,19 @@ async function executeDeleteTask(levelId, taskType, card, parentModalId) {
 
         if (!resp.ok || !data.success) {
             showToast(false, data.message || "Erreur suppression");
+            const confirmBtn = document.getElementById("btn-confirm-delete-task");
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="bi bi-trash me-2"></i> Réessayer';
+            }
             return false;
         }
 
-        // Mise à jour dataset et UI
-        let tasksMap = {};
-        try { tasksMap = JSON.parse(card.dataset.tasks || "{}"); } catch {}
-        delete tasksMap[taskType];
-        card.dataset.tasks = JSON.stringify(tasksMap);
-
-        const pill = card.querySelector(`.task-card[data-task-type="${taskType}"]`);
-        if (pill) pill.classList.remove("task-active");
-
-        const modalEl = document.getElementById(parentModalId);
-        if (modalEl) {
-            const modal = bootstrap.Modal.getInstance(modalEl);
-            if (modal) modal.hide();
-        }
-
-        showToast(true, "Tâche supprimée");
+        // =====================================================
+        // SUCCESS : SAUVEGARDE ID ET REFRESH
+        // =====================================================
+        sessionStorage.setItem("REFRESH_REOPEN_LEVEL_ID", levelId);
+        window.location.reload();
         return true;
 
     } catch (err) {
