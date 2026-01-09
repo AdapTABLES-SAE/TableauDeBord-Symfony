@@ -26,21 +26,17 @@
         </button>
     </div>
 
-    <!-- MODAL AJOUT CLASSE -->
     <div class="modal fade" id="addClassModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-md">
             <div class="modal-content border-0 shadow-lg">
 
                 <div class="modal-header bg-light-subtle text-black">
                     <h5 class="modal-title fw-semibold">Créer une classe</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
 
                 <div class="modal-body p-4">
-
-                    <form id="addClassForm" action="{{ path("add_classroom") }}" method="post"
-                          class="d-flex flex-column gap-3">
-
+                    <form id="addClassForm" action="{{ path("add_classroom") }}" method="post" class="d-flex flex-column gap-3">
                         <div>
                             <label for="className" class="form-label fw-semibold">Nom de la classe (*)</label>
                             <input type="text"
@@ -49,18 +45,16 @@
                                    class="form-control form-control-lg"
                                    placeholder="Ex : CE1 B"
                                    required>
-                            <label for="classID" class="form-label fw-semibold">Identifiant de la classe (*)</label>
+                            <label for="classID" class="form-label fw-semibold mt-2">Identifiant de la classe (*)</label>
                             <input type="text"
                                    id="classID"
                                    name="classID"
                                    class="form-control form-control-lg"
                                    placeholder="Ex : CE1_B"
+                                   data-user-edited="false"
                                    required>
                         </div>
-
-                        <small class="text-muted fst-italic">
-                            * : Champ obligatoire
-                        </small>
+                        <small class="text-muted fst-italic">* : Champ obligatoire</small>
                     </form>
                 </div>
 
@@ -68,8 +62,7 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         Annuler
                     </button>
-
-                    <button onclick="" id="addClassConfirm" class="btn btn-success px-4">
+                    <button type="button" id="addClassConfirm" class="btn btn-success px-4">
                         Créer
                     </button>
                 </div>

@@ -23,8 +23,6 @@ window.reloadDashboardPair = async function (pairName) {
     await reloadListOnly(pairName, id);
 };
 
-
-
 // ============================================================================
 //  RELOAD ONLY DETAIL PARTIAL
 // ============================================================================
@@ -74,33 +72,44 @@ async function reloadListOnly(pairName, checkedID = null) {
     const urlList = list.dataset.listUrl;
     if (!urlList) return;
 
-    list.innerHTML=_renderLoader("Chargement de la liste...")
+    list.innerHTML = _renderLoader("Chargement de la liste...")
     try {
         const res = await fetch(urlList);
         if (!res.ok) throw new Error("HTTP " + res.status);
 
         list.innerHTML = await res.text();
 
-        // Restore change event
+        // --- CORRECTION ICI ---
+        // On récupère les radios
         const radios = list.querySelectorAll('input[type="radio"][data-id]');
-        if (!radios.length) return;
 
-        radios.forEach(radio => {
-            radio.addEventListener('change', () => {
-                reloadDetailOnly(pairName, radio.dataset.id);
+        // Si on a des radios (liste non vide), on attache les événements
+        if (radios.length > 0) {
+
+            // 1. Restore change event
+            radios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    reloadDetailOnly(pairName, radio.dataset.id);
+                });
             });
-        });
 
-        // Restore selection
-        if (checkedID) {
-            const newSelected = list.querySelector(
-                `input[type="radio"][data-id="${checkedID}"]`
-            );
-            if (newSelected) {
-                newSelected.checked = true;
-                newSelected.dispatchEvent(new Event("change", { bubbles: true }));
+            // 2. Restore selection (si un ID était coché avant)
+            if (checkedID) {
+                const newSelected = list.querySelector(
+                    `input[type="radio"][data-id="${checkedID}"]`
+                );
+                if (newSelected) {
+                    newSelected.checked = true;
+                    // On ne déclenche l'événement change que si on veut recharger le détail
+                    // newSelected.dispatchEvent(new Event("change", { bubbles: true }));
+                }
             }
         }
+
+        // --- IMPORTANT ---
+        // On ne fait PLUS de "return" si la liste est vide.
+        // On continue l'exécution pour envoyer l'événement ci-dessous.
+        // C'est ce qui permet d'initialiser le bouton "Ajouter" même si la liste est vide.
 
         document.dispatchEvent(
             new CustomEvent("partial:list:loaded", {
@@ -135,6 +144,7 @@ window._renderLoader = _renderLoader;
 // BUTTON HELPERS
 // ============================================================================
 function resetButtons(saveBtn, cancelBtn) {
+    if(!saveBtn || !cancelBtn) return;
     saveBtn.classList.add("btn-outline-success", "disabled");
     saveBtn.classList.remove("btn-success");
 
@@ -143,6 +153,7 @@ function resetButtons(saveBtn, cancelBtn) {
 }
 
 function enableButtons(saveBtn, cancelBtn) {
+    if(!saveBtn || !cancelBtn) return;
     saveBtn.classList.remove("btn-outline-success", "disabled");
     saveBtn.classList.add("btn-success");
 
