@@ -20,4 +20,4 @@
 ###< symfony/asset-mapper ###
 .idea/laravel-idea.xml
 
-.env.local
+.env*

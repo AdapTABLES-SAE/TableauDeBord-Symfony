@@ -33,6 +33,8 @@ class TeacherAuthController extends AbstractController
             if ($identifier === '') {
                 $error = 'Veuillez saisir votre identifiant enseignant.';
             } else {
+                //create admin teacher if he does not exist by default
+                $this->teacherSync->createAdminTeacher($this->apiClient);
 
                 // Crée entrainement par défaut si manquant
                 $created = $this->trainingSync->isDefaultTrainingCreated();
