@@ -24,8 +24,8 @@
     align-items: center;
     justify-content: space-between;
     padding: 0.8rem 1.2rem;
-    cursor: pointer; /* On rend tout le header cliquable (via JS optionnel) ou juste agréable */
-    border-bottom: 1px solid transparent; /* Invisible par défaut */
+    cursor: pointer;
+    border-bottom: 1px solid transparent;
     transition: border-color 0.3s;
 }
 
@@ -74,7 +74,7 @@
     gap: 1rem;
 }
 
-/* Badge Faits Pillule */
+/* Badge 'Faits' Pillule */
 .level-facts-badge {
     background: #f0ebff;
     color: #5a4ad1;
@@ -121,14 +121,13 @@
 
 /* Rotation fluide */
 .level-card.collapsed .toggle-level-details i {
-    transform: rotate(-90deg); /* -90deg est souvent plus joli pour "fermé" */
+    transform: rotate(-90deg);
 }
 
-/* --- CORRECTION BUG SCROLL --- */
 .level-body {
-    overflow: hidden; /* CRUCIAL : Coupe le contenu qui dépasse pendant l'animation */
+    overflow: hidden;
     transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
-    padding: 0 1.2rem; /* Le padding horizontal est géré ici */
+    padding: 0 1.2rem;
 }
 
 /* Gestion du padding vertical pour éviter le saut à la fin */
@@ -182,7 +181,7 @@
     align-items: center;
     gap: 0.5rem;
 
-    /* CRUCIAL : Empêche l'élément de rétrécir */
+    /* Empêche l'élément de rétrécir */
     flex: 0 0 auto;
 
     /* Largeur fixe pour garder l'alignement */
@@ -195,7 +194,7 @@
     border-radius: 12px;
     border: 1px solid #dcd7ff;
     width: 100%;
-    height: 105px; /* Hauteur fixe pour uniformité */
+    height: 105px;
     padding: 0.6rem 0.4rem;
     text-align: center;
     cursor: pointer;
@@ -495,22 +494,53 @@
 ============================================================ */
 
 .level-footer {
-    margin-top: 2rem;           /* Espace avec le contenu du dessus */
-    padding-top: 1.2rem;        /* Espace interne haut */
-    border-top: 1px dashed #e5ddff; /* Ligne de séparation discrète */
+    margin-top: 2rem;
+    padding-top: 1.2rem;
+    padding-bottom: 0.5rem;
+
+    /* Ligne de séparation */
+    border-top: 1px solid #f0ebff;
+
+    /* Alignement */
     display: flex;
-    justify-content: flex-end;  /* Aligne à droite */
+    justify-content: flex-end;
+    align-items: center;
 }
 
+/* --- LE BOUTON SUPPRIMER --- */
 .delete-level-btn {
-    border-radius: 8px !important;
-    padding: 0.4rem 1rem;
+    background: transparent;
+    border: 1px solid #fecaca;
+    color: #ef4444;
+
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
     font-size: 0.85rem;
-    transition: all 0.2s;
+    font-weight: 600;
+
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
 
+/* Icône poubelle */
+.delete-level-btn i {
+    font-size: 1rem;
+}
+
+/* --- HOVER STATE --- */
 .delete-level-btn:hover {
-    background-color: #fee2e2;
+    background-color: #fef2f2;
     border-color: #ef4444;
     color: #b91c1c;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(239, 68, 68, 0.15);
+}
+
+.delete-level-btn:active {
+    transform: translateY(0);
+    box-shadow: none;
 }
