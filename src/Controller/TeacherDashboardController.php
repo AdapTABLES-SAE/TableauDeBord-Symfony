@@ -11,9 +11,7 @@ use App\Entity\Niveau;
 use App\Entity\Objectif;
 use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
-use App\Service\TrainingSyncService;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,8 +43,6 @@ class TeacherDashboardController extends AbstractController
             "dashboard_css" => [
                 $assets->getUrl('css/dashboard/_class_partial.css'),
                 $assets->getUrl('css/dashboard/_training_partial.css'),
-//                $assets->getUrl('css/carousel.css'),
-//                $assets->getUrl('css/training.css'),
             ],
             "dashboard_js" => [
                 $assets->getUrl('js/partials/_class/classDetails.js'),
@@ -59,6 +55,7 @@ class TeacherDashboardController extends AbstractController
             'target' => $target
         ]);
     }
+
     #[Route('/dashboard/classroom/add-classroom', name: 'add_classroom', methods: ['POST'])]
     public function addClassroom(
         Request $request,
@@ -67,7 +64,9 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em
     ): JsonResponse
     {
-        $count = 0;
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
 
         $teacherID = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherID);
@@ -102,6 +101,10 @@ class TeacherDashboardController extends AbstractController
         ApiClient $api,
         EntityManagerInterface $em
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
         $class = $em->getRepository(Classe::class)->find($id);
@@ -121,6 +124,10 @@ class TeacherDashboardController extends AbstractController
         SessionInterface $session,
         EntityManagerInterface $em
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
         $classes = $teacher->getClasses();
@@ -138,6 +145,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $class = $em->getRepository(Classe::class)->find($id);
 
         // permission check
@@ -166,8 +177,13 @@ class TeacherDashboardController extends AbstractController
         Request $request,
         ApiClient $apiClient,
         EntityManagerInterface $em,
+        SessionInterface $session
     ): JsonResponse
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $nom     = $request->request->get('lname');
         $prenom  = $request->request->get('fname');
         $studentId = $request->request->get('studentId');
@@ -198,9 +214,18 @@ class TeacherDashboardController extends AbstractController
 
     #[Route('/dashboard/class/{id}/update-infos', name: 'class_update', methods: ['POST'])]
     public function updateInfos(
-        int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient,
-        TrainingAssignmentService $trainingAssignmentService): JsonResponse
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        ApiClient $apiClient,
+        TrainingAssignmentService $trainingAssignmentService,
+        SessionInterface $session
+    ): JsonResponse
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $classData    = $request->request->all('class');
         $studentsData = $request->request->all('students');
 
@@ -251,6 +276,10 @@ class TeacherDashboardController extends AbstractController
         SessionInterface $session,
         EntityManagerInterface $em
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
 
@@ -267,6 +296,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $training = $em->getRepository(Entrainement::class)->find($id);
 
         if (!$training) {
@@ -285,13 +318,6 @@ class TeacherDashboardController extends AbstractController
             'training' => $training,
             'objectifs' => $objectifs
         ]);
-
-//        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
-//            'training'      => $training,
-//            'objectives'    => $objectives,
-//            'students'      => $students,
-//            'trainingPaths' => $trainingPaths,
-//        ]);
     }
 
     #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
@@ -300,10 +326,13 @@ class TeacherDashboardController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         TrainingAssignmentService $trainingAssignmentService,
-        ApiClient $apiClient,
         SessionInterface $session
     ): JsonResponse {
-        // 1. Vérifications de sécurité : L'entrainement existe et appartient au prof
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
+        // 1. Sécurité et Récupération
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) return new JsonResponse(['success' => false, 'message' => 'Entraînement introuvable'], 404);
 
@@ -313,90 +342,119 @@ class TeacherDashboardController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+        $needsSync = false; // Témoin de modification
 
         try {
-            // 2. Mise à jour du nom de l'entraînement
-            if (!empty($data['name'])) {
-                $training->setName($data['name']);
+            // =========================================================
+            // 2. MISE À JOUR DU NOM DE L'ENTRAÎNEMENT
+            // =========================================================
+            // On vérifie si 'name' est présent et différent de l'actuel
+            if (isset($data['name']) && trim($data['name']) !== '') {
+                $newName = trim($data['name']);
+                if ($training->getName() !== $newName) {
+                    $training->setName($newName);
+                    $needsSync = true;
+                }
             }
 
-            // 3. Gestion des suppressions d'objectifs
-            $deletedIds = $data['deletedObjectiveIds'] ?? [];
-            $hasDeleted = false;
+            // =========================================================
+            // 3. MISE À JOUR DES NOMS DES OBJECTIFS
+            // =========================================================
+            // Le JS doit envoyer un tableau : objectives: [{id: 12, name: "Nouveau titre"}, ...]
+            if (!empty($data['objectives']) && is_array($data['objectives'])) {
+                foreach ($data['objectives'] as $objItem) {
+                    // On vérifie qu'on a bien un ID et un Name
+                    if (!empty($objItem['id']) && isset($objItem['name'])) {
+                        $obj = $em->getRepository(Objectif::class)->find($objItem['id']);
 
-            if (!empty($deletedIds)) {
-                foreach ($deletedIds as $objId) {
-                    $obj = $em->getRepository(Objectif::class)->find($objId);
+                        // On vérifie que cet objectif appartient bien à l'entraînement en cours
+                        if ($obj && $obj->getEntrainement()->getId() === $id) {
+                            $newObjName = trim($objItem['name']);
 
-                    // On vérifie que l'objectif appartient bien à cet entrainement avant de supprimer
-                    if ($obj && $obj->getEntrainement()->getId() === $id) {
-                        $training->removeObjectif($obj); // Retrait de la collection
-                        $em->remove($obj);               // Suppression BDD
-                        $hasDeleted = true;
+                            // Si le nom a changé, on update
+                            if ($obj->getName() !== $newObjName) {
+                                $obj->setName($newObjName);
+                                $needsSync = true;
+                            }
+                        }
                     }
                 }
-                $em->flush();
             }
 
-            // 4. Si l'entraînement est vide après suppression, on recrée la structure par défaut
-            // On rafraîchit l'entité pour être sûr de l'état réel en base
-            $em->refresh($training);
+            // =========================================================
+            // 4. SUPPRESSION DES OBJECTIFS
+            // =========================================================
+            $deletedIds = $data['deletedObjectiveIds'] ?? [];
+            if (!empty($deletedIds)) {
+                foreach ($deletedIds as $delId) {
+                    $objToDelete = $em->getRepository(Objectif::class)->find($delId);
+                    if ($objToDelete && $objToDelete->getEntrainement()->getId() === $id) {
+                        $training->removeObjectif($objToDelete);
+                        $em->remove($objToDelete);
+                        $needsSync = true;
+                    }
+                }
+            }
+
+            // Sauvegarde intermédiaire pour valider les suppressions/modifs avant recréation
+            $em->flush();
+
+            // =========================================================
+            // 5. GESTION DU CAS "ENTRAÎNEMENT VIDE"
+            // =========================================================
+            $em->refresh($training); // On recharge pour avoir le compte exact
 
             if ($training->getObjectifs()->count() === 0) {
-                // ----------------------------------------------------------------
-                // RECRÉATION MANUELLE DE LA STRUCTURE PAR DÉFAUT
-                // ----------------------------------------------------------------
+                // Création Objectif par défaut
+                $defObj = new Objectif();
+                $defObj->setName("Objectif 1");
+                $defObj->setObjID(uniqid('obj_'));
+                $defObj->setEntrainement($training);
 
-                // Création de l'Objectif
-                $newObj = new Objectif();
-                $newObj->setEntrainement($training);
-                $newObj->setObjID(uniqid('obj_'));
-                $newObj->setName("Objectif 1");
+                // Création Niveau par défaut
+                $defLvl = new Niveau();
+                $defLvl->setName("Niveau 1");
+                $defLvl->setLevelID('L1_' . uniqid());
+                $defLvl->setTables(["1"]);
+                $defLvl->setResultLocation("RIGHT");
+                $defLvl->setLeftOperand("TABLE_OPERAND");
+                $defLvl->setIntervalMin(1);
+                $defLvl->setIntervalMax(10);
+                $defLvl->setSuccessCompletionCriteria(80);
+                $defLvl->setEncounterCompletionCriteria(100);
 
-                // Création du Niveau
-                $newLevel = new Niveau();
-                $newLevel->setObjectif($newObj);
-                $newLevel->setLevelID('L1_' . uniqid());
-                $newLevel->setName("Niveau 1");
+                $defLvl->setObjectif($defObj);
+                $defObj->addNiveau($defLvl);
 
-                // Paramètres spécifiques demandés (Tables 1, Intervalle 1-10...)
-                $newLevel->setTables(["1"]);
-                $newLevel->setResultLocation("RIGHT");
-                $newLevel->setLeftOperand("TABLE_OPERAND");
-                $newLevel->setIntervalMin(1);
-                $newLevel->setIntervalMax(10);
+                $em->persist($defObj);
+                $em->flush(); // Sauvegarde de la structure par défaut
 
-                // Paramètres de réussite
-                $newLevel->setSuccessCompletionCriteria(80);
-                $newLevel->setEncounterCompletionCriteria(100);
-
-                // Liaison finale
-                $newObj->addNiveau($newLevel);
-                $em->persist($newObj);
-                $em->flush();
-
-                $em->refresh($training);
+                $needsSync = true;
+                $em->refresh($training); // Rechargement final
             }
 
-            // 5. Envoi à l'API (Synchronisation avec les élèves)
-            // On le fait si on a supprimé des choses ou changé le nom
-            if ($hasDeleted || !empty($data['name'])) {
+            // =========================================================
+            // 6. SYNCHRONISATION API (Seulement si nécessaire)
+            // =========================================================
+            if ($needsSync) {
+                // On récupère les élèves impactés
                 $students = $em->getRepository(Eleve::class)->findBy(['entrainement' => $training]);
+
                 foreach ($students as $student) {
+                    // Ton service gère déjà le flush + refresh + envoi API
                     $trainingAssignmentService->assignTraining($student, $training);
                 }
             } else {
+                // Si rien n'a changé de significatif pour l'API, on s'assure juste que la BDD est à jour
                 $em->flush();
             }
 
             return new JsonResponse(['success' => true]);
 
         } catch (\Throwable $e) {
-            // En cas d'erreur, on renvoie le message précis pour le débogage
             return new JsonResponse([
                 'success' => false,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine()
+                'message' => 'Erreur serveur : ' . $e->getMessage()
             ], 500);
         }
     }
@@ -408,6 +466,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) {
             return new JsonResponse(['success' => false, 'fatal' => true]);
@@ -473,6 +535,10 @@ class TeacherDashboardController extends AbstractController
         SessionInterface $session,
         TrainingAssignmentService $trainingAssignmentService
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) {
             return new JsonResponse(['success' => false, 'fatal' => true]);
@@ -503,6 +569,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         if (!$teacherId) {
             return new JsonResponse(['success' => false, 'fatal' => true]);

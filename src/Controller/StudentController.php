@@ -11,6 +11,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Annotation\Route;
 
 class StudentController extends AbstractController
@@ -22,8 +23,12 @@ class StudentController extends AbstractController
     ) {}
 
     #[Route('/enseignant/classes/student/{learnerId}', name: 'teacher_student_view')]
-    public function view(string $learnerId, Request $request): Response
+    public function view(string $learnerId, Request $request, SessionInterface $session): Response
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $eleve = $this->em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
         if (!$eleve) {
             throw $this->createNotFoundException("Élève introuvable");
@@ -152,8 +157,12 @@ class StudentController extends AbstractController
     }
 
     #[Route('/enseignant/classes/student/{learnerId}/entrainement', name: 'ajax_update_training', methods: ['POST'])]
-    public function updateTrainingAjax(string $learnerId, Request $request): JsonResponse
+    public function updateTrainingAjax(string $learnerId, Request $request, SessionInterface $session): Response
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $data = json_decode($request->getContent(), true) ?? [];
         $entrainementId = $data['entrainementId'] ?? null;
 
@@ -225,8 +234,12 @@ class StudentController extends AbstractController
     public function updateEquipment(
         string $learnerId,
         Request $request,
-        ApiClient $apiClient
-    ): JsonResponse {
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
 
         $data = json_decode($request->getContent(), true);
 
@@ -250,8 +263,12 @@ class StudentController extends AbstractController
     public function deleteStudent(
         int $id,
         EntityManagerInterface $em,
-        ApiClient $apiClient
-    ): JsonResponse {
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
 
         $student = $em->getRepository(Eleve::class)->find($id);
 
@@ -277,8 +294,13 @@ class StudentController extends AbstractController
         string $learnerId,
         int $trainingId,
         EntityManagerInterface $em,
-        TrainingAssignmentService $trainingAssignmentService
-    ): JsonResponse {
+        TrainingAssignmentService $trainingAssignmentService,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         // =========================================================
         // 1. RÉCUPÉRATION
         // =========================================================

@@ -2,10 +2,12 @@
 
 namespace App\Controller;
 
+use App\Entity\Enseignant; // Pense à importer l'entité
 use App\Service\ApiClient;
 use App\Service\TeacherSyncService;
 use App\Service\ClassroomSyncService;
 use App\Service\TrainingSyncService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,7 +20,8 @@ class TeacherAuthController extends AbstractController
         private ApiClient $apiClient,
         private TeacherSyncService $teacherSync,
         private ClassroomSyncService $classroomSync,
-        private TrainingSyncService $trainingSync
+        private TrainingSyncService $trainingSync,
+        private EntityManagerInterface $em // Injection de l'Entity Manager
     ) {}
 
     #[Route('/', name: 'teacher_login', methods: ['GET', 'POST'])]
@@ -36,45 +39,66 @@ class TeacherAuthController extends AbstractController
                 //create admin teacher if he does not exist by default
                 $this->teacherSync->createAdminTeacher($this->apiClient);
 
-                // Crée entrainement par défaut si manquant
+                // 1. Création entrainement par défaut si nécessaire
                 $created = $this->trainingSync->isDefaultTrainingCreated();
-//                dd($created);
-                if(!$created){
+                if (!$created) {
                     $this->trainingSync->buildDefaultTrainingDoctrine();
                 }
 
-                // --- API CALL ---
+                // 2. Récupération API
                 $enseignantData = $this->apiClient->fetchTeacherData($identifier);
 
                 if ($enseignantData) {
 
                     // --- CAS ADMIN ---
                     if (($enseignantData['idProf'] ?? '') === 'ADMIN') {
-                        // On enregistre la session admin
                         $session->set('is_admin', true);
-
                         return $this->redirectToRoute('admin_teacher_list');
                     }
 
-                    // --- SYNC NORMAL ---
+                    // --- ÉTAPE 1 : Importation de la structure (Prof, Classes, Elèves) ---
                     $enseignant = $this->teacherSync->syncTeacher($enseignantData);
                     $this->classroomSync->syncClassesAndStudents($enseignant, $enseignantData);
 
+                    // =========================================================
+                    // LA CORRECTION EST ICI : RESET TOTAL DE LA MÉMOIRE
+                    // =========================================================
 
+                    // A. On sauvegarde tout ce qu'on vient de créer en BDD
+                    $this->em->flush();
 
-                    // Synchronisation des entrainements des élèves
-                    foreach ($enseignant->getClasses() as $classe) {
+                    // B. On garde l'ID de l'enseignant au chaud
+                    $profId = $enseignant->getId();
+
+                    // C. On vide la mémoire de Symfony/Doctrine.
+                    // C'est comme si le script s'arrêtait et redémarrait.
+                    $this->em->clear();
+
+                    // D. On recharge l'enseignant "tout neuf" depuis la base.
+                    // Doctrine va maintenant voir toutes les classes et tous les élèves
+                    // car il est obligé de relire la BDD.
+                    $enseignantFraichementCharge = $this->em->getRepository(Enseignant::class)->find($profId);
+
+                    // --- ÉTAPE 2 : Importation des entraînements ---
+                    // Maintenant, getClasses() n'est plus vide !
+                    foreach ($enseignantFraichementCharge->getClasses() as $classe) {
                         foreach ($classe->getEleves() as $eleve) {
                             $learnerId = $eleve->getLearnerId();
+
+                            // Appel API pour voir si l'élève a un parcours
                             $path = $this->apiClient->fetchLearningPathByLearner($learnerId);
+
                             if ($path) {
                                 $this->trainingSync->syncTraining($eleve, $path);
                             }
                         }
                     }
 
-                    // Sauvegarde session
-                    $session->set('teacher_id', $enseignant->getId());
+                    // Sauvegarde finale des entraînements récupérés
+                    $this->em->flush();
+
+                    // Sauvegarde session (avec le bon ID)
+                    $session->set('teacher_id', $enseignantFraichementCharge->getId());
 
                     return $this->redirectToRoute('class_dashboard');
                 }

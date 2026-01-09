@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\Session\SessionInterface;
 use Symfony\Component\Routing\Annotation\Route;
 use App\Service\ApiClient;
 
@@ -31,8 +32,13 @@ class ObjectiveController extends AbstractController
     public function edit(
         Entrainement $entrainement,
         Request $request,
+        SessionInterface $session,
         ?Objectif $objectif = null
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $isNew = false;
 
         if (!$objectif) {
@@ -87,9 +93,16 @@ class ObjectiveController extends AbstractController
      * Ajout d’un niveau vide (créé immédiatement en base).
      */
     #[Route('/objectif/{id}/niveau/add', name: 'add_level', methods: ['POST'])]
-    #[Route('/objectif/{id}/niveau/add', name: 'add_level', methods: ['POST'])]
-    public function addLevel(Objectif $objectif, Request $request, ApiClient $apiClient): JsonResponse
-    {
+    public function addLevel(
+        Objectif $objectif,
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         // Récupération des données
         $data = json_decode($request->getContent(), true);
         $selectedTables = $data['tables'] ?? ['1'];
@@ -104,7 +117,6 @@ class ObjectiveController extends AbstractController
 
         $niveau->setLevelID('L' . $index . '_' . $objectif->getObjID());
         $niveau->setName('Niveau ' . $index);
-        // $niveau->setObjectif($objectif); // Fait automatiquement par addNiveau()
 
         $niveau->setTables($selectedTables);
 
@@ -141,8 +153,16 @@ class ObjectiveController extends AbstractController
      * Sauvegarde des paramètres d’un niveau.
      */
     #[Route('/niveau/{id}/save', name: 'save_level', methods: ['POST'])]
-    public function saveLevel(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
-    {
+    public function saveLevel(
+        Niveau $niveau,
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $data = json_decode($request->getContent(), true) ?? [];
 
         $niveau->setName(trim((string) ($data['name'] ?? $niveau->getName())));
@@ -152,7 +172,7 @@ class ObjectiveController extends AbstractController
         $niveau->setResultLocation($data['equalPosition'] ?? 'RIGHT');
         $niveau->setLeftOperand($data['factorPosition'] ?? 'OPERAND_TABLE');
 
-        // Critères de complétion (si envoyés par le slider individuel)
+        // Critères de complétion
         if (isset($data['encounterCompletionCriteria'])) {
             $niveau->setEncounterCompletionCriteria((float)$data['encounterCompletionCriteria']);
         }
@@ -163,7 +183,6 @@ class ObjectiveController extends AbstractController
         $this->em->flush();
 
         // SYNCHRONISATION API
-        // On remonte : Niveau -> Objectif -> Entrainement
         $entrainement = $niveau->getObjectif()->getEntrainement();
         $this->syncWithApi($entrainement, $apiClient);
 
@@ -175,9 +194,14 @@ class ObjectiveController extends AbstractController
     public function saveAll(
         Objectif $objectif,
         Request $request,
-        ApiClient $apiClient
-    ): JsonResponse
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $payload = json_decode($request->getContent(), true);
 
         if (!$payload) {
@@ -205,7 +229,6 @@ class ObjectiveController extends AbstractController
                 }
 
                 $niveau->setName($lvlData['name']);
-                // Gestion fallback pour les tables (si vide, tableau vide)
                 $niveau->setTables($lvlData['tables'] ?? []);
                 $niveau->setIntervalMin((int)$lvlData['intervalMin']);
                 $niveau->setIntervalMax((int)$lvlData['intervalMax']);
@@ -261,23 +284,12 @@ class ObjectiveController extends AbstractController
         $this->em->flush();
 
         // SYNCHRONISATION API
-
-        // On récupère l'entrainement parent
         $entrainement = $objectif->getEntrainement();
 
         if ($entrainement) {
-            // On récupère tous les élèves liés à cet entraînement
             $eleves = $entrainement->getEleves();
-            $apiSuccessCount = 0;
-
             foreach ($eleves as $eleve) {
-                // On envoie le JSON complet à l'API pour chaque élève
-                // ApiClient se charge d'utiliser TrainingSerializer pour formater le JSON
-                $success = $apiClient->assignTrainingToLearner($eleve, $entrainement);
-
-                if ($success) {
-                    $apiSuccessCount++;
-                }
+                $apiClient->assignTrainingToLearner($eleve, $entrainement);
             }
         }
 
@@ -289,15 +301,18 @@ class ObjectiveController extends AbstractController
      * Suppression d’un niveau.
      */
     #[Route('/niveau/{id}/delete', name: 'delete_level', methods: ['DELETE'])]
-    public function deleteLevel(Niveau $niveau, ApiClient $apiClient): JsonResponse
-    {
-        // IMPORTANT : On récupère l'entrainement AVANT de supprimer le niveau
-        // Sinon la relation risque d'être cassée après le remove
+    public function deleteLevel(
+        Niveau $niveau,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $objectif = $niveau->getObjectif();
         $entrainement = $objectif->getEntrainement();
 
-        // On retire proprement le niveau de la collection de l'objectif (pour la mémoire PHP)
-        // Cela aide le Serializer à ne pas inclure le niveau supprimé lors de l'envoi API
         $objectif->removeNiveau($niveau);
 
         $this->em->remove($niveau);
@@ -310,12 +325,19 @@ class ObjectiveController extends AbstractController
     }
 
     /**
-     * Sauvegarde / création d’une tâche (C1, C2, REC, ID, MEMB).
-     * Une seule tâche par type et par niveau.
+     * Sauvegarde / création d’une tâche.
      */
     #[Route('/niveau/{id}/task/save', name: 'save_task', methods: ['POST'])]
-    public function saveTask(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
-    {
+    public function saveTask(
+        Niveau $niveau,
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $data = json_decode($request->getContent(), true) ?? [];
         $taskType = $data['taskType'] ?? null;
 
@@ -350,7 +372,6 @@ class ObjectiveController extends AbstractController
 
         switch ($taskType) {
             case 'C1':
-                // éléments recherchés
                 $targets = $data['targets'] ?? [];
                 $task->setTargets($targets);
                 $task->setAnswerModality($data['answerModality'] ?? 'INPUT');
@@ -380,12 +401,12 @@ class ObjectiveController extends AbstractController
                 $nbFacts = max(1, min(4, $nbFacts));
                 $task->setNbFacts($nbFacts);
 
-                $sourceVariation = $data['sourceVariation'] ?? 'RESULT'; // RESULT | OPERAND
+                $sourceVariation = $data['sourceVariation'] ?? 'RESULT';
                 $task->setSourceVariation($sourceVariation);
                 break;
 
             case 'MEMB':
-                $target = $data['target'] ?? 'CORRECT'; // CORRECT | INCORRECT
+                $target = $data['target'] ?? 'CORRECT';
                 $task->setTarget($target);
 
                 $nbIncorrect = (int) ($data['nbIncorrectChoices'] ?? 0);
@@ -396,29 +417,20 @@ class ObjectiveController extends AbstractController
                 break;
         }
 
-        // ON INSERT ICI LA LOGIQUE D'ÉQUILIBRAGE
+        // LOGIQUE D'ÉQUILIBRAGE
         if ($isNew) {
-            // 1. On s'assure que la nouvelle tâche est bien liée au niveau pour le calcul
             if (!$niveau->getTaches()->contains($task)) {
                 $niveau->addTache($task);
             }
-
-            // 2. On persiste d'abord pour que Doctrine connaisse la nouvelle tâche
             $this->em->persist($task);
-
-            // 3. MAGIE PHP : On recalcule tout le monde (100% ou 50/50 ou 33/33/33)
             $this->rebalanceTasks($niveau);
         } else {
-            // Si ce n'est pas nouveau, on sauvegarde juste les modifs de cette tâche
-            // (Sauf si vous voulez forcer le rééquilibrage à chaque modif, retirez le "else")
             $this->em->persist($task);
         }
 
-        // Sauvegarde en base de données locale
         $this->em->flush();
 
         // SYNCHRONISATION API
-        // On remonte la chaîne : Tache -> Niveau -> Objectif -> Entrainement
         $entrainement = $niveau->getObjectif()->getEntrainement();
         $this->syncWithApi($entrainement, $apiClient);
 
@@ -442,11 +454,19 @@ class ObjectiveController extends AbstractController
     }
 
     /**
-     * Suppression d’une tâche avec rééquilibrage automatique des pourcentages.
+     * Suppression d’une tâche.
      */
     #[Route('/niveau/{id}/task/delete', name: 'delete_task', methods: ['DELETE'])]
-    public function deleteTask(Niveau $niveau, Request $request, ApiClient $apiClient): JsonResponse
-    {
+    public function deleteTask(
+        Niveau $niveau,
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $data = json_decode($request->getContent(), true) ?? [];
         $taskType = $data['taskType'] ?? null;
 
@@ -458,22 +478,11 @@ class ObjectiveController extends AbstractController
         ]);
 
         if ($task) {
-            // 1. On retire la tâche de la collection du niveau (Mémoire)
-            // C'est vital pour que rebalanceTasks ne compte pas la tâche qu'on supprime !
             $niveau->removeTache($task);
-
-            // 2. On marque la tâche pour suppression (Base de données)
             $this->em->remove($task);
-
-            // 3. MAGIE : On recalcule les % des survivants
-            // Ex: S'il restait une tâche à 50%, elle passe à 100%
             $this->rebalanceTasks($niveau);
-
-            // 4. On envoie tout à la base de données (DELETE + UPDATE des survivants)
             $this->em->flush();
 
-            // 5. Synchronisation API
-            // L'API recevra la liste propre avec les bons pourcentages
             $entrainement = $niveau->getObjectif()->getEntrainement();
             $this->syncWithApi($entrainement, $apiClient);
         }
@@ -483,17 +492,22 @@ class ObjectiveController extends AbstractController
 
 
     /**
-     * API pour récupérer les objectifs et niveaux d'un entraînement (pour la modale prérequis).
-     * On exclut l'objectif actuel pour éviter les boucles infinies.
+     * API pour récupérer les objectifs et niveaux.
      */
     #[Route('/{entrainement}/api/data', name: 'api_data', methods: ['GET'])]
-    public function getTrainingData(Entrainement $entrainement, Request $request): JsonResponse
-    {
+    public function getTrainingData(
+        Entrainement $entrainement,
+        Request $request,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $currentObjId = (int) $request->query->get('exclude_id');
         $data = [];
 
         foreach ($entrainement->getObjectifs() as $obj) {
-            // On ne propose pas l'objectif qu'on est en train d'éditer comme prérequis de lui-même
             if ($obj->getId() === $currentObjId) {
                 continue;
             }
@@ -517,11 +531,19 @@ class ObjectiveController extends AbstractController
     }
 
     /**
-     * Ajout d'un prérequis en base de données.
+     * Ajout d'un prérequis.
      */
     #[Route('/objectif/{id}/prerequis/add', name: 'add_prerequis', methods: ['POST'])]
-    public function addPrerequis(Objectif $objectif, Request $request, ApiClient $apiClient): JsonResponse
-    {
+    public function addPrerequis(
+        Objectif $objectif,
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $data = json_decode($request->getContent(), true);
 
         // Validation
@@ -564,7 +586,6 @@ class ObjectiveController extends AbstractController
         $prerequis->setEncountersPercent($views);
         $prerequis->setSuccessPercent($success);
 
-        // On met à jour manuellement la collection côté PHP pour que le Serializer le voie tout de suite
         $objectif->addPrerequis($prerequis);
 
         $this->em->persist($prerequis);
@@ -596,12 +617,18 @@ class ObjectiveController extends AbstractController
      * Suppression d'un prérequis.
      */
     #[Route('/prerequis/{id}/delete', name: 'prerequis_delete', methods: ['DELETE'])]
-    public function deletePrerequis(Prerequis $prerequis, ApiClient $apiClient): JsonResponse
-    {
+    public function deletePrerequis(
+        Prerequis $prerequis,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $objectif = $prerequis->getObjectif();
         $entrainement = $objectif->getEntrainement();
 
-        // Nettoyage collection
         $objectif->removePrerequis($prerequis);
 
         $this->em->remove($prerequis);
@@ -617,8 +644,16 @@ class ObjectiveController extends AbstractController
      * Modification d'un prérequis existant.
      */
     #[Route('/prerequis/{id}/edit', name: 'edit_prerequis', methods: ['POST'])]
-    public function editPrerequis(Prerequis $prerequis, Request $request, ApiClient $apiClient): JsonResponse
-    {
+    public function editPrerequis(
+        Prerequis $prerequis,
+        Request $request,
+        ApiClient $apiClient,
+        SessionInterface $session
+    ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $data = json_decode($request->getContent(), true);
 
         // Validation basique (Sliders)
@@ -640,7 +675,7 @@ class ObjectiveController extends AbstractController
             return new JsonResponse(['success' => false, 'message' => 'Cible introuvable'], 404);
         }
 
-        // Validation Unicité (On exclut le prérequis actuel de la vérification)
+        // Validation Unicité
         $targetObjStringID = $targetObj->getObjID();
         $currentObjectif = $prerequis->getObjectif();
 
@@ -662,7 +697,6 @@ class ObjectiveController extends AbstractController
 
         $this->em->flush();
 
-        // Préparation des variables pour la vue (Gestion des noms vides)
         $targetObjName = !empty($targetObj->getName()) ? $targetObj->getName() : $targetObj->getObjID();
         $targetLvlName = !empty($targetLvl->getName()) ? $targetLvl->getName() : $targetLvl->getLevelID();
 
@@ -689,53 +723,42 @@ class ObjectiveController extends AbstractController
     }
 
     /* =========================================================================
-       METHODE PRIVÉE POUR CENTRALISER LA SYNCHRO API (SÉCURISÉE)
+       METHODE PRIVÉE POUR CENTRALISER LA SYNCHRO API
        ========================================================================= */
     private function syncWithApi(?Entrainement $entrainement, ApiClient $apiClient): void
     {
         if (!$entrainement) return;
 
-        // On récupère tous les élèves liés à cet entrainement
         $eleves = $entrainement->getEleves();
 
         foreach ($eleves as $eleve) {
             try {
-                // On essaie d'envoyer à l'API
                 $apiClient->assignTrainingToLearner($eleve, $entrainement);
             } catch (\Throwable $e) {
-                // Si l'API est éteinte ou plante, on ne fait rien pour ne pas bloquer l'enseignant.
-                // Idéalement, on log l'erreur :
-                // error_log("Erreur Synchro API pour l'élève " . $eleve->getId() . " : " . $e->getMessage());
+                // Log l'erreur si besoin
             }
         }
     }
 
     /**
      * Recalcule les pourcentages pour que la somme fasse toujours 100%.
-     * À appeler après un ajout ou une suppression.
      */
     private function rebalanceTasks(Niveau $niveau): void
     {
-        // On récupère les tâches restantes dans la collection en mémoire
         $tasks = $niveau->getTaches();
         $count = count($tasks);
 
         if ($count === 0) return;
 
-        // Calcul de la base (ex: 100 / 3 = 33)
         $base = (int) floor(100 / $count);
         $remainder = 100 % $count;
 
         foreach ($tasks as $t) {
             $val = $base;
-            // On distribue le reste (ex: 34, 33, 33)
             if ($remainder > 0) {
                 $val++;
                 $remainder--;
             }
-
-            // On met à jour l'entité.
-            // Doctrine détectera ce changement automatiquement au prochain flush.
             $t->setRepartitionPercent($val);
         }
     }
