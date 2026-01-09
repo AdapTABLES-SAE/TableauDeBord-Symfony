@@ -513,12 +513,19 @@
 
                                         <button type="button"
                                                 class="btn btn-sm btn-light position-absolute top-0 end-0 m-2 shadow-sm clone-training-btn"
+
+                                            {# --- CONFIGURATION TOOLTIP --- #}
                                                 data-bs-toggle="tooltip"
-                                                title="Dupliquer et modifier pour cet élève"
+                                                data-bs-placement="top"
+                                                title="Cloner cet entraînement pour l'assigner spécifiquement à cet élève"
+                                            {# ----------------------------- #}
+
                                                 data-training-id="{{ e.id }}"
                                                 data-learner-id="{{ eleve.learnerId }}"
                                                 style="z-index: 10; border-radius: 50%; width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center;">
-                                            <i class="bi bi-pencil-square text-primary"></i>
+
+                                            {# J'ai mis une icône de copie qui correspond mieux à l'action "Cloner" #}
+                                            <i class="bi bi-files text-primary"></i>
                                         </button>
 
                                         <div class="card-body py-4">

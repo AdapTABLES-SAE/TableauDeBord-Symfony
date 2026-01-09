@@ -300,10 +300,9 @@ class TeacherDashboardController extends AbstractController
         Request $request,
         EntityManagerInterface $em,
         TrainingAssignmentService $trainingAssignmentService,
-        ApiClient $apiClient,
         SessionInterface $session
     ): JsonResponse {
-        // 1. Vérifications de sécurité : L'entrainement existe et appartient au prof
+        // 1. Sécurité et Récupération
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) return new JsonResponse(['success' => false, 'message' => 'Entraînement introuvable'], 404);
 
@@ -313,90 +312,119 @@ class TeacherDashboardController extends AbstractController
         }
 
         $data = json_decode($request->getContent(), true);
+        $needsSync = false; // Témoin de modification
 
         try {
-            // 2. Mise à jour du nom de l'entraînement
-            if (!empty($data['name'])) {
-                $training->setName($data['name']);
+            // =========================================================
+            // 2. MISE À JOUR DU NOM DE L'ENTRAÎNEMENT
+            // =========================================================
+            // On vérifie si 'name' est présent et différent de l'actuel
+            if (isset($data['name']) && trim($data['name']) !== '') {
+                $newName = trim($data['name']);
+                if ($training->getName() !== $newName) {
+                    $training->setName($newName);
+                    $needsSync = true;
+                }
             }
 
-            // 3. Gestion des suppressions d'objectifs
-            $deletedIds = $data['deletedObjectiveIds'] ?? [];
-            $hasDeleted = false;
+            // =========================================================
+            // 3. MISE À JOUR DES NOMS DES OBJECTIFS
+            // =========================================================
+            // Le JS doit envoyer un tableau : objectives: [{id: 12, name: "Nouveau titre"}, ...]
+            if (!empty($data['objectives']) && is_array($data['objectives'])) {
+                foreach ($data['objectives'] as $objItem) {
+                    // On vérifie qu'on a bien un ID et un Name
+                    if (!empty($objItem['id']) && isset($objItem['name'])) {
+                        $obj = $em->getRepository(Objectif::class)->find($objItem['id']);
 
-            if (!empty($deletedIds)) {
-                foreach ($deletedIds as $objId) {
-                    $obj = $em->getRepository(Objectif::class)->find($objId);
+                        // On vérifie que cet objectif appartient bien à l'entraînement en cours
+                        if ($obj && $obj->getEntrainement()->getId() === $id) {
+                            $newObjName = trim($objItem['name']);
 
-                    // On vérifie que l'objectif appartient bien à cet entrainement avant de supprimer
-                    if ($obj && $obj->getEntrainement()->getId() === $id) {
-                        $training->removeObjectif($obj); // Retrait de la collection
-                        $em->remove($obj);               // Suppression BDD
-                        $hasDeleted = true;
+                            // Si le nom a changé, on update
+                            if ($obj->getName() !== $newObjName) {
+                                $obj->setName($newObjName);
+                                $needsSync = true;
+                            }
+                        }
                     }
                 }
-                $em->flush();
             }
 
-            // 4. Si l'entraînement est vide après suppression, on recrée la structure par défaut
-            // On rafraîchit l'entité pour être sûr de l'état réel en base
-            $em->refresh($training);
+            // =========================================================
+            // 4. SUPPRESSION DES OBJECTIFS
+            // =========================================================
+            $deletedIds = $data['deletedObjectiveIds'] ?? [];
+            if (!empty($deletedIds)) {
+                foreach ($deletedIds as $delId) {
+                    $objToDelete = $em->getRepository(Objectif::class)->find($delId);
+                    if ($objToDelete && $objToDelete->getEntrainement()->getId() === $id) {
+                        $training->removeObjectif($objToDelete);
+                        $em->remove($objToDelete);
+                        $needsSync = true;
+                    }
+                }
+            }
+
+            // Sauvegarde intermédiaire pour valider les suppressions/modifs avant recréation
+            $em->flush();
+
+            // =========================================================
+            // 5. GESTION DU CAS "ENTRAÎNEMENT VIDE"
+            // =========================================================
+            $em->refresh($training); // On recharge pour avoir le compte exact
 
             if ($training->getObjectifs()->count() === 0) {
-                // ----------------------------------------------------------------
-                // RECRÉATION MANUELLE DE LA STRUCTURE PAR DÉFAUT
-                // ----------------------------------------------------------------
+                // Création Objectif par défaut
+                $defObj = new Objectif();
+                $defObj->setName("Objectif 1");
+                $defObj->setObjID(uniqid('obj_'));
+                $defObj->setEntrainement($training);
 
-                // Création de l'Objectif
-                $newObj = new Objectif();
-                $newObj->setEntrainement($training);
-                $newObj->setObjID(uniqid('obj_'));
-                $newObj->setName("Objectif 1");
+                // Création Niveau par défaut
+                $defLvl = new Niveau();
+                $defLvl->setName("Niveau 1");
+                $defLvl->setLevelID('L1_' . uniqid());
+                $defLvl->setTables(["1"]);
+                $defLvl->setResultLocation("RIGHT");
+                $defLvl->setLeftOperand("TABLE_OPERAND");
+                $defLvl->setIntervalMin(1);
+                $defLvl->setIntervalMax(10);
+                $defLvl->setSuccessCompletionCriteria(80);
+                $defLvl->setEncounterCompletionCriteria(100);
 
-                // Création du Niveau
-                $newLevel = new Niveau();
-                $newLevel->setObjectif($newObj);
-                $newLevel->setLevelID('L1_' . uniqid());
-                $newLevel->setName("Niveau 1");
+                $defLvl->setObjectif($defObj);
+                $defObj->addNiveau($defLvl);
 
-                // Paramètres spécifiques demandés (Tables 1, Intervalle 1-10...)
-                $newLevel->setTables(["1"]);
-                $newLevel->setResultLocation("RIGHT");
-                $newLevel->setLeftOperand("TABLE_OPERAND");
-                $newLevel->setIntervalMin(1);
-                $newLevel->setIntervalMax(10);
+                $em->persist($defObj);
+                $em->flush(); // Sauvegarde de la structure par défaut
 
-                // Paramètres de réussite
-                $newLevel->setSuccessCompletionCriteria(80);
-                $newLevel->setEncounterCompletionCriteria(100);
-
-                // Liaison finale
-                $newObj->addNiveau($newLevel);
-                $em->persist($newObj);
-                $em->flush();
-
-                $em->refresh($training);
+                $needsSync = true;
+                $em->refresh($training); // Rechargement final
             }
 
-            // 5. Envoi à l'API (Synchronisation avec les élèves)
-            // On le fait si on a supprimé des choses ou changé le nom
-            if ($hasDeleted || !empty($data['name'])) {
+            // =========================================================
+            // 6. SYNCHRONISATION API (Seulement si nécessaire)
+            // =========================================================
+            if ($needsSync) {
+                // On récupère les élèves impactés
                 $students = $em->getRepository(Eleve::class)->findBy(['entrainement' => $training]);
+
                 foreach ($students as $student) {
+                    // Ton service gère déjà le flush + refresh + envoi API
                     $trainingAssignmentService->assignTraining($student, $training);
                 }
             } else {
+                // Si rien n'a changé de significatif pour l'API, on s'assure juste que la BDD est à jour
                 $em->flush();
             }
 
             return new JsonResponse(['success' => true]);
 
         } catch (\Throwable $e) {
-            // En cas d'erreur, on renvoie le message précis pour le débogage
             return new JsonResponse([
                 'success' => false,
-                'message' => $e->getMessage(),
-                'line' => $e->getLine()
+                'message' => 'Erreur serveur : ' . $e->getMessage()
             ], 500);
         }
     }
