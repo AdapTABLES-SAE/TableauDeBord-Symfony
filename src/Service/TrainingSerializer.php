@@ -126,7 +126,7 @@ class TrainingSerializer
         }
 
         return [
-            // ⚠️ clé EXACTE attendue par le Java : timeMaxSecond (et pas maxTime)
+            //  clé EXACTE attendue par le Java : timeMaxSecond (et pas maxTime)
             'timeMaxSecond'             => $timeMax,
             'taskType'                  => $t->getTaskType() ?? 'C1',
             'repartitionPercent'        => $repartition,
@@ -141,8 +141,8 @@ class TrainingSerializer
 
             'targets'        => $targets,
             'answerModality' => $t->getAnswerModality(),
-            'sourceVariation'=> $t->getSourceVariation(),
-            'target'         => $t->getTarget(),
+            'sourceVariation'=> $t->getSourceVariation() ?? "NONE",
+            'target'         => $t->getTarget() ?? "NONE",
         ];
     }
 }

@@ -176,6 +176,74 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    // GESTION CLONAGE (PROCESSUS EN 2 ÉTAPES)
+    document.querySelectorAll('.clone-training-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const icon = btn.querySelector('i');
+            const originalClass = icon.className;
+
+            // Feedback visuel
+            icon.className = 'spinner-border spinner-border-sm text-primary';
+            btn.classList.add('disabled');
+
+            const trainingId = btn.dataset.trainingId;
+            const learnerId = btn.dataset.learnerId;
+
+            try {
+                // --- ÉTAPE 1 : CLONAGE EN BASE DE DONNÉES ---
+                const cloneUrl = `/enseignant/classes/student/${learnerId}/training/${trainingId}/clone`;
+
+                const cloneResp = await fetch(cloneUrl, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                const cloneData = await cloneResp.json();
+
+                if (!cloneData.success) {
+                    throw new Error(cloneData.message || "Erreur lors du clonage BDD");
+                }
+
+                console.log("Clonage BDD réussi. ID =", cloneData.newTrainingId);
+
+                // --- ÉTAPE 2 : ASSIGNATION API (APPEL DE LA ROUTE QUI MARCHE) ---
+                // On utilise la route existante 'ajax_update_training'
+                const assignUrl = `/enseignant/classes/student/${learnerId}/entrainement`;
+
+                const assignResp = await fetch(assignUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        entrainementId: cloneData.newTrainingId
+                    })
+                });
+
+                const assignData = await assignResp.json();
+
+                if (!assignData.success) {
+                    throw new Error(assignData.message || "Erreur lors de l'assignation API");
+                }
+
+                // --- SUCCÈS TOTAL : REDIRECTION ---
+                // On redirige vers le dashboard avec l'entraînement ouvert
+                window.location.href = `/dashboard?target=trainings&open=${cloneData.newTrainingId}`;
+
+            } catch (err) {
+                console.error(err);
+                alert("Une erreur est survenue : " + err.message);
+                icon.className = originalClass;
+                btn.classList.remove('disabled');
+            }
+        });
+    });
+
+
     /* ======================================================
        CLICK SUR UN ÉQUIPEMENT
        ====================================================== */
@@ -287,58 +355,5 @@ document.addEventListener('DOMContentLoaded', () => {
             pill.textContent = "Pas acheté";
         }
     }
-
-});
-
-/* ============================
-   TOOLTIP VIDÉO — HOVER ITEM
-   ============================ */
-
-let tooltip = null;
-let tooltipVideo = null;
-
-function createTooltip() {
-    tooltip = document.createElement("div");
-    tooltip.id = "video-tooltip";
-
-    tooltipVideo = document.createElement("video");
-    tooltipVideo.autoplay = true;
-    tooltipVideo.muted = true;
-    tooltipVideo.loop = true;
-    tooltipVideo.playsInline = true;
-
-    tooltip.appendChild(tooltipVideo);
-    document.body.appendChild(tooltip);
-}
-
-createTooltip();
-
-document.querySelectorAll(".equipment-toggle").forEach(card => {
-
-    card.addEventListener("mouseenter", () => {
-        const itemId = card.dataset.id;
-        const videoPath = `/videos/equipment/${itemId.toLowerCase()}.mp4`;
-
-        // Définition de la vidéo
-        tooltipVideo.src = videoPath;
-
-        // Affiche le tooltip
-        tooltip.style.display = "block";
-    });
-
-    card.addEventListener("mousemove", (e) => {
-        // Suit la souris tout en rajoutant un décalage esthétique
-        tooltip.style.left = (e.clientX + 20) + "px";
-        tooltip.style.top = (e.clientY + 20) + "px";
-    });
-
-    card.addEventListener("mouseleave", () => {
-        // Cache le tooltip
-        tooltip.style.display = "none";
-
-        // Stop la vidéo immédiatement
-        tooltipVideo.pause();
-        tooltipVideo.src = "";
-    });
 
 });

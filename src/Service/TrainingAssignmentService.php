@@ -24,8 +24,11 @@ class TrainingAssignmentService
     {
         // Mise à jour locale
         $eleve->setEntrainement($entrainement);
-        $eleve->setCurrentLearningPathID($entrainement->getLearningPathID());
+        if ($entrainement->getLearningPathID()) {
+            $eleve->setCurrentLearningPathID($entrainement->getLearningPathID());
+        }
         $this->em->flush();
+        $this->em->refresh($entrainement);
 
         // Envoi à l’API
         return $this->apiClient->assignTrainingToLearner($eleve, $entrainement);

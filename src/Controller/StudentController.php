@@ -217,7 +217,7 @@ class StudentController extends AbstractController
         return new JsonResponse([
             'success'          => true,
             'message'          => 'Nouvel entraînement attribué avec succès.',
-            'entrainementName' => $entrainement->getLearningPathID()
+            'entrainementName' => $entrainement->getName()
         ]);
     }
 
@@ -269,5 +269,147 @@ class StudentController extends AbstractController
         return new JsonResponse([
             'success' => $ok], ($ok ? 200:500)
         );
+    }
+
+
+    #[Route('/enseignant/classes/student/{learnerId}/training/{trainingId}/clone', name: 'clone_training_for_student', methods: ['POST'])]
+    public function cloneTrainingForStudent(
+        string $learnerId,
+        int $trainingId,
+        EntityManagerInterface $em,
+        TrainingAssignmentService $trainingAssignmentService
+    ): JsonResponse {
+        // =========================================================
+        // 1. RÉCUPÉRATION
+        // =========================================================
+        $eleve = $em->getRepository(Eleve::class)->findOneBy(['learnerId' => $learnerId]);
+        $originalTraining = $em->getRepository(Entrainement::class)->find($trainingId);
+
+        if (!$eleve || !$originalTraining) {
+            return new JsonResponse(['success' => false, 'message' => 'Ressource introuvable'], 404);
+        }
+
+        // =========================================================
+        // 2. CRÉATION ENTRAINEMENT (SANITIZATION NOM)
+        // =========================================================
+        $newTraining = new Entrainement();
+
+        // On construit une chaîne "Prenom_Nom"
+        $rawName = $eleve->getPrenomEleve() . '_' . $eleve->getNomEleve();
+
+        // 1. On remplace les espaces par des underscores
+        $nameNoSpace = str_replace(' ', '_', $rawName);
+
+        // 2. On supprime les accents (ex: é -> e) - nécessite que le serveur gère iconv, sinon le regex fera le reste
+        if (function_exists('iconv')) {
+            $nameNoSpace = iconv('UTF-8', 'ASCII//TRANSLIT', $nameNoSpace);
+        }
+
+        // 3. On ne garde que les Lettres, Chiffres et Underscores (Sécurité API Java)
+        $cleanName = preg_replace('/[^A-Za-z0-9_]/', '', $nameNoSpace);
+
+        // ID Technique : TRAINING_PRENOM_NOM_uid
+        $newTraining->setLearningPathID("TRAINING_" . strtoupper($cleanName) . "_" . uniqid());
+
+        // Nom : Entrainement_specifique_PRENOM_NOM
+        $newTraining->setName("Entrainement_specifique_" . $cleanName);
+
+        $newTraining->setEnseignant($eleve->getClasse()->getEnseignant());
+
+        // =========================================================
+        // 3. CLONAGE PROFOND
+        // =========================================================
+        foreach ($originalTraining->getObjectifs() as $originalObj) {
+            $newObj = new \App\Entity\Objectif();
+            $newObj->setName($originalObj->getName());
+            $newObj->setObjID(uniqid('obj_'));
+            $newObj->setEntrainement($newTraining); // Lien BDD
+
+            foreach ($originalObj->getNiveaux() as $originalLevel) {
+                $newLevel = new \App\Entity\Niveau();
+                $newLevel->setName($originalLevel->getName());
+                $newLevel->setLevelID('L' . uniqid());
+
+                // Copie Paramètres
+                $newLevel->setTables($originalLevel->getTables());
+                $newLevel->setResultLocation($originalLevel->getResultLocation());
+                $newLevel->setLeftOperand($originalLevel->getLeftOperand());
+                $newLevel->setIntervalMin($originalLevel->getIntervalMin());
+                $newLevel->setIntervalMax($originalLevel->getIntervalMax());
+                $newLevel->setSuccessCompletionCriteria($originalLevel->getSuccessCompletionCriteria());
+                $newLevel->setEncounterCompletionCriteria($originalLevel->getEncounterCompletionCriteria());
+
+                $newLevel->setObjectif($newObj); // Lien BDD
+
+                foreach ($originalLevel->getTaches() as $originalTask) {
+                    $newTask = new \App\Entity\Tache();
+                    $newTask->setTaskType($originalTask->getTaskType());
+                    $newTask->setRepartitionPercent($originalTask->getRepartitionPercent());
+
+                    $newTask->setTimeMaxSecond($originalTask->getTimeMaxSecond());
+                    $newTask->setNbFacts($originalTask->getNbFacts());
+                    $newTask->setSuccessiveSuccessesToReach($originalTask->getSuccessiveSuccessesToReach());
+                    $newTask->setAnswerModality($originalTask->getAnswerModality());
+                    $newTask->setNbIncorrectChoices($originalTask->getNbIncorrectChoices());
+                    $newTask->setNbCorrectChoices($originalTask->getNbCorrectChoices());
+
+                    // --- CORRECTIFS VITAUX ---
+                    $newTask->setSourceVariation($originalTask->getSourceVariation());
+                    $newTask->setTarget($originalTask->getTarget());
+                    // COPIE DU TABLEAU DES CIBLES (C'était l'oubli majeur)
+                    $newTask->setTargets($originalTask->getTargets());
+                    // -------------------------
+
+                    $newTask->setNiveau($newLevel); // Lien BDD
+                    $em->persist($newTask);
+                }
+                $em->persist($newLevel);
+            }
+            $em->persist($newObj);
+        }
+
+        $em->persist($newTraining);
+
+        // 4. SAUVEGARDE PHYSIQUE
+        $em->flush();
+
+        // ID pour rechargement
+        $newId = $newTraining->getId();
+        $studentLearnerId = $eleve->getLearnerId();
+
+        // =========================================================
+        // 5. RESET MÉMOIRE (La clé du succès)
+        // =========================================================
+        // On force Symfony à oublier l'objet "sale" en mémoire
+        $em->clear();
+
+        // =========================================================
+        // 6. RECHARGEMENT PROPRE
+        // =========================================================
+        $freshEleve = $em->getRepository(Eleve::class)->findOneBy(['learnerId' => $studentLearnerId]);
+        $freshTraining = $em->getRepository(Entrainement::class)->find($newId);
+
+        // =========================================================
+        // 7. APPEL SERVICE (Synchro API)
+        // =========================================================
+        $ok = $trainingAssignmentService->assignTraining($freshEleve, $freshTraining);
+
+        if (!$ok) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Clonage BDD réussi, mais l\'API a refusé le JSON.'
+            ], 500);
+        }
+
+        // Attribution locale sur les objets rechargés
+        $freshEleve->setEntrainement($freshTraining);
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'message' => 'Entraînement cloné et attribué.',
+            'newTrainingId' => $freshTraining->getId(),
+            'redirectUrl' => '/dashboard?target=trainings&open=' . $freshTraining->getId()
+        ]);
     }
 }

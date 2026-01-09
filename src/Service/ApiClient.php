@@ -390,4 +390,23 @@ class ApiClient
             ];
         }
     }
+
+    /**
+     * Envoie un Learning Path construit manuellement (tableau PHP) à l'API.
+     */
+    public function sendRawTraining(array $payload): bool
+    {
+        // On utilise la même URL que pour l'assignation
+        $url = ApiEndpoints::BASE_URL . ApiEndpoints::SAVE_LEARNINGPATH;
+
+        try {
+            $response = $this->client->request('POST', $url, [
+                'json' => $payload
+            ]);
+
+            return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }
