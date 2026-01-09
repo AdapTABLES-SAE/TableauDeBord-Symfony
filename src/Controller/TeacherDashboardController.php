@@ -11,9 +11,7 @@ use App\Entity\Niveau;
 use App\Entity\Objectif;
 use App\Service\ApiClient;
 use App\Service\TrainingAssignmentService;
-use App\Service\TrainingSyncService;
 use Doctrine\ORM\EntityManagerInterface;
-use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Asset\Packages;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -45,8 +43,6 @@ class TeacherDashboardController extends AbstractController
             "dashboard_css" => [
                 $assets->getUrl('css/dashboard/_class_partial.css'),
                 $assets->getUrl('css/dashboard/_training_partial.css'),
-//                $assets->getUrl('css/carousel.css'),
-//                $assets->getUrl('css/training.css'),
             ],
             "dashboard_js" => [
                 $assets->getUrl('js/partials/_class/classDetails.js'),
@@ -59,6 +55,7 @@ class TeacherDashboardController extends AbstractController
             'target' => $target
         ]);
     }
+
     #[Route('/dashboard/classroom/add-classroom', name: 'add_classroom', methods: ['POST'])]
     public function addClassroom(
         Request $request,
@@ -67,7 +64,9 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em
     ): JsonResponse
     {
-        $count = 0;
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
 
         $teacherID = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherID);
@@ -102,6 +101,10 @@ class TeacherDashboardController extends AbstractController
         ApiClient $api,
         EntityManagerInterface $em
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
         $class = $em->getRepository(Classe::class)->find($id);
@@ -121,6 +124,10 @@ class TeacherDashboardController extends AbstractController
         SessionInterface $session,
         EntityManagerInterface $em
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
         $classes = $teacher->getClasses();
@@ -138,6 +145,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $class = $em->getRepository(Classe::class)->find($id);
 
         // permission check
@@ -166,8 +177,13 @@ class TeacherDashboardController extends AbstractController
         Request $request,
         ApiClient $apiClient,
         EntityManagerInterface $em,
+        SessionInterface $session
     ): JsonResponse
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $nom     = $request->request->get('lname');
         $prenom  = $request->request->get('fname');
         $studentId = $request->request->get('studentId');
@@ -198,9 +214,18 @@ class TeacherDashboardController extends AbstractController
 
     #[Route('/dashboard/class/{id}/update-infos', name: 'class_update', methods: ['POST'])]
     public function updateInfos(
-        int $id, Request $request, EntityManagerInterface $em, ApiClient $apiClient,
-        TrainingAssignmentService $trainingAssignmentService): JsonResponse
+        int $id,
+        Request $request,
+        EntityManagerInterface $em,
+        ApiClient $apiClient,
+        TrainingAssignmentService $trainingAssignmentService,
+        SessionInterface $session
+    ): JsonResponse
     {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $classData    = $request->request->all('class');
         $studentsData = $request->request->all('students');
 
@@ -251,6 +276,10 @@ class TeacherDashboardController extends AbstractController
         SessionInterface $session,
         EntityManagerInterface $em
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
 
@@ -267,6 +296,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): Response {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $training = $em->getRepository(Entrainement::class)->find($id);
 
         if (!$training) {
@@ -285,13 +318,6 @@ class TeacherDashboardController extends AbstractController
             'training' => $training,
             'objectifs' => $objectifs
         ]);
-
-//        return $this->render('/dashboard/partials/_training/_trainingDetailsM.html.twig', [
-//            'training'      => $training,
-//            'objectives'    => $objectives,
-//            'students'      => $students,
-//            'trainingPaths' => $trainingPaths,
-//        ]);
     }
 
     #[Route('/dashboard/training/{id}/update', name: 'training_update', methods: ['POST'])]
@@ -302,6 +328,10 @@ class TeacherDashboardController extends AbstractController
         TrainingAssignmentService $trainingAssignmentService,
         SessionInterface $session
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         // 1. Sécurité et Récupération
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) return new JsonResponse(['success' => false, 'message' => 'Entraînement introuvable'], 404);
@@ -436,6 +466,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) {
             return new JsonResponse(['success' => false, 'fatal' => true]);
@@ -501,6 +535,10 @@ class TeacherDashboardController extends AbstractController
         SessionInterface $session,
         TrainingAssignmentService $trainingAssignmentService
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $training = $em->getRepository(Entrainement::class)->find($id);
         if (!$training) {
             return new JsonResponse(['success' => false, 'fatal' => true]);
@@ -531,6 +569,10 @@ class TeacherDashboardController extends AbstractController
         EntityManagerInterface $em,
         SessionInterface $session
     ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
         $teacherId = $session->get('teacher_id');
         if (!$teacherId) {
             return new JsonResponse(['success' => false, 'fatal' => true]);

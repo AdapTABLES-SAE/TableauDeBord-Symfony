@@ -22,6 +22,7 @@ class AdminTeacherController extends AbstractController
     #[Route('/admin/teachers', name: 'admin_teacher_list', methods: ['GET'])]
     public function index(SessionInterface $session): Response
     {
+        // Protection Admin
         if (!$session->get('is_admin')) {
             return $this->redirectToRoute('teacher_login');
         }
@@ -36,6 +37,7 @@ class AdminTeacherController extends AbstractController
     #[Route('/admin/teachers/add', name: 'admin_teacher_add', methods: ['POST'])]
     public function add(SessionInterface $session, Request $request): Response
     {
+        // Protection Admin
         if (!$session->get('is_admin')) {
             return $this->redirectToRoute('teacher_login');
         }
@@ -86,6 +88,7 @@ class AdminTeacherController extends AbstractController
         TeacherDeletionService $deleter
     ): Response
     {
+        // Protection Admin
         if (!$session->get('is_admin')) {
             return $this->redirectToRoute('teacher_login');
         }
@@ -99,7 +102,7 @@ class AdminTeacherController extends AbstractController
             return $this->redirectToRoute('admin_teacher_list');
         }
 
-        // Suppression API + suppression locale + cascade
+        // Suppression API + suppression locale + cascade via le service
         $ok = $deleter->deleteTeacher($enseignant);
 
         if ($ok) {
@@ -110,5 +113,4 @@ class AdminTeacherController extends AbstractController
 
         return $this->redirectToRoute('admin_teacher_list');
     }
-
 }
