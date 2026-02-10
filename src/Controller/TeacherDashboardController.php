@@ -509,6 +509,13 @@ class TeacherDashboardController extends AbstractController
             $niveauCopy = clone $niveau;
             $niveauCopy->setObjectif($objectifCopy);
             $niveauCopy->setLevelID(uniqid('lvl_'));
+
+            foreach ($niveau->getTaches() as $tache) {
+                $tacheCopy = clone $tache;
+                $tacheCopy->setNiveau($niveauCopy);
+                $niveauCopy->addTache($tacheCopy);
+            }
+
             $objectifCopy->addNiveau($niveauCopy);
         }
 
