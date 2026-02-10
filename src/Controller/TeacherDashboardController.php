@@ -459,84 +459,6 @@ class TeacherDashboardController extends AbstractController
         }
     }
 
-    #[Route('/dashboard/training/{id}/objective/add', name: 'training_objective_add', methods: ['POST'])]
-    public function addObjective(
-        int $id,
-        Request $request,
-        EntityManagerInterface $em,
-        SessionInterface $session
-    ): JsonResponse {
-        if (!$session->get('teacher_id')) {
-            return $this->redirectToRoute('teacher_login');
-        }
-
-        $training = $em->getRepository(Entrainement::class)->find($id);
-        if (!$training) {
-            return new JsonResponse(['success' => false, 'fatal' => true]);
-        }
-
-        $teacherId = $session->get('teacher_id');
-        if (!$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
-            return new JsonResponse(['success' => false, 'fatal' => true]);
-        }
-
-        $data = json_decode($request->getContent(), true);
-        $name = trim((string) ($data['name'] ?? ''));
-
-        if ($name === '') {
-            return new JsonResponse(['success' => false, 'fatal' => false]);
-        }
-
-        $sourceTraining = $em->getRepository(Entrainement::class)->findOneBy([
-            'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID,
-        ]);
-
-        if (!$sourceTraining) {
-            return new JsonResponse(['success' => false, 'fatal' => true]);
-        }
-
-        $sourceObjectif = $sourceTraining->getObjectifs()->first();
-        if (!$sourceObjectif) {
-            return new JsonResponse(['success' => false, 'fatal' => true]);
-        }
-
-        $objectifCopy = clone $sourceObjectif;
-        $objectifCopy->setName($name);
-        $objectifCopy->setEntrainement($training);
-        $objectifCopy->setObjID(uniqid('obj_'));
-
-        foreach ($sourceObjectif->getNiveaux() as $niveau) {
-            $niveauCopy = clone $niveau;
-            $niveauCopy->setObjectif($objectifCopy);
-            $niveauCopy->setLevelID(uniqid('lvl_'));
-
-            foreach ($niveau->getTaches() as $tache) {
-                $tacheCopy = clone $tache;
-                $tacheCopy->setNiveau($niveauCopy);
-                $niveauCopy->addTache($tacheCopy);
-            }
-
-            $objectifCopy->addNiveau($niveauCopy);
-        }
-
-        foreach ($sourceObjectif->getPrerequis() as $prerequis) {
-            $prerequisCopy = clone $prerequis;
-            $prerequisCopy->setObjectif($objectifCopy);
-            $objectifCopy->addPrerequis($prerequisCopy);
-        }
-
-        $em->persist($objectifCopy);
-        $em->flush();
-
-        return new JsonResponse([
-            'success' => true,
-            'objective' => [
-                'id' => $objectifCopy->getId(),
-                'name' => $objectifCopy->getName(),
-            ],
-        ]);
-    }
-
     #[Route('/dashboard/training/delete/{id}', name: 'training_delete', methods: ['DELETE'])]
     public function deleteTraining(
         int $id,
@@ -573,68 +495,108 @@ class TeacherDashboardController extends AbstractController
     }
 
     #[Route('/dashboard/training/add', name: 'training_add', methods: ['POST'])]
-    public function addTraining(
-        Request $request,
-        EntityManagerInterface $em,
-        SessionInterface $session
-    ): JsonResponse {
-        if (!$session->get('teacher_id')) {
-            return $this->redirectToRoute('teacher_login');
-        }
-
+    public function addTraining(Request $request, EntityManagerInterface $em, SessionInterface $session): JsonResponse
+    {
         $teacherId = $session->get('teacher_id');
-        if (!$teacherId) {
-            return new JsonResponse(['success' => false, 'fatal' => true]);
-        }
+        $teacher = $teacherId ? $em->getRepository(Enseignant::class)->find($teacherId) : null;
 
-        $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
         if (!$teacher) {
             return new JsonResponse(['success' => false, 'fatal' => true]);
         }
 
         $data = json_decode($request->getContent(), true);
-        $name = trim((string) ($data['name'] ?? ''));
-
-        if ($name === '') {
-            return new JsonResponse(['success' => false, 'fatal' => false]);
-        }
-
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') return new JsonResponse(['success' => false, 'fatal' => false]);
 
         $sourceTraining = $em->getRepository(Entrainement::class)->findOneBy([
             'learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID,
         ]);
 
-        if (!$sourceTraining) {
-            return new JsonResponse(['success' => false, 'fatal' => true]);
-        }
+        if (!$sourceTraining) return new JsonResponse(['success' => false, 'fatal' => true]);
 
+        // Création du nouvel entraînement
         $trainingCopy = clone $sourceTraining;
         $trainingCopy->setLearningPathID(uniqid('TRAIN_'));
         $trainingCopy->setName($name);
         $trainingCopy->setEnseignant($teacher);
+        $trainingCopy->getObjectifs()->clear(); // On vide les objectifs clonés par défaut pour les recloner proprement
 
+        // Utilisation de la fonction commune pour chaque objectif
         foreach ($sourceTraining->getObjectifs() as $sourceObjectif) {
-
-            $objectifCopy = clone $sourceObjectif;
-            $objectifCopy->setEntrainement($trainingCopy);
+            $objectifCopy = $this->cloneObjectiveStructure($sourceObjectif, $trainingCopy);
             $trainingCopy->addObjectif($objectifCopy);
-
-            foreach ($sourceObjectif->getNiveaux() as $niveau) {
-                $niveauCopy = clone $niveau;
-                $niveauCopy->setObjectif($objectifCopy);
-                $objectifCopy->addNiveau($niveauCopy);
-            }
         }
 
         $em->persist($trainingCopy);
         $em->flush();
 
-        return new JsonResponse([
-            'success' => true,
-            'training' => [
-                'id'   => $trainingCopy->getId(),
-                'name' => $trainingCopy->getName(),
-            ],
-        ]);
+        return new JsonResponse(['success' => true, 'training' => ['id' => $trainingCopy->getId(), 'name' => $trainingCopy->getName()]]);
+    }
+
+    #[Route('/dashboard/training/{id}/objective/add', name: 'training_objective_add', methods: ['POST'])]
+    public function addObjective(int $id, Request $request, EntityManagerInterface $em, SessionInterface $session): JsonResponse
+    {
+        $teacherId = $session->get('teacher_id');
+        $training = $em->getRepository(Entrainement::class)->find($id);
+
+        if (!$training || !$teacherId || $training->getEnseignant()?->getId() !== $teacherId) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $data = json_decode($request->getContent(), true);
+        $name = trim((string)($data['name'] ?? ''));
+        if ($name === '') return new JsonResponse(['success' => false, 'fatal' => false]);
+
+        // On récupère l'objectif source (le premier du parcours par défaut)
+        $sourceTraining = $em->getRepository(Entrainement::class)->findOneBy(['learningPathID' => ApiEndpoints::DEFAULT_LEARNING_PATH_ID]);
+        $sourceObjectif = $sourceTraining?->getObjectifs()->first();
+
+        if (!$sourceObjectif) return new JsonResponse(['success' => false, 'fatal' => true]);
+
+        // Utilisation de la fonction commune
+        $objectifCopy = $this->cloneObjectiveStructure($sourceObjectif, $training, $name);
+
+        $em->persist($objectifCopy);
+        $em->flush();
+
+        return new JsonResponse(['success' => true, 'objective' => ['id' => $objectifCopy->getId(), 'name' => $objectifCopy->getName()]]);
+    }
+
+
+    /**
+     * Méthode partagée pour cloner un objectif et ses sous-éléments (Niveaux, Tâches, Prérequis)
+     */
+    private function cloneObjectiveStructure(Objectif $source, Entrainement $targetTraining, string $newName = null): Objectif
+    {
+        $objectifCopy = clone $source;
+        $objectifCopy->setEntrainement($targetTraining);
+        $objectifCopy->setObjID(uniqid('obj_'));
+
+        if ($newName) {
+            $objectifCopy->setName($newName);
+        }
+
+        // 1. Cloner les Niveaux et leurs Tâches
+        foreach ($source->getNiveaux() as $niveau) {
+            $niveauCopy = clone $niveau;
+            $niveauCopy->setObjectif($objectifCopy);
+            $niveauCopy->setLevelID(uniqid('lvl_'));
+
+            foreach ($niveau->getTaches() as $tache) {
+                $tacheCopy = clone $tache;
+                $tacheCopy->setNiveau($niveauCopy);
+                $niveauCopy->addTache($tacheCopy);
+            }
+            $objectifCopy->addNiveau($niveauCopy);
+        }
+
+        // 2. Cloner les Prérequis
+        foreach ($source->getPrerequis() as $prerequis) {
+            $prerequisCopy = clone $prerequis;
+            $prerequisCopy->setObjectif($objectifCopy);
+            $objectifCopy->addPrerequis($prerequisCopy);
+        }
+
+        return $objectifCopy;
     }
 }
