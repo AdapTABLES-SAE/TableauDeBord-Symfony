@@ -503,10 +503,12 @@ class TeacherDashboardController extends AbstractController
         $objectifCopy = clone $sourceObjectif;
         $objectifCopy->setName($name);
         $objectifCopy->setEntrainement($training);
+        $objectifCopy->setObjID(uniqid('obj_'));
 
         foreach ($sourceObjectif->getNiveaux() as $niveau) {
             $niveauCopy = clone $niveau;
             $niveauCopy->setObjectif($objectifCopy);
+            $niveauCopy->setLevelID(uniqid('lvl_'));
             $objectifCopy->addNiveau($niveauCopy);
         }
 
