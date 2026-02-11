@@ -20,6 +20,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Update URL without navigation
             const url = new URL(window.location.href);
             url.searchParams.set("target", urlParam);
+            url.searchParams.delete("select");
+
             history.pushState({ target: urlParam }, "", url.toString());
 
             // Load the pair when switching tabs
