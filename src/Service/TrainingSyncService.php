@@ -184,7 +184,7 @@ class TrainingSyncService
                                     "resultLocation" => "RIGHT",
                                     "leftOperand" => "TABLE_OPERAND",
                                     "intervalMin" => 1,
-                                    "intervalMax" => 1
+                                    "intervalMax" => 10
                                 ],
                                 "tasksParameters" => [
                                     [
