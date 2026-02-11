@@ -611,6 +611,54 @@ class TeacherDashboardController extends AbstractController
         ]);
     }
 
+    #[Route('/dashboard/training/duplicate/{id}', name: 'training_duplicate', methods: ['POST'])]
+    public function duplicateTraining(
+        int $id,
+        EntityManagerInterface $em,
+        SessionInterface $session
+    ): JsonResponse {
+        if (!$session->get('teacher_id')) {
+            return $this->redirectToRoute('teacher_login');
+        }
+
+        $teacherId = $session->get('teacher_id');
+        if (!$teacherId) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $teacher = $em->getRepository(Enseignant::class)->find($teacherId);
+        if (!$teacher) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $sourceTraining = $em->getRepository(Entrainement::class)->find($id);
+
+        if (!$sourceTraining) {
+            return new JsonResponse(['success' => false, 'fatal' => true]);
+        }
+
+        $trainingCopy = clone $sourceTraining;
+        $trainingCopy->setLearningPathID(uniqid('TRAIN_'));
+        $trainingCopy->setName($sourceTraining->getName() . "(copie)");
+        $trainingCopy->setEnseignant($teacher);
+
+        foreach ($sourceTraining->getObjectifs() as $sourceObjectif) {
+            $objectifCopy = $this->deepCloneObjective($sourceObjectif, $trainingCopy);
+            $trainingCopy->addObjectif($objectifCopy);
+        }
+
+        $em->persist($trainingCopy);
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'training' => [
+                'id'   => $trainingCopy->getId(),
+                'name' => $trainingCopy->getName(),
+            ],
+        ]);
+    }
+
     /**
      * Méthode partagée pour cloner un objectif et ses sous-éléments (Niveaux, Tâches, Prérequis)
      */

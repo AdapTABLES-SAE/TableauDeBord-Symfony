@@ -5,6 +5,14 @@
 
         <div class="position-absolute top-0" style="left: 20px;">
             <button
+                id="duplicateTrainingBtn"
+                class="btn btn-outline-primary"
+                title="Dupliquer l'entraînement"
+                data-action="{{ path('training_duplicate', {'id': training.id}) }}"
+            >
+                <i class="bi bi-files"></i>
+            </button>
+            <button
                 id="deleteTrainingBtn"
                 class="btn btn-outline-danger"
                 data-action="{{ path('training_delete', {'id': training.id}) }}"
@@ -284,5 +292,25 @@
             </div>
         </div>
     </div>
-
+    {# ================= DUPLICATE TRAINING MODAL ================= #}
+    <div class="modal fade" id="duplicateTrainingModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-primary">
+                <div class="modal-header bg-light-subtle">
+                    <h5 class="modal-title fw-bold text-primary">
+                        <i class="bi bi-files me-2"></i>Dupliquer l'entraînement
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Voulez-vous vraiment créer une copie de l'entraînement <strong>"{{ training.name }}"</strong> ?
+                    <br><small class="text-muted">Tous les objectifs et niveaux seront copiés.</small>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button id="confirmDuplicateBtn" class="btn btn-primary px-4">Confirmer la copie</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

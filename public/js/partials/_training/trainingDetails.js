@@ -266,8 +266,71 @@ document.addEventListener("partial:loaded", (e) => {
         });
     }
 
+// ========================================================================
+// 8. DUPLICATE TRAINING
+// ========================================================================
+
+    const duplicateBtn = q('#duplicateTrainingBtn');
+    const confirmDuplicateBtn = q('#confirmDuplicateBtn');
+    const duplicateModalEl = q('#duplicateTrainingModal');
+
+    if (duplicateBtn && confirmDuplicateBtn && duplicateModalEl) {
+        const modal = bootstrap.Modal.getOrCreateInstance(duplicateModalEl);
+
+        // 1. Show the modal when the icon is clicked
+        duplicateBtn.addEventListener('click', () => {
+            modal.show();
+        });
+
+        // 2. Handle the actual duplication logic on confirmation
+        confirmDuplicateBtn.addEventListener('click', async () => {
+            const url = duplicateBtn.dataset.action;
+            if (!url) return;
+
+            // UI Feedback: Loading state
+            confirmDuplicateBtn.disabled = true;
+            const originalText = confirmDuplicateBtn.innerHTML;
+            confirmDuplicateBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Copie en cours...';
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Success! Close modal and show toast
+                    modal.hide();
+                    showToast(true, "Succès", "Entraînement dupliqué avec succès.");
+
+                    // Reload the pair and auto-select the new duplicate ID
+                    setTimeout(() => {
+                        if (window.reloadDashboardPair) {
+                            window.reloadDashboardPair("trainings", result.training.id);
+                        }
+                    }, 300);
+
+                } else {
+                    showToast(false, "Erreur", result.message || "Impossible de dupliquer l'entraînement.");
+                }
+
+            } catch (err) {
+                console.error("Duplication error:", err);
+                showToast(false, "Erreur", "Erreur réseau lors de la duplication.");
+            } finally {
+                // Reset button state
+                confirmDuplicateBtn.disabled = false;
+                confirmDuplicateBtn.innerHTML = originalText;
+            }
+        });
+    }
+
     // ========================================================================
-    // 8. INITIAL STATE
+    // 9. INITIAL STATE
     // ========================================================================
     resetButtons(saveBtn, cancelBtn);
 });
