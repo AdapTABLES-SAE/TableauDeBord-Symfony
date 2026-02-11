@@ -1,9 +1,9 @@
 /* ============================================================
-   BLOC NIVEAU — STYLE SIMPLE & PROPRE
+   BLOC NIVEAU
 ============================================================ */
 
 .level-card {
-    background: #ffffff; /* Fond blanc plus propre */
+    background: #ffffff;
     border-radius: 12px;
     border: 1px solid #e5ddff;
     margin-bottom: 1rem;
@@ -94,43 +94,48 @@
     opacity: 0.8;
 }
 
-/* Chevron */
-.toggle-level-details {
-    background: transparent;
-    border: none;
+/* =========================================
+   STYLE DU CHEVRON
+   ========================================= */
+
+/* L'icône elle-même */
+.level-chevron {
     color: #9890c7;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    padding: 0;
-}
-
-.toggle-level-details:hover {
-    background: #f0ebff;
-    color: #5a4ad1;
-}
-
-.toggle-level-details i {
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     font-size: 1.1rem;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s;
+    background: transparent;
 }
 
-/* Rotation fluide */
-.level-card.collapsed .toggle-level-details i {
+/* Au survol de TOUTE la barre (.level-header), on illumine le chevron */
+.level-header:hover .level-chevron {
+    color: #5a4ad1;
+    transform: scale(1.1);
+}
+
+/* =========================================
+   LOGIQUE DE ROTATION
+   ========================================= */
+
+/* PAR DÉFAUT (OUVERT) : Le chevron pointe vers le bas (bi-chevron-down).
+   C'est l'état normal, pas de transformation.
+*/
+
+/* QUAND FERMÉ (.collapsed) :
+   On tourne de -90deg pour qu'il pointe vers la droite (comme >)
+*/
+.level-card.collapsed .level-chevron {
     transform: rotate(-90deg);
 }
 
+/* =========================================
+   ANIMATION DU CORPS
+   ========================================= */
 .level-body {
     overflow: hidden;
     transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     padding: 0 1.2rem;
 }
 
-/* Gestion du padding vertical pour éviter le saut à la fin */
 .level-body-content {
     padding-top: 1rem;
     padding-bottom: 1.2rem;
@@ -338,7 +343,7 @@
 
 
 /* ============================================================
-   POSITION = & FACTEUR — VERSION DÉFINITIVE
+   POSITION = & FACTEUR
 ============================================================ */
 
 .positions-row {

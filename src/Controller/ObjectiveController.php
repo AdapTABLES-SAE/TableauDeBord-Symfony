@@ -111,16 +111,13 @@ class ObjectiveController extends AbstractController
         $objectif->addNiveau($niveau);
 
         $index = $objectif->getNiveaux()->count();
-
-        // Sécurité index si count() est capricieux avec la persistence
         if ($index == 0) $index = 1;
 
         $niveau->setLevelID('L' . $index . '_' . $objectif->getObjID());
         $niveau->setName('Niveau ' . $index);
-
         $niveau->setTables($selectedTables);
 
-        // Valeurs par défaut
+        // Valeurs par défaut du NIVEAU
         $niveau->setSuccessCompletionCriteria(80);
         $niveau->setEncounterCompletionCriteria(100);
         $niveau->setResultLocation('RIGHT');
@@ -129,12 +126,37 @@ class ObjectiveController extends AbstractController
         $niveau->setIntervalMax(10);
 
         $this->em->persist($niveau);
+
+        // =========================================================
+        // AJOUT AUTOMATIQUE DE LA TÂCHE C1
+        // =========================================================
+        $tache = new Tache();
+        $tache->setNiveau($niveau);
+        $tache->setTaskType('C1'); // Type C1
+
+        // Valeurs par défaut de la TÂCHE C1
+        $tache->setTimeMaxSecond(60);
+        $tache->setRepartitionPercent(100); // 100% car c'est la seule tâche
+        $tache->setSuccessiveSuccessesToReach(1);
+
+        // Spécifique C1
+        $tache->setNbIncorrectChoices(2);
+        $tache->setAnswerModality('INPUT'); // ou 'CHOICE' selon votre préférence
+        $tache->setTargets([]); // Pas de cibles spécifiques par défaut (toutes)
+
+        $niveau->addTache($tache); // Important pour la relation
+        $this->em->persist($tache);
+
+        // =========================================================
+
         $this->em->flush();
 
-        // SYNCHRONISATION API
+        // SYNCHRONISATION API (Enverra le niveau ET la tâche)
         $this->syncWithApi($objectif->getEntrainement(), $apiClient);
 
         // Rendu HTML
+        // Le template _level_block.html.twig va détecter la présence de la tâche C1
+        // et activera visuellement le bouton correspondant automatiquement.
         $html = $this->renderView('objective/_level_block.html.twig', [
             'niveau' => $niveau,
             'index'  => $index,
@@ -470,7 +492,18 @@ class ObjectiveController extends AbstractController
         $data = json_decode($request->getContent(), true) ?? [];
         $taskType = $data['taskType'] ?? null;
 
-        if (!$taskType) return new JsonResponse(['success' => false], 400);
+        if (!$taskType) return new JsonResponse(['success' => false, 'message' => 'Type de tâche manquant'], 400);
+
+        // =========================================================
+        // SÉCURITÉ : EMPÊCHER LA SUPPRESSION DE LA DERNIÈRE TÂCHE
+        // =========================================================
+        if ($niveau->getTaches()->count() <= 1) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => "Impossible de supprimer la dernière tâche. Un niveau doit contenir au moins une activité."
+            ], 400); // 400 Bad Request
+        }
+        // =========================================================
 
         $task = $this->em->getRepository(Tache::class)->findOneBy([
             'niveau'   => $niveau,
@@ -480,7 +513,10 @@ class ObjectiveController extends AbstractController
         if ($task) {
             $niveau->removeTache($task);
             $this->em->remove($task);
+
+            // Recalcul des % pour que les tâches restantes fassent 100%
             $this->rebalanceTasks($niveau);
+
             $this->em->flush();
 
             $entrainement = $niveau->getObjectif()->getEntrainement();

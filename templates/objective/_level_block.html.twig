@@ -46,26 +46,30 @@
     {# ============================================================
        HEADER
        ============================================================ #}
-    <div class="level-header">
+    <div class="level-header" style="cursor: pointer;">
 
-        <div class="level-title-group">
-            <div class="level-title">Niveau {{ index }}</div>
+        {# Zone Titre + Input extensible #}
+        <div class="level-title-group flex-grow-1 d-flex align-items-center" style="margin-right: 15px;">
+            <div class="level-title text-nowrap me-2">Niveau {{ index }}</div>
+
             <input type="text"
-                   class="form-control form-control-sm level-name-input"
+                   class="form-control form-control-sm level-name-input w-100"
                    placeholder="Nom du niveau"
-                   value="{{ niveau.name }}">
+                   value="{{ niveau.name }}"
+                   onclick="event.stopPropagation();">
         </div>
 
         <div class="level-actions">
 
-            <div class="level-facts-badge" title="Nombre total de faits générés">
-                <span>FAITS</span>
+            <div class="level-facts-badge" title="Nombre total de calculs générés" style="width: auto; padding-left: 12px; padding-right: 12px;">
+                <span>CALCULS</span>
                 <strong data-facts-count>0</strong>
             </div>
 
-            <button type="button" class="toggle-level-details">
-                <i class="bi bi-chevron-down"></i>
-            </button>
+            <div class="ms-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                <i class="bi bi-chevron-down level-chevron"></i>
+            </div>
+
         </div>
     </div>
 

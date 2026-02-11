@@ -334,10 +334,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             let equationHTML = "";
+
+            // 'mx-1' ajoute une petite marge à gauche ET à droite = un espacement égal partout
             if (currentEqPos === "LEFT") {
-                equationHTML = `<strong>${result}</strong> = ${leftFactor} × ${rightFactor}`;
+                // Format : 10 = 2 x 5
+                equationHTML = `<strong>${result}</strong> <span class="mx-1">=</span> ${leftFactor} <span class="mx-1">×</span> ${rightFactor}`;
             } else {
-                equationHTML = `${leftFactor} × ${rightFactor} = <strong>${result}</strong>`;
+                // Format : 2 x 5 = 10
+                equationHTML = `${leftFactor} <span class="mx-1">×</span> ${rightFactor} <span class="mx-1">=</span> <strong>${result}</strong>`;
             }
 
             list.push(`
@@ -591,7 +595,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ========================================================================================= */
 
     function initCollapse(card) {
-        const toggleBtn = card.querySelector(".toggle-level-details");
+        // CORRECTION : On cible la barre entière (.level-header) au lieu de l'ancien bouton
+        const toggleBtn = card.querySelector(".level-header");
         const body      = card.querySelector(".level-body");
 
         if (!toggleBtn || !body) return;
@@ -616,25 +621,27 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         };
 
-        // État initial (Si la carte est déjà marquée collapsed dans le HTML)
+        // État initial
         if (card.classList.contains("collapsed")) {
             closeCard(card);
         } else {
             openCard(card);
         }
 
-        // Clic sur le bouton
+        // ÉVÉNEMENT CLIC SUR LA BARRE
         toggleBtn.addEventListener("click", (e) => {
+            // On empêche le clic de remonter (optionnel ici mais propre)
+            // Note: les inputs ont déjà leur propre stopPropagation() dans le HTML
             e.stopPropagation();
 
             const isCurrentlyOpen = !card.classList.contains("collapsed");
 
             if (isCurrentlyOpen) {
-                // Si c'est ouvert, on ferme simplement
+                // Si c'est ouvert, on ferme
                 closeCard(card);
-                updatePreview();
+                if (typeof updatePreview === "function") updatePreview();
             } else {
-                // Si c'est fermé, ON FERME TOUS LES AUTRES d'abord
+                // Si c'est fermé, ON FERME TOUS LES AUTRES d'abord (Effet accordéon)
                 document.querySelectorAll(".level-card").forEach(otherCard => {
                     if (otherCard !== card) {
                         closeCard(otherCard);
@@ -642,7 +649,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 openCard(card);
-                updatePreview();
+                if (typeof updatePreview === "function") updatePreview();
             }
         });
     }
