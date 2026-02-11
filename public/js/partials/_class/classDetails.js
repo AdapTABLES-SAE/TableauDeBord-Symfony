@@ -350,7 +350,7 @@ document.addEventListener("partial:loaded", (e) => {
         function genId(n, p) {
             n = n.trim().toLowerCase();
             p = p.trim().toLowerCase();
-            return (n ? n.substring(0, 7) : "") + (p ? p.charAt(0) : "");
+            return (p ? p.charAt(0) : "") + (n ? n.substring(0, 7) : "");
         }
 
         function updatePlaceholderId() {
@@ -367,7 +367,7 @@ document.addEventListener("partial:loaded", (e) => {
         // --------------------------------------------------------------------
         addStudentBtnOpen?.addEventListener("click", () => {
             addStudentForm.reset();
-            studentIdInput.placeholder = "dupontm";
+            studentIdInput.placeholder = "mdupont";
             studentIdInput.value = "";
             addStudentModal.show();
         });
