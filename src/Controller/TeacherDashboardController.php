@@ -34,6 +34,9 @@ class TeacherDashboardController extends AbstractController
         $validTargets = ['classes', 'trainings'];
         $target = $request->query->get('target', 'classes');
 
+        $select = $request->query->get('select');
+
+
         if (!in_array($target, $validTargets, true)) {
             $target = 'classes';
         }
@@ -52,7 +55,8 @@ class TeacherDashboardController extends AbstractController
                 $assets->getUrl('js/partials/_training/carousel.js'),
             ],
 
-            'target' => $target
+            'target' => $target,
+            'selected' => $select
         ]);
     }
 

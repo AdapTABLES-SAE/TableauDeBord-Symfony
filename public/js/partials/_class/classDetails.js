@@ -467,14 +467,6 @@ document.addEventListener("partial:loaded", (e) => {
 
                     // Recharger uniquement la liste des classes
                     await window.reloadListOnly("classes");
-
-                    // Puis vider le détail
-                    container.innerHTML = `
-                    <h2 class="fw-bold mb-3">Ma classe</h2>
-                    <p class="text-primary fs-5">
-                        Sélectionner une classe pour voir le détail.
-                    </p>
-                `;
                 } else {
                     showToast(
                         false,

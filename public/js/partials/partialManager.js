@@ -3,24 +3,33 @@
 //  • If no radio selected → reload ONLY list
 // ============================================================================
 
-window.reloadDashboardPair = async function (pairName) {
+window.reloadDashboardPair = async function (pairName, newSelectionRowID= null) {
     const list = document.querySelector(
         `[data-partial-list][data-dashboard-pair="${pairName}"]`
     );
 
     if (!list) return;
 
-    const selected = list.querySelector('input[type="radio"]:checked');
-
-    if (!selected) {
-        return reloadListOnly(pairName);
+    let validatedID = null;
+    if (newSelectionRowID !== null) {
+        const val = Number(newSelectionRowID);
+        if (!Number.isNaN(val) && Number.isInteger(val)) {
+            validatedID = val;
+        }
     }
 
-    const id = selected.dataset.id;
-    if (!id) return reloadListOnly(pairName);
+    if (validatedID === null) {
+        const currentChecked = list.querySelector('input[type="radio"]:checked');
+        if (currentChecked) {
+            validatedID = currentChecked.dataset.id;
+        }
+    }
+    if (!validatedID) return reloadListOnly(pairName);
+    await reloadListOnly(pairName, validatedID);
 
-    await reloadDetailOnly(pairName, id);
-    await reloadListOnly(pairName, id);
+    if (validatedID) {
+        await reloadDetailOnly(pairName, validatedID);
+    }
 };
 
 // ============================================================================
@@ -79,8 +88,6 @@ async function reloadListOnly(pairName, checkedID = null) {
 
         list.innerHTML = await res.text();
 
-        // --- CORRECTION ICI ---
-        // On récupère les radios
         const radios = list.querySelectorAll('input[type="radio"][data-id]');
 
         // Si on a des radios (liste non vide), on attache les événements
@@ -100,16 +107,9 @@ async function reloadListOnly(pairName, checkedID = null) {
                 );
                 if (newSelected) {
                     newSelected.checked = true;
-                    // On ne déclenche l'événement change que si on veut recharger le détail
-                    // newSelected.dispatchEvent(new Event("change", { bubbles: true }));
                 }
             }
         }
-
-        // --- IMPORTANT ---
-        // On ne fait PLUS de "return" si la liste est vide.
-        // On continue l'exécution pour envoyer l'événement ci-dessous.
-        // C'est ce qui permet d'initialiser le bouton "Ajouter" même si la liste est vide.
 
         document.dispatchEvent(
             new CustomEvent("partial:list:loaded", {

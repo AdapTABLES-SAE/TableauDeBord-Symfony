@@ -17,14 +17,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (!pairName || !urlParam) return;
 
-            // 🔹 Update URL without navigation
+            // Update URL without navigation
             const url = new URL(window.location.href);
             url.searchParams.set("target", urlParam);
             history.pushState({ target: urlParam }, "", url.toString());
 
-            // 🔹 Load the pair when switching tabs
-            // window.reloadDashboardPair(pairName); //not used anymore cause first list item is selected on load
-            window.reloadListOnly(pairName);
+            // Load the pair when switching tabs
+            window.reloadDashboardPair(pairName);
+            // window.reloadListOnly(pairName);
         });
     });
 });
