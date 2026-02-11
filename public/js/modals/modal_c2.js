@@ -249,7 +249,7 @@ function generateC2Preview() {
     optBox.appendChild(bottomRow);
 
     hint.textContent =
-        "Deux des potions correspondront aux éléments manquants de la multiplication ci-dessus.";
+        "Deux des résultats correspondront aux éléments manquants de la multiplication ci-dessus.";
 }
 
 /* ======================================================
