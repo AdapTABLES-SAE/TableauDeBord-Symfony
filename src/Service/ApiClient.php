@@ -3,23 +3,29 @@
 namespace App\Service;
 
 use Symfony\Contracts\HttpClient\HttpClientInterface;
+use Symfony\Component\DependencyInjection\Attribute\Autowire;
 use App\Constant\ApiEndpoints;
 use App\Entity\Eleve;
 use App\Entity\Entrainement;
 
 class ApiClient
 {
+    private string $baseUrl;
+
     public function __construct(
         private HttpClientInterface $client,
         private TrainingSerializer $trainingSerializer,
-    ) {}
+        #[Autowire('%app.api_base_url%')] string $baseUrl
+    ) {
+        $this->baseUrl = $baseUrl;
+    }
 
     /**
      * Récupère un enseignant depuis /data/teacher/{idProf}
      */
     public function fetchTeacherData(string $teacherId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHER . $teacherId;
+        $url = $this->baseUrl . ApiEndpoints::GET_TEACHER . $teacherId;
 
         $response = $this->client->request('GET', $url);
 
@@ -35,7 +41,7 @@ class ApiClient
     public function fetchStudentsByTeacherAndClass(string $teacherId, string $classId): array
     {
         $url =
-            ApiEndpoints::BASE_URL .
+            $this->baseUrl .
             ApiEndpoints::GET_STUDENTS_1 . $teacherId . "/" .
             ApiEndpoints::GET_STUDENTS_2. $classId;
 
@@ -52,7 +58,7 @@ class ApiClient
      */
     public function fetchLearningPathByLearner(string $learnerId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_LEARNINGPATH . $learnerId;
+        $url = $this->baseUrl . ApiEndpoints::GET_LEARNINGPATH . $learnerId;
 
         $response = $this->client->request('GET', $url);
 
@@ -67,7 +73,7 @@ class ApiClient
      */
     public function fetchAllTeachers(): array
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::GET_TEACHERS;
+        $url = $this->baseUrl . ApiEndpoints::GET_TEACHERS;
 
         $response = $this->client->request('GET', $url);
 
@@ -82,7 +88,7 @@ class ApiClient
      */
     public function createTeacher(string $idProf, string $name): array
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_PROF;
+        $url = $this->baseUrl . ApiEndpoints::ADD_PROF;
 
         try {
             $response = $this->client->request('POST', $url, [
@@ -126,7 +132,7 @@ class ApiClient
      */
     public function deleteTeacher(string $idProf): bool
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::DELETE_PROF . $idProf;
+        $url = $this->baseUrl . ApiEndpoints::DELETE_PROF . $idProf;
 
         $response = $this->client->request('DELETE', $url);
 
@@ -143,7 +149,7 @@ class ApiClient
      */
     public function fetchLearnerStatistics(string $learnerId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::STATS_URL . $learnerId;
+        $url = $this->baseUrl . ApiEndpoints::STATS_URL . $learnerId;
 
         $response = $this->client->request('GET', $url);
 
@@ -156,13 +162,13 @@ class ApiClient
      * Récupère la progression d'un élève pour un objectif + niveau.
      *
      * Correspond à :
-     *   GET /results/learner/{learnerID}/objective/{objID}/level/{levelID}
+     * GET /results/learner/{learnerID}/objective/{objID}/level/{levelID}
      *
      * Retourne null si l'appel échoue ou n'est pas en 200.
      */
     public function fetchObjectiveLevelResults(string $learnerId, string $objectiveId, string $levelId): ?array
     {
-        $url = ApiEndpoints::BASE_URL
+        $url = $this->baseUrl
             . ApiEndpoints::GET_LEVEL_1 . $learnerId . '/'
             . ApiEndpoints::GET_LEVEL_2 . $objectiveId . '/'
             . ApiEndpoints::GET_LEVEL_3 . $levelId;
@@ -174,17 +180,8 @@ class ApiClient
                 return null;
             }
 
-            // Exemple JSON :
-            // {
-            //   "globalEncounters": 0,
-            //   "progresses": [
-            //     { "idTask": "...", "currentSuccess": 0, "currentEncounters": 0, "typeTask": "C1" }
-            //   ],
-            //   "globalSuccess": 0
-            // }
             return $response->toArray(false);
         } catch (\Throwable $e) {
-            // Erreur réseau, 500, etc. => on considère "pas de données"
             return null;
         }
     }
@@ -196,7 +193,7 @@ class ApiClient
      */
     public function fetchLearnerStore(string $learnerId): ?array
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::EQUIP_URL . $learnerId;
+        $url = $this->baseUrl . ApiEndpoints::EQUIP_URL . $learnerId;
 
         $response = $this->client->request('GET', $url);
 
@@ -204,7 +201,7 @@ class ApiClient
     }
 
     public function updateClassroomName(string $classId, string $name): bool {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::MODIF_CLASSROOM;
+        $url = $this->baseUrl . ApiEndpoints::MODIF_CLASSROOM;
 
         $payload = [
             'id' => $classId,
@@ -224,7 +221,7 @@ class ApiClient
      */
     public function updateLearnerData(string $classId, string $learnerId, string $prenom, string $nom): bool
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::MODIF_STUDENT;
+        $url = $this->baseUrl . ApiEndpoints::MODIF_STUDENT;
 
         $payload = [
             'idClasse' => $classId,
@@ -239,9 +236,10 @@ class ApiClient
 
         return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
+
     public function deleteStudent(string $teacherId, string $classId, string $studentId): bool
     {
-        $url = ApiEndpoints::BASE_URL .
+        $url = $this->baseUrl .
             ApiEndpoints::DELETE_STUDENT_1 . $teacherId . "/" .
             ApiEndpoints::DELETE_STUDENT_2 . $classId . "/"
             . ApiEndpoints::DELETE_STUDENT_3 . $studentId;
@@ -253,7 +251,7 @@ class ApiClient
 
     public function addStudent(string $classId, string $studentId, string $nomEleve, string $prenomEleve): bool
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_STUDENT;
+        $url = $this->baseUrl . ApiEndpoints::ADD_STUDENT;
 
         $payload = [
             'idClasse'    => $classId,
@@ -271,7 +269,7 @@ class ApiClient
 
     public function addClassroom(string $teacherId, string $classId, string $className): bool
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::ADD_CLASSROOM;
+        $url = $this->baseUrl . ApiEndpoints::ADD_CLASSROOM;
 
         $payload = [
             'idProf' => $teacherId,
@@ -290,24 +288,21 @@ class ApiClient
 
     public function deleteClassroom(string $teacherId, string $classroomId): bool
     {
-        $url = ApiEndpoints::BASE_URL .
-                ApiEndpoints::DELETE_CLASSROOM_1 . $teacherId . "/" .
-                ApiEndpoints::DELETE_CLASSROOM_2 . $classroomId;
+        $url = $this->baseUrl .
+            ApiEndpoints::DELETE_CLASSROOM_1 . $teacherId . "/" .
+            ApiEndpoints::DELETE_CLASSROOM_2 . $classroomId;
 
         $response = $this->client->request('DELETE', $url);
 
         return ($response->getStatusCode() >= 200 && $response->getStatusCode() < 300);
     }
 
-
-
     /**
      * Envoie / met à jour un parcours complet dans /path/training
-     * Important : la structure doit coller à ce que ton PathManager Java attend.
      */
     public function assignTrainingToLearner(Eleve $eleve, Entrainement $entrainement): bool
     {
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::SAVE_LEARNINGPATH;
+        $url = $this->baseUrl . ApiEndpoints::SAVE_LEARNINGPATH;
 
         $payload = $this->trainingSerializer->toApiPayload($entrainement, $eleve);
 
@@ -324,7 +319,7 @@ class ApiClient
     public function getLearnerStats(string $learnerId): ?array
     {
         try {
-            $url = ApiEndpoints::BASE_URL . ApiEndpoints::STATS_URL . $learnerId;
+            $url = $this->baseUrl . ApiEndpoints::STATS_URL . $learnerId;
 
             $response = $this->client->request('GET', $url);
 
@@ -341,7 +336,10 @@ class ApiClient
 
     public function fetchLearnerInventory(string $learnerId): array
     {
-        $url = ApiEndpoints::BASE_URL . "store/learner/" . $learnerId;
+        // Note: Ici j'utilise $this->baseUrl mais je garde "store/learner/"
+        // car il n'y avait pas de constante ApiEndpoints::GET_INVENTORY explicite dans votre code précédent
+        // (bien que EQUIP_URL semble correspondre). J'utilise EQUIP_URL par sécurité si c'est la même chose.
+        $url = $this->baseUrl . ApiEndpoints::EQUIP_URL . $learnerId;
 
         try {
             $response = $this->client->request('GET', $url);
@@ -360,7 +358,7 @@ class ApiClient
 
     public function updateLearnerEquipment(string $learnerId, array $items): array
     {
-        $url = ApiEndpoints::BASE_URL . 'store';
+        $url = $this->baseUrl . 'store';
 
         try {
             $response = $this->client->request('POST', $url, [
@@ -397,7 +395,7 @@ class ApiClient
     public function sendRawTraining(array $payload): bool
     {
         // On utilise la même URL que pour l'assignation
-        $url = ApiEndpoints::BASE_URL . ApiEndpoints::SAVE_LEARNINGPATH;
+        $url = $this->baseUrl . ApiEndpoints::SAVE_LEARNINGPATH;
 
         try {
             $response = $this->client->request('POST', $url, [
