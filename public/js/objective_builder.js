@@ -534,15 +534,36 @@ document.addEventListener("DOMContentLoaded", () => {
         updateUI();
 
         function drag(type) {
+            // FIX UX : Mettre la poignée qu'on touche au premier plan (z-index)
+            // Cela évite les bugs graphiques quand elles se chevauchent
+            if (type === "min") {
+                handleMin.style.zIndex = "10";
+                handleMax.style.zIndex = "5";
+            } else {
+                handleMin.style.zIndex = "5";
+                handleMax.style.zIndex = "10";
+            }
+
             function move(e) {
                 const rect = wrap.getBoundingClientRect();
                 const pct = Math.min(Math.max((e.clientX - rect.left) / rect.width, 0), 1);
                 const val = Math.round(MIN + pct * (MAX - MIN));
 
+                // Au lieu de bloquer le mouvement si on croise l'autre poignée,
+                // on pousse l'autre poignée. Ça empêche d'être bloqué à 10-10.
+
                 if (type === "min") {
-                    minVal = Math.min(val, maxVal);
+                    minVal = val;
+                    // Si je pousse Min plus haut que Max, Max monte avec lui
+                    if (minVal > maxVal) {
+                        maxVal = minVal;
+                    }
                 } else {
-                    maxVal = Math.max(val, minVal);
+                    maxVal = val;
+                    // Si je pousse Max plus bas que Min, Min descend avec lui
+                    if (maxVal < minVal) {
+                        minVal = maxVal;
+                    }
                 }
 
                 updateUI();
@@ -555,8 +576,8 @@ document.addEventListener("DOMContentLoaded", () => {
             window.addEventListener("mouseup", stop);
         }
 
-        handleMin.addEventListener("mousedown", () => drag("min"));
-        handleMax.addEventListener("mousedown", () => drag("max"));
+        handleMin.addEventListener("mousedown", (e) => { e.preventDefault(); drag("min"); });
+        handleMax.addEventListener("mousedown", (e) => { e.preventDefault(); drag("max"); });
     }
 
     /* =========================================================================================
