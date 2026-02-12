@@ -480,13 +480,21 @@ class ObjectiveController extends AbstractController
      */
     #[Route('/niveau/{id}/task/delete', name: 'delete_task', methods: ['DELETE'])]
     public function deleteTask(
-        Niveau $niveau,
+        int $id,
         Request $request,
         ApiClient $apiClient,
         SessionInterface $session
     ): Response {
         if (!$session->get('teacher_id')) {
-            return $this->redirectToRoute('teacher_login');
+            return new JsonResponse(['success' => false, 'message' => 'Non authentifié'], 401);
+        }
+
+        // 1. Recherche manuelle pour contrôler l'erreur
+        $niveau = $this->em->getRepository(Niveau::class)->find($id);
+
+        if (!$niveau) {
+            // Renvoie du JSON au lieu d'une page HTML 404 qui fait planter le JS
+            return new JsonResponse(['success' => false, 'message' => 'Niveau introuvable'], 404);
         }
 
         $data = json_decode($request->getContent(), true) ?? [];
@@ -494,16 +502,13 @@ class ObjectiveController extends AbstractController
 
         if (!$taskType) return new JsonResponse(['success' => false, 'message' => 'Type de tâche manquant'], 400);
 
-        // =========================================================
         // SÉCURITÉ : EMPÊCHER LA SUPPRESSION DE LA DERNIÈRE TÂCHE
-        // =========================================================
         if ($niveau->getTaches()->count() <= 1) {
             return new JsonResponse([
                 'success' => false,
                 'message' => "Impossible de supprimer la dernière tâche. Un niveau doit contenir au moins une activité."
-            ], 400); // 400 Bad Request
+            ], 400);
         }
-        // =========================================================
 
         $task = $this->em->getRepository(Tache::class)->findOneBy([
             'niveau'   => $niveau,
@@ -514,13 +519,15 @@ class ObjectiveController extends AbstractController
             $niveau->removeTache($task);
             $this->em->remove($task);
 
-            // Recalcul des % pour que les tâches restantes fassent 100%
+            // Recalcul des %
             $this->rebalanceTasks($niveau);
 
             $this->em->flush();
 
-            $entrainement = $niveau->getObjectif()->getEntrainement();
-            $this->syncWithApi($entrainement, $apiClient);
+            // Sync API
+            if ($niveau->getObjectif()) {
+                $this->syncWithApi($niveau->getObjectif()->getEntrainement(), $apiClient);
+            }
         }
 
         return new JsonResponse(['success' => true]);

@@ -344,35 +344,40 @@ export function openC2Modal(levelId, task, card) {
         generateC2Preview();
     };
 
-    /* SUPPRESSION */
+    /* ---------- Supprimer ---------- */
     const deleteBtn = document.getElementById("c2_deleteBtn");
-
     if (deleteBtn) {
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
         if (task && task.id) {
-            // Si la tâche existe, on affiche le bouton
-            deleteBtn.classList.remove("d-none");
+            newDeleteBtn.classList.remove("d-none");
 
-            deleteBtn.onclick = () => {
-                openTaskDeleteModal(
-                    levelId,
-                    "C2",
-                    card,
-                    "taskModalC2",
-                    "Tâche 2 éléments manquants (C2)"
-                );
+            newDeleteBtn.onclick = () => {
+                const isDirty = (typeof window.isUnsaved === 'function') && window.isUnsaved();
+
+                if (isDirty) {
+                    // CAS A : Changements en cours -> Modale JAUNE -> Delete Direct
+                    window.checkUnsavedChanges(async () => {
+                        await window.deleteTaskDirectly(levelId, "C2", "taskModalC2");
+                    });
+                } else {
+                    // CAS B : Propre -> Modale ROUGE
+                    openTaskDeleteModal(levelId, "C2", card, "taskModalC2", "Tâche 2 éléments manquants (C2)");
+                }
             };
-
         } else {
-            // Si c'est une création, pas de bouton supprimer
-            deleteBtn.classList.add("d-none");
-            deleteBtn.onclick = null;
+            newDeleteBtn.classList.add("d-none");
         }
     }
 
-    /* ENREGISTREMENT */
+    /* ---------- Enregistrer ---------- */
     const confirmBtn = document.getElementById("c2_confirmBtn");
     if (confirmBtn) {
-        confirmBtn.onclick = () => {
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        newConfirmBtn.onclick = () => {
             const targetInput = document.querySelector('input[name="c2_target"]:checked');
             const target = targetInput ? targetInput.value : "RESULT";
 
@@ -384,8 +389,11 @@ export function openC2Modal(levelId, task, card) {
                 successiveSuccessesToReach: parseInt(succSlider.value, 10),
             };
 
-            requestTaskSave(async () => {
-                await saveTask(levelId, payload, card, "C2", "taskModalC2");
+            // Double enveloppe : 1. Unsaved Changes -> 2. Student Safety -> 3. Save
+            window.checkUnsavedChanges(() => {
+                requestTaskSave(async () => {
+                    await saveTask(levelId, payload, card, "C2", "taskModalC2");
+                });
             });
         };
     }

@@ -230,42 +230,53 @@ export function openIdModal(levelId, task, card) {
         generateIdPreview();
     };
 
-    /* ------------------ DELETE ------------------ */
+    /* ---------- Supprimer ---------- */
     const deleteBtn = document.getElementById("id_deleteBtn");
     if (deleteBtn) {
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
         if (task && task.id) {
-            deleteBtn.classList.remove("d-none");
-            deleteBtn.onclick = () => {
-                openTaskDeleteModal(
-                    levelId,
-                    "ID",
-                    card,
-                    "taskModalID",
-                    "Tâche Identification (ID)"
-                );
+            newDeleteBtn.classList.remove("d-none");
+
+            newDeleteBtn.onclick = () => {
+                const isDirty = (typeof window.isUnsaved === 'function') && window.isUnsaved();
+
+                if (isDirty) {
+                    window.checkUnsavedChanges(async () => {
+                        await window.deleteTaskDirectly(levelId, "ID", "taskModalId");
+                    });
+                } else {
+                    openTaskDeleteModal(levelId, "ID", card, "taskModalId", "Tâche Identification (ID)");
+                }
             };
         } else {
-            deleteBtn.classList.add("d-none");
-            deleteBtn.onclick = null;
+            newDeleteBtn.classList.add("d-none");
         }
     }
 
-    /* ------------------ CONFIRM ------------------ */
+    /* ---------- Enregistrer ---------- */
     const confirmBtn = document.getElementById("id_confirmBtn");
     if (confirmBtn) {
-        confirmBtn.onclick = () => {
-            const src = getSourceVariation();
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        newConfirmBtn.onclick = () => {
+            const srcRadio = document.querySelector('input[name="id_source"]:checked');
+            const sourceVal = srcRadio ? srcRadio.value : "RESULT";
 
             const payload = {
                 taskType: "ID",
-                sourceVariation: src,
                 nbFacts: parseInt(nbFactsSlider.value, 10),
+                sourceVariation: sourceVal,
                 timeMaxSecond: parseInt(timeSlider.value, 10),
-                successiveSuccessesToReach: parseInt(succSlider.value, 10)
+                successiveSuccessesToReach: parseInt(succSlider.value, 10),
             };
 
-            requestTaskSave(async () => {
-                await saveTask(levelId, payload, card, "ID", "taskModalID");
+            window.checkUnsavedChanges(() => {
+                requestTaskSave(async () => {
+                    await saveTask(levelId, payload, card, "ID", "taskModalId");
+                });
             });
         };
     }

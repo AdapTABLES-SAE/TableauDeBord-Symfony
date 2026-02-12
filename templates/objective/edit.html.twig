@@ -287,6 +287,37 @@
         </div>
     </div>
 
+    <div class="modal fade" id="unsaved-changes-modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-warning-subtle border-0">
+                    <h5 class="modal-title text-warning-emphasis fw-bold">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>Modifications non enregistrées
+                    </h5>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="mb-0 fs-6 text-secondary">
+                        Vous avez effectué des modifications sur l'objectif qui n'ont pas encore été enregistrées.
+                    </p>
+                    <p class="mt-2 fw-bold text-dark">
+                        Que souhaitez-vous faire avant de continuer cette action ?
+                    </p>
+                </div>
+                <div class="modal-footer border-0 bg-light d-flex flex-column align-items-stretch gap-2">
+                    <button type="button" class="btn btn-primary fw-bold" id="btn-unsaved-save-continue">
+                        <i class="bi bi-save me-2"></i>Enregistrer les changements et Continuer
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-unsaved-ignore-continue">
+                        Ignorer les changements et Continuer
+                    </button>
+                    <button type="button" class="btn btn-link text-muted btn-sm text-decoration-none mt-1" data-bs-dismiss="modal">
+                        Annuler
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {# ===================== MODALES DE TÂCHES ===================== #}
     {% include 'objective/_modal_task_c1.html.twig' %}
     {% include 'objective/_modal_task_c2.html.twig' %}

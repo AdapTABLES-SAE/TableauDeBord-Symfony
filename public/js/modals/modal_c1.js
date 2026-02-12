@@ -327,6 +327,7 @@ export function openC1Modal(levelId, task, card) {
        5. BOUTONS ACTION (SUPPRIMER / ENREGISTRER)
        ----------------------------------------------------------- */
 
+    /* ---------- Supprimer ---------- */
     const deleteBtn = document.getElementById("c1_deleteBtn");
     if (deleteBtn) {
         const newDeleteBtn = deleteBtn.cloneNode(true);
@@ -334,14 +335,41 @@ export function openC1Modal(levelId, task, card) {
 
         if (task && task.id) {
             newDeleteBtn.classList.remove("d-none");
+
             newDeleteBtn.onclick = () => {
-                openTaskDeleteModal(levelId, "C1", card, "taskModalC1", "Tâche 1 élément manquant (C1)");
+                // 1. On vérifie l'état global
+                const isDirty = (typeof window.isUnsaved === 'function') && window.isUnsaved();
+
+                // Debug console pour vérifier
+                console.log("Clic Supprimer. Modifications en cours ?", isDirty);
+
+                if (isDirty) {
+                    // CAS A : Changements en cours
+                    // -> On ouvre la modale JAUNE
+                    window.checkUnsavedChanges(async () => {
+                        // Si l'utilisateur valide (Save ou Ignore), on supprime DIRECTEMENT
+                        // (On saute la modale rouge)
+                        await window.deleteTaskDirectly(levelId, "C1", "taskModalC1");
+                    });
+
+                } else {
+                    // CAS B : Pas de changements
+                    // -> On ouvre la modale ROUGE classique
+                    openTaskDeleteModal(
+                        levelId,
+                        "C1",
+                        card,
+                        "taskModalC1",
+                        "Tâche 1 élément manquant (C1)"
+                    );
+                }
             };
         } else {
             newDeleteBtn.classList.add("d-none");
         }
     }
 
+    /* ---------- Enregistrer ---------- */
     const confirmBtn = document.getElementById("c1_confirmBtn");
     if (confirmBtn) {
         const newConfirmBtn = confirmBtn.cloneNode(true);
@@ -351,8 +379,9 @@ export function openC1Modal(levelId, task, card) {
             const selectedRadio = document.querySelector('input[name="c1_target"]:checked');
             const selectedTarget = selectedRadio ? selectedRadio.value : "RESULT";
 
-            // Lecture sécurisée de la modalité
-            const modality = (switchChoice && switchChoice.checked) ? "CHOICE" : "INPUT";
+            // Sécurité pour la modalité
+            const choiceSwitch = document.getElementById("c1_mod_choice");
+            const modality = (choiceSwitch && choiceSwitch.checked) ? "CHOICE" : "INPUT";
 
             const payload = {
                 taskType: "C1",
@@ -363,8 +392,15 @@ export function openC1Modal(levelId, task, card) {
                 successiveSuccessesToReach: succSlider ? parseInt(succSlider.value, 10) : 1
             };
 
-            requestTaskSave(async () => {
-                await saveTask(levelId, payload, card, "C1", "taskModalC1");
+            // 1. On vérifie les changements non sauvegardés (Notre nouvelle modale)
+            window.checkUnsavedChanges(() => {
+
+                // 2. Si c'est bon, on vérifie la sécurité élèves (requestTaskSave)
+                requestTaskSave(async () => {
+
+                    // 3. Enfin, on sauvegarde la tâche
+                    await saveTask(levelId, payload, card, "C1", "taskModalC1");
+                });
             });
         };
     }

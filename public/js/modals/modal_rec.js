@@ -248,42 +248,49 @@ export function openRecModal(levelId, task, card) {
         generateRecPreview();
     };
 
-    // Suppression
+    /* ---------- Supprimer ---------- */
     const deleteBtn = document.getElementById("rec_deleteBtn");
-
     if (deleteBtn) {
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
         if (task && task.id) {
-            deleteBtn.classList.remove("d-none");
+            newDeleteBtn.classList.remove("d-none");
 
-            deleteBtn.onclick = () => {
-                openTaskDeleteModal(
-                    levelId,
-                    "REC",
-                    card,
-                    "taskModalREC",
-                    "Tâche Récupération (REC)"
-                );
+            newDeleteBtn.onclick = () => {
+                const isDirty = (typeof window.isUnsaved === 'function') && window.isUnsaved();
+
+                if (isDirty) {
+                    window.checkUnsavedChanges(async () => {
+                        await window.deleteTaskDirectly(levelId, "REC", "taskModalRec");
+                    });
+                } else {
+                    openTaskDeleteModal(levelId, "REC", card, "taskModalRec", "Tâche Récupération (REC)");
+                }
             };
-
         } else {
-            deleteBtn.classList.add("d-none");
-            deleteBtn.onclick = null;
+            newDeleteBtn.classList.add("d-none");
         }
     }
 
-    // Confirmation
+    /* ---------- Enregistrer ---------- */
     const confirmBtn = document.getElementById("rec_confirmBtn");
     if (confirmBtn) {
-        confirmBtn.onclick = () => {
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        newConfirmBtn.onclick = () => {
             const payload = {
                 taskType: "REC",
                 nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
                 timeMaxSecond: parseInt(timeSlider.value, 10),
-                successiveSuccessesToReach: parseInt(succSlider.value, 10)
+                successiveSuccessesToReach: parseInt(succSlider.value, 10),
             };
 
-            requestTaskSave(async () => {
-                await saveTask(levelId, payload, card, "REC", "taskModalREC");
+            window.checkUnsavedChanges(() => {
+                requestTaskSave(async () => {
+                    await saveTask(levelId, payload, card, "REC", "taskModalRec");
+                });
             });
         };
     }

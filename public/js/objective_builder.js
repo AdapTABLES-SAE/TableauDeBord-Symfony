@@ -1030,6 +1030,79 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 
+    /* =========================================================================
+       DIRTY CHECK & DIRECT DELETE
+    ========================================================================= */
+
+    // 1. Accesseur global de l'état "Modifié"
+    window.isUnsaved = function() {
+        return unsavedChanges;
+    };
+
+    // 2. Intercepteur (Modale Jaune)
+    window.checkUnsavedChanges = function(actionCallback) {
+        if (!unsavedChanges) { actionCallback(); return; }
+
+        const modalEl = document.getElementById('unsaved-changes-modal');
+        const modal = new bootstrap.Modal(modalEl);
+        const btnSave = document.getElementById('btn-unsaved-save-continue');
+        const btnIgnore = document.getElementById('btn-unsaved-ignore-continue');
+
+        const newBtnSave = btnSave.cloneNode(true); btnSave.parentNode.replaceChild(newBtnSave, btnSave);
+        const newBtnIgnore = btnIgnore.cloneNode(true); btnIgnore.parentNode.replaceChild(newBtnIgnore, btnIgnore);
+
+        newBtnSave.onclick = async () => {
+            newBtnSave.disabled = true;
+            newBtnSave.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Enregistrement...';
+            try {
+                await executeGlobalSave();
+                unsavedChanges = false;
+                modal.hide();
+                actionCallback();
+            } catch (e) { console.error(e); alert("Erreur sauvegarde."); newBtnSave.disabled = false; newBtnSave.innerHTML = 'Enregistrer et Continuer'; }
+        };
+
+        newBtnIgnore.onclick = () => { unsavedChanges = false; modal.hide(); actionCallback(); };
+        modal.show();
+
+        modalEl.style.zIndex = "10000";
+        setTimeout(() => {
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            const myBackdrop = backdrops[backdrops.length - 1];
+            if (myBackdrop) myBackdrop.style.zIndex = "9999";
+        }, 10);
+    };
+
+    // 3. Suppression Directe
+    window.deleteTaskDirectly = async function(levelId, taskType, modalId) {
+        if (!levelId) return;
+
+        const url = `/enseignant/entrainements/niveau/${levelId}/task/delete`;
+
+        console.log("Suppression via:", url);
+
+        const modalEl = document.getElementById(modalId);
+        if (modalEl) { const tm = bootstrap.Modal.getInstance(modalEl); if (tm) tm.hide(); }
+        if(saveAllBtn) saveAllBtn.classList.add('loading');
+
+        try {
+            const resp = await fetch(url, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+                body: JSON.stringify({ taskType: taskType })
+            });
+
+            // Sécurité Parsing HTML
+            const text = await resp.text();
+            let json;
+            try { json = JSON.parse(text); }
+            catch (e) { console.error("Erreur serveur (HTML):", text); showToast(false, "Erreur interne serveur."); if(saveAllBtn) saveAllBtn.classList.remove('loading'); return; }
+
+            if (json.success) window.location.reload();
+            else { showToast(false, json.message || "Erreur suppression."); if(saveAllBtn) saveAllBtn.classList.remove('loading'); }
+        } catch (e) { console.error(e); showToast(false, "Erreur réseau."); if(saveAllBtn) saveAllBtn.classList.remove('loading'); }
+    };
+
 
     /* =========================================================================================
        TASK WRAPPERS — LIVE UPDATE

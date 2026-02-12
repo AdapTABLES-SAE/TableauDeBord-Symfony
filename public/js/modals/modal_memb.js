@@ -258,46 +258,54 @@ export function openMembModal(levelId, task, card) {
         succVal.textContent = succSlider.value;
     };
 
-    /* ---------- Suppression ---------- */
+    /* ---------- Supprimer ---------- */
     const deleteBtn = document.getElementById("memb_deleteBtn");
-
     if (deleteBtn) {
+        const newDeleteBtn = deleteBtn.cloneNode(true);
+        deleteBtn.parentNode.replaceChild(newDeleteBtn, deleteBtn);
+
         if (task && task.id) {
-            deleteBtn.classList.remove("d-none");
+            newDeleteBtn.classList.remove("d-none");
 
-            deleteBtn.onclick = () => {
-                openTaskDeleteModal(
-                    levelId,
-                    "MEMB",
-                    card,
-                    "taskModalMEMB",
-                    "Tâche Appartenance (MEMB)"
-                );
+            newDeleteBtn.onclick = () => {
+                const isDirty = (typeof window.isUnsaved === 'function') && window.isUnsaved();
+
+                if (isDirty) {
+                    window.checkUnsavedChanges(async () => {
+                        await window.deleteTaskDirectly(levelId, "MEMB", "taskModalMemb");
+                    });
+                } else {
+                    openTaskDeleteModal(levelId, "MEMB", card, "taskModalMemb", "Tâche Appartenance (MEMB)");
+                }
             };
-
         } else {
-            deleteBtn.classList.add("d-none");
-            deleteBtn.onclick = null;
+            newDeleteBtn.classList.add("d-none");
         }
     }
 
-    /* ---------- Confirmation ---------- */
+    /* ---------- Enregistrer ---------- */
     const confirmBtn = document.getElementById("memb_confirmBtn");
     if (confirmBtn) {
-        confirmBtn.onclick = () => {
-            const target = switchIncorrect.checked ? "INCORRECT" : "CORRECT";
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+
+        newConfirmBtn.onclick = () => {
+            const targetRadio = document.querySelector('input[name="memb_target"]:checked');
+            const targetVal = targetRadio ? targetRadio.value : "CORRECT";
 
             const payload = {
                 taskType: "MEMB",
-                target,
-                nbCorrectChoices: parseInt(nbCorrectSlider.value, 10),
-                nbIncorrectChoices: parseInt(nbIncorrectSlider.value, 10),
+                target: targetVal,
+                nbIncorrectChoices: parseInt(nbIncSlider.value, 10),
+                nbCorrectChoices: parseInt(nbCorSlider.value, 10),
                 timeMaxSecond: parseInt(timeSlider.value, 10),
-                successiveSuccessesToReach: parseInt(succSlider.value, 10)
+                successiveSuccessesToReach: parseInt(succSlider.value, 10),
             };
 
-            requestTaskSave(async () => {
-                await saveTask(levelId, payload, card, "MEMB", "taskModalMEMB");
+            window.checkUnsavedChanges(() => {
+                requestTaskSave(async () => {
+                    await saveTask(levelId, payload, card, "MEMB", "taskModalMemb");
+                });
             });
         };
     }
